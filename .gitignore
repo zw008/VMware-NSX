@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+*.log
+.DS_Store
+.venv/
+.mcpregistry_*
+mcp-publisher

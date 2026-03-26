@@ -1,0 +1,8 @@
+{
+  "name": "vmware-nsx",
+  "description": "VMware NSX networking management: segments, gateways, NAT, routing, IPAM",
+  "command": "vmware-nsx-mcp",
+  "env": {
+    "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml"
+  }
+}

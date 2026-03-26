@@ -1,0 +1,9 @@
+# mcp-agent (LastMile AI) configuration
+# Add to your mcp_agent.config.yaml
+
+mcp:
+  servers:
+    vmware-nsx:
+      command: vmware-nsx-mcp
+      env:
+        VMWARE_NSX_CONFIG: ~/.vmware-nsx/config.yaml

@@ -1,0 +1,8 @@
+# Continue configuration
+# Add to your Continue MCP settings (~/.continue/config.yaml)
+
+mcpServers:
+  - name: vmware-nsx
+    command: vmware-nsx-mcp
+    env:
+      VMWARE_NSX_CONFIG: ~/.vmware-nsx/config.yaml

@@ -1,0 +1,8 @@
+services:
+  vmware-nsx-mcp:
+    build: .
+    volumes:
+      - ~/.vmware-nsx:/root/.vmware-nsx:ro
+    environment:
+      - VMWARE_NSX_CONFIG=/root/.vmware-nsx/config.yaml
+    stdin_open: true

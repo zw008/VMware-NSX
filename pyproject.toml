@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vmware-nsx"
+version = "1.3.0"
+description = "VMware NSX networking management: segments, gateways, NAT, routing, IPAM"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "zw008" }]
+keywords = ["vmware", "nsx", "nsx-t", "networking", "mcp", "ai-ops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Networking",
+]
+dependencies = [
+    "httpx>=0.27,<1.0",
+    "typer>=0.12,<1.0",
+    "rich>=13.0,<15.0",
+    "pyyaml>=6.0,<7.0",
+    "python-dotenv>=1.0,<2.0",
+    "mcp[cli]>=1.0,<2.0",
+]
+
+[project.scripts]
+vmware-nsx = "vmware_nsx.cli:app"
+vmware-nsx-mcp = "mcp_server.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vmware_nsx", "mcp_server"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

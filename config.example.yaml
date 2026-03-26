@@ -1,0 +1,21 @@
+# VMware NSX Configuration
+# Copy to ~/.vmware-nsx/config.yaml and edit
+
+targets:
+  nsx-prod:
+    host: nsx-manager.example.com
+    username: admin
+    port: 443
+    verify_ssl: true
+  nsx-lab:
+    host: 10.0.0.50
+    username: admin
+    port: 443
+    verify_ssl: false
+
+default_target: nsx-prod
+
+# Passwords are loaded from environment variables:
+# VMWARE_NSX_NSX_PROD_PASSWORD=xxx
+# VMWARE_NSX_NSX_LAB_PASSWORD=xxx
+# Or from ~/.vmware-nsx/.env file
