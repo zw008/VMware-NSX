@@ -13,8 +13,8 @@ VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 31 个 MCP 
 
 | Skill | 范围 | 工具数 | 安装 |
 |-------|------|:-----:|------|
-| **[vmware-nsx](https://github.com/zw008/VMware-NSX)**（本 Skill） | Segment、网关、NAT、路由、IPAM | 31 | `uv tool install vmware-nsx` |
-| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW 规则、安全组、IDS/IPS | - | `uv tool install vmware-nsx-security` |
+| **[vmware-nsx](https://github.com/zw008/VMware-NSX)**（本 Skill） | Segment、网关、NAT、路由、IPAM | 31 | `uv tool install vmware-nsx-mgmt` |
+| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW 规则、安全组、IDS/IPS | - | `uv tool install vmware-nsx-mgmt-security` |
 | **[vmware-monitor](https://github.com/zw008/VMware-Monitor)**（只读） | 清单、健康、告警、事件 | 8 | `uv tool install vmware-monitor` |
 | **[vmware-aiops](https://github.com/zw008/VMware-AIops)**（完整运维） | VM 生命周期、部署、Guest Ops、计划模式 | 33 | `uv tool install vmware-aiops` |
 | **[vmware-storage](https://github.com/zw008/VMware-Storage)** | 数据存储、iSCSI、vSAN | 11 | `uv tool install vmware-storage` |
@@ -24,10 +24,10 @@ VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 31 个 MCP 
 
 ```bash
 # 通过 PyPI
-uv tool install vmware-nsx
+uv tool install vmware-nsx-mgmt
 
 # 或 pip
-pip install vmware-nsx
+pip install vmware-nsx-mgmt
 ```
 
 ## 配置
@@ -203,7 +203,7 @@ vmware-nsx doctor
 
 ```bash
 # 直接运行
-uvx --from vmware-nsx vmware-nsx-mcp
+uvx --from vmware-nsx-mgmt vmware-nsx-mcp
 
 # 或通过 Docker
 docker compose up -d

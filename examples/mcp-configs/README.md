@@ -6,8 +6,8 @@ Copy the relevant config snippet into your AI agent's MCP configuration file.
 
 ```bash
 # Install vmware-nsx
-uv tool install vmware-nsx
-# or: pip install vmware-nsx
+uv tool install vmware-nsx-mgmt
+# or: pip install vmware-nsx-mgmt
 
 # Configure credentials
 mkdir -p ~/.vmware-nsx

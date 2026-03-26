@@ -11,7 +11,7 @@ description: >
   vmware-aiops, for monitoring use vmware-monitor.
 installer:
   kind: uv
-  package: vmware-nsx
+  package: vmware-nsx-mgmt
 metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 ---
 
@@ -39,7 +39,7 @@ VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, r
 ## Quick Install
 
 ```bash
-uv tool install vmware-nsx
+uv tool install vmware-nsx-mgmt
 vmware-nsx doctor
 ```
 
@@ -260,7 +260,7 @@ The password environment variable is missing. Variable names follow the pattern 
 ## Setup
 
 ```bash
-uv tool install vmware-nsx
+uv tool install vmware-nsx-mgmt
 mkdir -p ~/.vmware-nsx
 cp config.example.yaml ~/.vmware-nsx/config.yaml
 # Edit config.yaml with your NSX Manager targets

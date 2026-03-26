@@ -14,13 +14,13 @@ Complete setup and security guide for `vmware-nsx`.
 ### Via uv (recommended)
 
 ```bash
-uv tool install vmware-nsx
+uv tool install vmware-nsx-mgmt
 ```
 
 ### Via pip
 
 ```bash
-pip install vmware-nsx
+pip install vmware-nsx-mgmt
 ```
 
 ### From source

@@ -13,8 +13,8 @@ VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 
 
 | Skill | Scope | Tools | Install |
 |-------|-------|:-----:|---------|
-| **[vmware-nsx](https://github.com/zw008/VMware-NSX)** (this) | Segments, gateways, NAT, routing, IPAM | 31 | `uv tool install vmware-nsx` |
-| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW rules, security groups, IDS/IPS | - | `uv tool install vmware-nsx-security` |
+| **[vmware-nsx](https://github.com/zw008/VMware-NSX)** (this) | Segments, gateways, NAT, routing, IPAM | 31 | `uv tool install vmware-nsx-mgmt` |
+| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW rules, security groups, IDS/IPS | - | `uv tool install vmware-nsx-mgmt-security` |
 | **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** (read-only) | Inventory, health, alarms, events | 8 | `uv tool install vmware-monitor` |
 | **[vmware-aiops](https://github.com/zw008/VMware-AIops)** (full ops) | VM lifecycle, deployment, guest ops, plans | 33 | `uv tool install vmware-aiops` |
 | **[vmware-storage](https://github.com/zw008/VMware-Storage)** | Datastores, iSCSI, vSAN | 11 | `uv tool install vmware-storage` |
@@ -24,10 +24,10 @@ VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 
 
 ```bash
 # Via PyPI
-uv tool install vmware-nsx
+uv tool install vmware-nsx-mgmt
 
 # Or pip
-pip install vmware-nsx
+pip install vmware-nsx-mgmt
 ```
 
 ## Configuration
@@ -138,7 +138,7 @@ vmware-nsx doctor
 
 ```bash
 # Run directly
-uvx --from vmware-nsx vmware-nsx-mcp
+uvx --from vmware-nsx-mgmt vmware-nsx-mcp
 
 # Or via Docker
 docker compose up -d

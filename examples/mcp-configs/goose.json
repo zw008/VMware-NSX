@@ -1,5 +1,5 @@
 {
-  "name": "vmware-nsx",
+  "name": "vmware-nsx-mgmt",
   "description": "VMware NSX networking management: segments, gateways, NAT, routing, IPAM",
   "command": "vmware-nsx-mcp",
   "env": {

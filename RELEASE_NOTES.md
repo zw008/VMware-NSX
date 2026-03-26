@@ -23,4 +23,4 @@
 - examples/mcp-configs/: 7 agent config templates (Claude Code, Cursor, Goose, Continue, LocalCowork, mcp-agent, VS Code Copilot)
 - README.md and README-CN.md with Companion Skills, Workflows, Troubleshooting
 
-**PyPI**: `uv tool install vmware-nsx==1.3.0`
+**PyPI**: `uv tool install vmware-nsx-mgmt==1.3.0`
