@@ -2,6 +2,16 @@
 
 ---
 
+## v1.3.1 — 2026-03-27
+
+### Family expansion: NSX-Security, Aria + hub entry point
+
+- Added vmware-nsx-security and vmware-aria to companion skills routing table
+- README updated with complete 7-skill family table
+- vmware-aiops is now the family entry point (`vmware-aiops hub status`)
+
+---
+
 ## v1.3.0 — 2026-03-26
 
 ### Initial release

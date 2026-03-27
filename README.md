@@ -13,12 +13,12 @@ VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 
 
 | Skill | Scope | Tools | Install |
 |-------|-------|:-----:|---------|
-| **[vmware-nsx](https://github.com/zw008/VMware-NSX)** (this) | Segments, gateways, NAT, routing, IPAM | 31 | `uv tool install vmware-nsx-mgmt` |
-| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW rules, security groups, IDS/IPS | - | `uv tool install vmware-nsx-mgmt-security` |
-| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** (read-only) | Inventory, health, alarms, events | 8 | `uv tool install vmware-monitor` |
-| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** (full ops) | VM lifecycle, deployment, guest ops, plans | 33 | `uv tool install vmware-aiops` |
+| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** ⭐ entry point | VM lifecycle, deployment, guest ops, clusters | 31 | `uv tool install vmware-aiops` |
+| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** | Read-only monitoring, alarms, events, VM info | 8 | `uv tool install vmware-monitor` |
 | **[vmware-storage](https://github.com/zw008/VMware-Storage)** | Datastores, iSCSI, vSAN | 11 | `uv tool install vmware-storage` |
 | **[vmware-vks](https://github.com/zw008/VMware-VKS)** | Tanzu Namespaces, TKC cluster lifecycle | 20 | `uv tool install vmware-vks` |
+| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW microsegmentation, security groups, Traceflow | 20 | `uv tool install vmware-nsx-security` |
+| **[vmware-aria](https://github.com/zw008/VMware-Aria)** | Aria Ops metrics, alerts, capacity planning | 18 | `uv tool install vmware-aria` |
 
 ## Quick Install
 
