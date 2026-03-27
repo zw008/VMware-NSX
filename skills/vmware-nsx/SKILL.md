@@ -20,7 +20,7 @@ metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-n
 VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, routing, and IPAM.
 
 > Domain-focused networking skill for NSX-T / NSX 4.x Policy API.
-> **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring).
+> **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity).
 
 ## What This Skill Does
 
@@ -70,7 +70,8 @@ vmware-nsx doctor
 | Read-only vSphere monitoring, alarms, events | **vmware-monitor** |
 | VM lifecycle, deployment, guest ops | **vmware-aiops** |
 | Storage: iSCSI, vSAN, datastores | **vmware-storage** |
-| Tanzu Kubernetes | **vmware-vks** |
+| Tanzu Kubernetes (vSphere 8.x+) | **vmware-vks** |
+| Aria Ops: metrics, alerts, capacity planning | **vmware-aria** |
 
 ## Common Workflows
 
