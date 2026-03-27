@@ -12,6 +12,8 @@ description: >
 installer:
   kind: uv
   package: vmware-nsx-mgmt
+allowed-tools:
+  - Bash
 metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 ---
 
