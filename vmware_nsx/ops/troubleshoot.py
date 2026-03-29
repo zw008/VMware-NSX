@@ -3,22 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING
+
+from vmware_policy import sanitize
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
 
 _log = logging.getLogger("vmware-nsx.troubleshoot")
-
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-
-
-def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip control characters and truncate to max_len."""
-    if not text:
-        return text
-    return _CONTROL_CHAR_RE.sub("", text[:max_len])
 
 
 # ---------------------------------------------------------------------------
@@ -69,18 +61,18 @@ def get_logical_port_status(client: NsxClient, segment_id: str) -> dict:
 
         port_details.append(
             {
-                "id": _sanitize(port_id),
-                "display_name": _sanitize(p.get("display_name", "")),
+                "id": sanitize(port_id),
+                "display_name": sanitize(p.get("display_name", "")),
                 "attachment_type": attachment.get(
                     "type", ""
                 ),
-                "attachment_id": _sanitize(
+                "attachment_id": sanitize(
                     attachment.get("id", "")
                 ),
                 "admin_state": p.get("admin_state", "UP"),
                 "realized_state": {
                     "state": realized_state.get("state", "UNKNOWN"),
-                    "details": _sanitize(
+                    "details": sanitize(
                         str(realized_state.get("details", "")),
                         max_len=200,
                     ),
@@ -90,7 +82,7 @@ def get_logical_port_status(client: NsxClient, segment_id: str) -> dict:
 
     return {
         "segment_id": segment_id,
-        "segment_name": _sanitize(seg.get("display_name", "")),
+        "segment_name": sanitize(seg.get("display_name", "")),
         "admin_state": seg.get("admin_state", "UP"),
         "port_count": len(ports),
         "ports": port_details,
@@ -118,7 +110,7 @@ def get_segment_port_for_vm(
     Returns:
         Dict with VM info and associated segment ports.
     """
-    sanitized_name = _sanitize(vm_display_name, max_len=200)
+    sanitized_name = sanitize(vm_display_name, max_len=200)
 
     # Step 1: Find the VM in NSX fabric
     vm_data = client.get(
@@ -171,23 +163,23 @@ def get_segment_port_for_vm(
             ):
                 matched_ports.append(
                     {
-                        "segment_id": _sanitize(seg_id),
-                        "segment_name": _sanitize(
+                        "segment_id": sanitize(seg_id),
+                        "segment_name": sanitize(
                             seg.get("display_name", "")
                         ),
-                        "port_id": _sanitize(p.get("id", "")),
-                        "port_name": _sanitize(
+                        "port_id": sanitize(p.get("id", "")),
+                        "port_name": sanitize(
                             p.get("display_name", "")
                         ),
-                        "attachment_id": _sanitize(attachment_id),
+                        "attachment_id": sanitize(attachment_id),
                     }
                 )
 
     return {
         "vm_display_name": sanitized_name,
         "found": True,
-        "vm_external_id": _sanitize(vm_external_id),
-        "host_id": _sanitize(vm.get("host_id", "")),
+        "vm_external_id": sanitize(vm_external_id),
+        "host_id": sanitize(vm.get("host_id", "")),
         "power_state": vm.get("power_state", ""),
         "matched_ports": matched_ports,
         "port_count": len(matched_ports),

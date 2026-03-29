@@ -3,22 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING, Any
+
+from vmware_policy import sanitize
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
 
 _log = logging.getLogger("vmware-nsx.segment-mgmt")
-
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-
-
-def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip control characters and truncate to max_len."""
-    if not text:
-        return text
-    return _CONTROL_CHAR_RE.sub("", text[:max_len])
 
 
 def _validate_id(resource_id: str) -> str:
@@ -63,7 +55,7 @@ def create_segment(
     _validate_id(segment_id)
 
     body: dict[str, Any] = {
-        "display_name": _sanitize(display_name),
+        "display_name": sanitize(display_name),
         "transport_zone_path": transport_zone_path,
     }
 
@@ -155,7 +147,7 @@ def delete_segment(client: NsxClient, segment_id: str) -> dict:
                 "Detach all ports before deleting."
             ),
             "port_ids": [
-                _sanitize(p.get("id", "")) for p in ports[:10]
+                sanitize(p.get("id", "")) for p in ports[:10]
             ],
         }
 
@@ -193,7 +185,7 @@ def create_tier1_gateway(
     _validate_id(tier1_id)
 
     body: dict[str, Any] = {
-        "display_name": _sanitize(display_name),
+        "display_name": sanitize(display_name),
     }
 
     if tier0_path:

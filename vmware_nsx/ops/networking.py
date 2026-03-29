@@ -3,22 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING
+
+from vmware_policy import sanitize
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
 
 _log = logging.getLogger("vmware-nsx.networking")
-
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-
-
-def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip control characters and truncate to max_len."""
-    if not text:
-        return text
-    return _CONTROL_CHAR_RE.sub("", text[:max_len])
 
 
 # ---------------------------------------------------------------------------
@@ -43,13 +35,13 @@ def list_nat_rules(client: NsxClient, tier1_id: str) -> list[dict]:
     items = client.get_all(path)
     return [
         {
-            "id": _sanitize(r.get("id", "")),
-            "display_name": _sanitize(r.get("display_name", "")),
+            "id": sanitize(r.get("id", "")),
+            "display_name": sanitize(r.get("display_name", "")),
             "action": r.get("action", ""),
-            "source_network": _sanitize(r.get("source_network", "")),
-            "destination_network": _sanitize(r.get("destination_network", "")),
-            "translated_network": _sanitize(r.get("translated_network", "")),
-            "translated_ports": _sanitize(r.get("translated_ports", "")),
+            "source_network": sanitize(r.get("source_network", "")),
+            "destination_network": sanitize(r.get("destination_network", "")),
+            "translated_network": sanitize(r.get("translated_network", "")),
+            "translated_ports": sanitize(r.get("translated_ports", "")),
             "enabled": r.get("enabled", True),
             "logging": r.get("logging", False),
             "firewall_match": r.get("firewall_match", ""),
@@ -130,15 +122,15 @@ def get_bgp_neighbors(client: NsxClient, tier0_id: str) -> dict:
 
     return {
         "tier0_id": tier0_id,
-        "locale_service_id": _sanitize(ls_id),
+        "locale_service_id": sanitize(ls_id),
         "local_as_num": bgp_config.get("local_as_num", ""),
         "enabled": bgp_config.get("enabled", False),
         "graceful_restart": bgp_config.get("graceful_restart_config", {}),
         "neighbors": [
             {
-                "id": _sanitize(n.get("id", "")),
-                "display_name": _sanitize(n.get("display_name", "")),
-                "neighbor_address": _sanitize(n.get("neighbor_address", "")),
+                "id": sanitize(n.get("id", "")),
+                "display_name": sanitize(n.get("display_name", "")),
+                "neighbor_address": sanitize(n.get("neighbor_address", "")),
                 "remote_as_num": n.get("remote_as_num", ""),
                 "source_addresses": n.get("source_addresses", []),
                 "hold_down_timer": n.get("hold_down_timer", 180),
@@ -148,7 +140,7 @@ def get_bgp_neighbors(client: NsxClient, tier0_id: str) -> dict:
         ],
         "neighbor_status": [
             {
-                "neighbor_address": _sanitize(
+                "neighbor_address": sanitize(
                     s.get("neighbor_address", "")
                 ),
                 "remote_as_num": s.get("remote_as_number", ""),
@@ -189,12 +181,12 @@ def list_static_routes(
     items = client.get_all(path)
     return [
         {
-            "id": _sanitize(r.get("id", "")),
-            "display_name": _sanitize(r.get("display_name", "")),
-            "network": _sanitize(r.get("network", "")),
+            "id": sanitize(r.get("id", "")),
+            "display_name": sanitize(r.get("display_name", "")),
+            "network": sanitize(r.get("network", "")),
             "next_hops": [
                 {
-                    "ip_address": _sanitize(
+                    "ip_address": sanitize(
                         nh.get("ip_address", "")
                     ),
                     "admin_distance": nh.get("admin_distance", 1),
@@ -220,8 +212,8 @@ def list_ip_pools(client: NsxClient) -> list[dict]:
     items = client.get_all("/policy/api/v1/infra/ip-pools")
     return [
         {
-            "id": _sanitize(p.get("id", "")),
-            "display_name": _sanitize(p.get("display_name", "")),
+            "id": sanitize(p.get("id", "")),
+            "display_name": sanitize(p.get("display_name", "")),
             "pool_usage": p.get("pool_usage", {}),
         }
         for p in items
@@ -245,9 +237,9 @@ def get_ip_pool_usage(client: NsxClient, pool_id: str) -> dict:
         "allocation_count": len(allocations),
         "allocations": [
             {
-                "id": _sanitize(a.get("id", "")),
-                "display_name": _sanitize(a.get("display_name", "")),
-                "allocation_ip": _sanitize(a.get("allocation_ip", "")),
+                "id": sanitize(a.get("id", "")),
+                "display_name": sanitize(a.get("display_name", "")),
+                "allocation_ip": sanitize(a.get("allocation_ip", "")),
             }
             for a in allocations
         ],

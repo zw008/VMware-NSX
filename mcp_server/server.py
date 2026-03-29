@@ -44,6 +44,7 @@ from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from vmware_policy import vmware_tool
 
 from vmware_nsx.config import load_config
 from vmware_nsx.connection import ConnectionManager
@@ -86,6 +87,7 @@ def _get_connection(target: str | None = None) -> Any:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_segments(target: str | None = None) -> list[dict]:
     """List all NSX network segments with type, subnet, admin state, and port count.
 
@@ -99,6 +101,7 @@ def list_segments(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_segment(segment_id: str, target: str | None = None) -> dict:
     """Get detailed info for a specific network segment.
 
@@ -113,6 +116,7 @@ def get_segment(segment_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_tier0_gateways(target: str | None = None) -> list[dict]:
     """List all Tier-0 gateways with HA mode and transit subnets.
 
@@ -126,6 +130,7 @@ def list_tier0_gateways(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
     """Get detailed info for a specific Tier-0 gateway.
 
@@ -140,6 +145,7 @@ def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_tier1_gateways(target: str | None = None) -> list[dict]:
     """List all Tier-1 gateways with linked Tier-0 path and route advertisement.
 
@@ -153,6 +159,7 @@ def list_tier1_gateways(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
     """Get detailed info for a specific Tier-1 gateway.
 
@@ -167,6 +174,7 @@ def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_transport_zones(target: str | None = None) -> list[dict]:
     """List all transport zones with type and host switch name.
 
@@ -180,6 +188,7 @@ def list_transport_zones(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_transport_nodes(target: str | None = None) -> list[dict]:
     """List all transport nodes with type and status.
 
@@ -193,6 +202,7 @@ def list_transport_nodes(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_edge_clusters(target: str | None = None) -> list[dict]:
     """List all edge clusters with member count and deployment type.
 
@@ -211,6 +221,7 @@ def list_edge_clusters(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
     """List NAT rules on a Tier-1 gateway.
 
@@ -225,6 +236,7 @@ def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
     """Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
 
@@ -239,6 +251,7 @@ def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
     """List static routes on a Tier-1 gateway.
 
@@ -253,6 +266,7 @@ def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_ip_pools(target: str | None = None) -> list[dict]:
     """List all IP address pools with subnets and usage summary.
 
@@ -266,6 +280,7 @@ def list_ip_pools(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
     """Get IP pool allocation usage details (total, allocated, free).
 
@@ -285,6 +300,7 @@ def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def list_nsx_alarms(target: str | None = None) -> list[dict]:
     """Get all active NSX alarms with severity, feature, description, and entity.
 
@@ -298,6 +314,7 @@ def list_nsx_alarms(target: str | None = None) -> list[dict]:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
     """Check status of a specific transport node (connectivity, tunnel status).
 
@@ -312,6 +329,7 @@ def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
     """Check status of an edge cluster (member health, overall status).
 
@@ -326,6 +344,7 @@ def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_nsx_manager_status(target: str | None = None) -> dict:
     """Get NSX Manager cluster status (node health, cluster status, version).
 
@@ -344,6 +363,7 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
     """Check logical port operational status (admin state, link state, attachment).
 
@@ -358,6 +378,7 @@ def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="low")
 def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
     """Find which segment a VM is attached to via its VIF attachment.
 
@@ -377,6 +398,7 @@ def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def create_segment(
     segment_id: str,
     display_name: str,
@@ -408,6 +430,7 @@ def create_segment(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def update_segment(
     segment_id: str,
     display_name: str | None = None,
@@ -429,6 +452,7 @@ def update_segment(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="high")
 def delete_segment(segment_id: str, target: str | None = None) -> str:
     """Delete a network segment. WARNING: This will disconnect all attached VMs.
 
@@ -449,6 +473,7 @@ def delete_segment(segment_id: str, target: str | None = None) -> str:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def create_tier1_gateway(
     tier1_id: str,
     display_name: str,
@@ -480,6 +505,7 @@ def create_tier1_gateway(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def update_tier1_gateway(
     tier1_id: str,
     display_name: str | None = None,
@@ -508,6 +534,7 @@ def update_tier1_gateway(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="high")
 def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
     """Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
 
@@ -523,6 +550,7 @@ def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def configure_tier0_bgp(
     tier0_id: str,
     local_as: int,
@@ -562,6 +590,7 @@ def configure_tier0_bgp(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def create_nat_rule(
     tier1_id: str,
     rule_id: str,
@@ -595,6 +624,7 @@ def create_nat_rule(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="high")
 def delete_nat_rule(
     tier1_id: str,
     rule_id: str,
@@ -620,6 +650,7 @@ def delete_nat_rule(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def create_static_route(
     tier1_id: str,
     route_id: str,
@@ -643,6 +674,7 @@ def create_static_route(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="high")
 def delete_static_route(
     tier1_id: str,
     route_id: str,
@@ -668,6 +700,7 @@ def delete_static_route(
 
 
 @mcp.tool()
+@vmware_tool(risk_level="medium")
 def create_ip_pool(
     pool_id: str,
     display_name: str,

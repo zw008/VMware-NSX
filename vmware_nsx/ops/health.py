@@ -3,22 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING
+
+from vmware_policy import sanitize
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
 
 _log = logging.getLogger("vmware-nsx.health")
-
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-
-
-def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip control characters and truncate to max_len."""
-    if not text:
-        return text
-    return _CONTROL_CHAR_RE.sub("", text[:max_len])
 
 
 # ---------------------------------------------------------------------------
@@ -58,18 +50,18 @@ def list_alarms(
 
     return [
         {
-            "id": _sanitize(a.get("id", "")),
+            "id": sanitize(a.get("id", "")),
             "severity": a.get("severity", ""),
             "status": a.get("status", ""),
-            "feature_name": _sanitize(a.get("feature_name", "")),
-            "event_type": _sanitize(a.get("event_type", "")),
-            "description": _sanitize(a.get("description", ""), max_len=1000),
-            "recommended_action": _sanitize(
+            "feature_name": sanitize(a.get("feature_name", "")),
+            "event_type": sanitize(a.get("event_type", "")),
+            "description": sanitize(a.get("description", ""), max_len=1000),
+            "recommended_action": sanitize(
                 a.get("recommended_action", ""), max_len=1000
             ),
-            "entity_id": _sanitize(a.get("entity_id", "")),
+            "entity_id": sanitize(a.get("entity_id", "")),
             "last_reported_time": a.get("last_reported_time", 0),
-            "node_display_name": _sanitize(
+            "node_display_name": sanitize(
                 a.get("node_display_name", "")
             ),
         }
@@ -97,10 +89,10 @@ def get_transport_node_status(client: NsxClient, node_id: str) -> dict:
         "node_id": node_id,
         "status": data.get("status", ""),
         "node_deployment_state": data.get("node_deployment_state", {}),
-        "control_connection_status": _sanitize(
+        "control_connection_status": sanitize(
             data.get("control_connection_status", {}).get("status", "")
         ),
-        "mgmt_connection_status": _sanitize(
+        "mgmt_connection_status": sanitize(
             data.get("mgmt_connection_status", {}).get("status", "")
         ),
         "tunnel_status": {
@@ -138,7 +130,7 @@ def get_edge_cluster_status(client: NsxClient, cluster_id: str) -> dict:
         "member_count": len(members),
         "members": [
             {
-                "transport_node_id": _sanitize(
+                "transport_node_id": sanitize(
                     m.get("transport_node_id", "")
                 ),
                 "status": m.get("status", ""),
@@ -162,7 +154,7 @@ def get_manager_status(client: NsxClient) -> dict:
     data = client.get("/api/v1/cluster/status")
     nodes = data.get("mgmt_cluster_status", {}).get("online_nodes", [])
     return {
-        "cluster_id": _sanitize(data.get("cluster_id", "")),
+        "cluster_id": sanitize(data.get("cluster_id", "")),
         "overall_status": data.get("detailed_cluster_status", {}).get(
             "overall_status", ""
         ),
@@ -175,8 +167,8 @@ def get_manager_status(client: NsxClient) -> dict:
         "online_node_count": len(nodes),
         "nodes": [
             {
-                "uuid": _sanitize(n.get("uuid", "")),
-                "mgmt_cluster_listen_addr": _sanitize(
+                "uuid": sanitize(n.get("uuid", "")),
+                "mgmt_cluster_listen_addr": sanitize(
                     n.get("mgmt_cluster_listen_addr", {}).get(
                         "ip_address", ""
                     )
@@ -186,7 +178,7 @@ def get_manager_status(client: NsxClient) -> dict:
         ],
         "groups": [
             {
-                "group_id": _sanitize(g.get("group_id", "")),
+                "group_id": sanitize(g.get("group_id", "")),
                 "group_status": g.get("group_status", ""),
                 "group_type": g.get("group_type", ""),
             }

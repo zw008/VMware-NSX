@@ -23,6 +23,7 @@ VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, r
 
 > Domain-focused networking skill for NSX-T / NSX 4.x Policy API.
 > **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity).
+> | [vmware-pilot](../vmware-pilot/SKILL.md) (workflow orchestration) | [vmware-policy](../vmware-policy/SKILL.md) (audit/policy)
 
 ## What This Skill Does
 
@@ -74,6 +75,8 @@ vmware-nsx doctor
 | Storage: iSCSI, vSAN, datastores | **vmware-storage** |
 | Tanzu Kubernetes (vSphere 8.x+) | **vmware-vks** |
 | Aria Ops: metrics, alerts, capacity planning | **vmware-aria** |
+| Multi-step workflows with approval | **vmware-pilot** |
+| Audit log query | **vmware-policy** (`vmware-audit` CLI) |
 
 ## Common Workflows
 
@@ -273,6 +276,8 @@ chmod 600 ~/.vmware-nsx/.env
 
 vmware-nsx doctor
 ```
+
+> All tools are automatically audited via vmware-policy. Audit logs: `vmware-audit log --last 20`
 
 > Full setup guide with multi-target config, MCP server setup, and Docker: see `references/setup-guide.md`
 

@@ -3,22 +3,14 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING, Any
+
+from vmware_policy import sanitize
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
 
 _log = logging.getLogger("vmware-nsx.nat-route-mgmt")
-
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
-
-
-def _sanitize(text: str, max_len: int = 500) -> str:
-    """Strip control characters and truncate to max_len."""
-    if not text:
-        return text
-    return _CONTROL_CHAR_RE.sub("", text[:max_len])
 
 
 def _validate_id(resource_id: str) -> str:
@@ -277,7 +269,7 @@ def create_ip_pool(
             )
 
     body: dict[str, Any] = {
-        "display_name": _sanitize(display_name),
+        "display_name": sanitize(display_name),
     }
 
     path = f"/policy/api/v1/infra/ip-pools/{pool_id}"
