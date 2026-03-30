@@ -1,20 +1,18 @@
 ---
 name: vmware-nsx
 description: >
-  VMware NSX networking management: segments, gateways, NAT, routing, IPAM.
-  Query and configure network infrastructure via natural language.
-  Use when user asks to "list segments", "create a segment", "show NAT rules",
-  "check BGP neighbors", "add a static route", "create a Tier-1 gateway",
-  "check NSX alarms", "find which segment a VM is on", or mentions
-  NSX/NSX-T/VCF networking operations.
-  For DFW/firewall/security use vmware-nsx-security, for VM operations use
-  vmware-aiops, for monitoring use vmware-monitor.
+  Use this skill whenever the user needs to manage VMware NSX networking — segments, gateways, NAT, routing, and IP pools.
+  Directly handles: create/manage network segments, configure Tier-0/Tier-1 gateways, set up NAT rules, manage static routes, configure IP pools, check transport node and edge cluster health.
+  Always use this skill for "create segment", "set up gateway", "create NAT rule", "check network health", "troubleshoot connectivity", or any NSX/networking/segment task.
+  For DFW/firewall rules use vmware-nsx-security, for VM operations use vmware-aiops, for multi-step workflows use vmware-pilot.
 installer:
   kind: uv
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
 metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+compatibility: >
+  Requires vmware-policy (auto-installed). All operations audited to ~/.vmware/audit.db.
 ---
 
 # VMware NSX
@@ -296,6 +294,17 @@ Segments / Gateways / NAT / Routes / IP Pools / Transport Nodes
 ```
 
 The MCP server uses stdio transport (local only, no network listener). Connections to NSX Manager use HTTPS on port 443.
+
+## Audit & Safety
+
+All operations are automatically audited via vmware-policy (`@vmware_tool` decorator):
+- Every tool call logged to `~/.vmware/audit.db` (SQLite, framework-agnostic)
+- Policy rules enforced via `~/.vmware/rules.yaml` (deny rules, maintenance windows, risk levels)
+- Risk classification: each tool tagged as low/medium/high/critical
+- View recent operations: `vmware-audit log --last 20`
+- View denied operations: `vmware-audit log --status denied`
+
+vmware-policy is automatically installed as a dependency — no manual setup needed.
 
 ## License
 

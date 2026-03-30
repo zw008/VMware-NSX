@@ -1,0 +1,38 @@
+{
+  "skill_name": "vmware-nsx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new app network: segment app-web on 10.10.1.0/24 with a Tier-1 gateway and SNAT to 172.16.0.10",
+      "expected_output": "Segment, gateway, and NAT rule created",
+      "files": [],
+      "expectations": [
+        "Uses create_segment with correct subnet",
+        "Uses create_tier1_gateway",
+        "Uses create_nat_rule with SNAT action and correct IPs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "List all network segments and check if any transport nodes are down",
+      "expected_output": "Segment list and transport node health",
+      "files": [],
+      "expectations": [
+        "Uses list_segments for segment inventory",
+        "Uses list_transport_nodes or get_transport_node_status for health",
+        "Reports unhealthy nodes clearly"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Troubleshoot why VM app-01 can't reach the internet - check its segment, gateway, and NAT",
+      "expected_output": "Network path analysis from VM to internet",
+      "files": [],
+      "expectations": [
+        "Uses get_segment_port_for_vm to find VM's segment",
+        "Checks gateway configuration",
+        "Checks NAT rules on the Tier-1 gateway"
+      ]
+    }
+  ]
+}
