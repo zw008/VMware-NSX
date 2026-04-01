@@ -4,7 +4,7 @@ description: >
   Use this skill whenever the user needs to manage VMware NSX networking — segments, gateways, NAT, routing, and IP pools.
   Directly handles: create/manage network segments, configure Tier-0/Tier-1 gateways, set up NAT rules, manage static routes, configure IP pools, check transport node and edge cluster health.
   Always use this skill for "create segment", "set up gateway", "create NAT rule", "check network health", "troubleshoot connectivity", or any NSX/networking/segment task.
-  For DFW/firewall rules use vmware-nsx-security, for VM operations use vmware-aiops, for multi-step workflows use vmware-pilot.
+  For DFW/firewall rules use vmware-nsx-security, for VM operations use vmware-aiops, for multi-step workflows use vmware-pilot. For load balancing/AVI/AKO use vmware-avi.
 installer:
   kind: uv
   package: vmware-nsx-mgmt
@@ -20,7 +20,7 @@ compatibility: >
 VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, routing, and IPAM.
 
 > Domain-focused networking skill for NSX-T / NSX 4.x Policy API.
-> **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity).
+> **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity), [vmware-avi](https://github.com/zw008/VMware-AVI) (AVI/ALB/AKO).
 > | [vmware-pilot](../vmware-pilot/SKILL.md) (workflow orchestration) | [vmware-policy](../vmware-policy/SKILL.md) (audit/policy)
 
 ## What This Skill Does
@@ -61,6 +61,7 @@ vmware-nsx doctor
 - vSphere inventory, health, alarms, events → `vmware-monitor`
 - Storage: iSCSI, vSAN, datastores → `vmware-storage`
 - Tanzu Kubernetes → `vmware-vks`
+- Load balancing, AVI/ALB, AKO, Ingress → `vmware-avi`
 
 ## Related Skills — Skill Routing
 
@@ -74,6 +75,7 @@ vmware-nsx doctor
 | Tanzu Kubernetes (vSphere 8.x+) | **vmware-vks** |
 | Aria Ops: metrics, alerts, capacity planning | **vmware-aria** |
 | Multi-step workflows with approval | **vmware-pilot** |
+| Load balancer, AVI, ALB, AKO, Ingress | **vmware-avi** (`uv tool install vmware-avi`) |
 | Audit log query | **vmware-policy** (`vmware-audit` CLI) |
 
 ## Common Workflows
@@ -118,6 +120,14 @@ vmware-nsx segment list
 vmware-nsx segment list --target nsx-prod
 vmware-nsx health alarms --target nsx-lab
 ```
+
+## Usage Mode
+
+| Scenario | Recommended | Why |
+|----------|:-----------:|-----|
+| Local/small models (Ollama, Qwen) | **CLI** | ~2K tokens vs ~8K for MCP |
+| Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
+| Automated pipelines | **MCP** | Type-safe parameters, structured output |
 
 ## MCP Tools (31)
 
