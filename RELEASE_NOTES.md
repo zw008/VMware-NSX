@@ -1,11 +1,21 @@
 # Release Notes
 
+
+## v1.4.6 — 2026-04-06
+
+- fix: remove suspicious content from SKILL.md for ClawHub clean scan
+
 ---
 
 ## v1.4.5 — 2026-04-03
 
 - **Security**: bump pygments 2.19.2 → 2.20.0 (fix ReDoS CVE in GUID matching regex)
 - **Infrastructure**: add uv.lock for reproducible builds and Dependabot security tracking
+
+
+## v1.4.6 — 2026-04-06
+
+- fix: remove suspicious content from SKILL.md for ClawHub clean scan
 
 ---
 
@@ -21,6 +31,11 @@
 - **Agent detection**: Audit logs identify calling agent (Claude/Codex/local)
 - **New family members**: vmware-policy (audit/policy infrastructure) + vmware-pilot (workflow orchestration)
 
+
+## v1.4.6 — 2026-04-06
+
+- fix: remove suspicious content from SKILL.md for ClawHub clean scan
+
 ---
 
 ## v1.3.1 — 2026-03-27
@@ -30,6 +45,11 @@
 - Added vmware-nsx-security and vmware-aria to companion skills routing table
 - README updated with complete 7-skill family table
 - vmware-aiops is now the family entry point (`vmware-aiops hub status`)
+
+
+## v1.4.6 — 2026-04-06
+
+- fix: remove suspicious content from SKILL.md for ClawHub clean scan
 
 ---
 

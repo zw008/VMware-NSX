@@ -83,13 +83,13 @@ vmware-nsx doctor
 ### Create an App Network (Segment + T1 Gateway + NAT)
 
 1. Create a Tier-1 gateway → `vmware-nsx gateway create-t1 app-t1 --edge-cluster edge-cluster-01 --tier0 tier0-gw`
-2. Create a segment → `vmware-nsx segment create app-web-seg --gateway app-t1 --subnet 10.10.1.1/24 --transport-zone tz-overlay`
-3. Add SNAT rule → `vmware-nsx nat create app-t1 --action SNAT --source 10.10.1.0/24 --translated 172.16.0.10`
+2. Create a segment → `vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <subnet-cidr> --transport-zone tz-overlay`
+3. Add SNAT rule → `vmware-nsx nat create app-t1 --action SNAT --source <private-cidr> --translated <public-ip>`
 4. Verify → `vmware-nsx segment list` and `vmware-nsx nat list app-t1`
 
 **Dry-run first**: Append `--dry-run` to any write command to preview without executing:
 ```bash
-vmware-nsx segment create app-web-seg --gateway app-t1 --subnet 10.10.1.1/24 --transport-zone tz-overlay --dry-run
+vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <subnet-cidr> --transport-zone tz-overlay --dry-run
 ```
 
 ### Check Network Health
@@ -279,7 +279,8 @@ mkdir -p ~/.vmware-nsx
 cp config.example.yaml ~/.vmware-nsx/config.yaml
 # Edit config.yaml with your NSX Manager targets
 
-echo "VMWARE_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
+# Add to ~/.vmware-nsx/.env (create if missing, chmod 600):
+# VMWARE_NSX_PROD_PASSWORD=<your-password>
 chmod 600 ~/.vmware-nsx/.env
 
 vmware-nsx doctor
