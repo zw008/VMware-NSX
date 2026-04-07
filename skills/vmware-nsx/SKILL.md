@@ -10,7 +10,7 @@ installer:
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_TARGET_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
   Requires vmware-policy (auto-installed). All operations audited to ~/.vmware/audit.db.
 ---
@@ -262,7 +262,7 @@ The password environment variable is missing. Variable names follow the pattern 
 ## Safety
 
 - **Read-heavy**: 18 of 31 tools are read-only (list, get, status, health, troubleshoot)
-- **Audit logging**: All operations logged to `~/.vmware-nsx/audit.log` in JSON Lines format with timestamp, user, target, operation, parameters, and result
+- **Audit logging**: All operations logged to `~/.vmware/audit.db` (SQLite WAL, via vmware-policy) with timestamp, user, target, operation, parameters, and result
 - **Double confirmation**: CLI write commands require two separate confirmation prompts before executing
 - **Dry-run mode**: All write commands support `--dry-run` to preview API calls without executing
 - **Dependency checks**: Segment delete checks for connected ports; gateway delete checks for connected segments; prevents accidental cascade failures

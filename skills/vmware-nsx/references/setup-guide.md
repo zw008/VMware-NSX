@@ -223,7 +223,7 @@ When `cert_path` and `key_path` are set, the password environment variable is no
 
 ### Audit Logging
 
-All operations are logged to `~/.vmware-nsx/audit.log` in JSON Lines format.
+All operations are logged to `~/.vmware/audit.db` (SQLite WAL mode, via vmware-policy).
 
 Each audit entry records:
 - **timestamp**: UTC ISO 8601
@@ -375,7 +375,7 @@ Recommended role assignments for the service account used by this skill:
 |------|---------|
 | `~/.vmware-nsx/config.yaml` | Connection targets and settings |
 | `~/.vmware-nsx/.env` | Passwords (chmod 600) |
-| `~/.vmware-nsx/audit.log` | Operation audit trail (JSON Lines) |
+| `~/.vmware/audit.db` | Operation audit trail (SQLite WAL, via vmware-policy) |
 
 ## Combining with Other VMware Skills
 
