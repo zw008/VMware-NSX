@@ -1,3 +1,10 @@
+## v1.4.9 (2026-04-11)
+
+- Fix: 403 auth failure for NSX passwords containing special chars (!, ), etc.)
+  Switch /api/session/create from Basic Auth header to form-body credentials
+  (j_username/j_password) matching curl behavior; preserve special chars
+  unencoded using urllib.parse.quote safe-set to avoid NSX decoding issues.
+
 ## v1.4.8 (2026-04-09)
 
 - Security: bump cryptography 46.0.6→46.0.7 (CVE-2026-39892, buffer overflow)

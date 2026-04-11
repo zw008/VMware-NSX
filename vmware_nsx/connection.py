@@ -24,6 +24,7 @@ class NsxClient:
 
     def __init__(self, target: TargetConfig, password: str) -> None:
         self._target = target
+        self._password = password
         self._base_url = f"https://{target.host}:{target.port}"
         self._token: str | None = None
 
@@ -31,22 +32,48 @@ class NsxClient:
         if not target.verify_ssl:
             warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
+        # No client-level auth — credentials are sent via form body in
+        # _create_session(); subsequent requests use session cookie + XSRF token.
         self._client = httpx.Client(
             base_url=self._base_url,
             verify=target.verify_ssl,
             timeout=30.0,
-            auth=(target.username, password),
         )
         self._create_session()
 
     def _create_session(self) -> None:
-        """Authenticate and store session token."""
-        resp = self._client.post("/api/session/create")
+        """Authenticate via form body and store the XSRF session token.
+
+        NSX Manager's /api/session/create requires j_username and j_password
+        as application/x-www-form-urlencoded body parameters.  Python's
+        urllib.parse.urlencode encodes '!' → '%21' and ')' → '%29', but some
+        NSX versions compare the raw encoded string against the stored password,
+        causing spurious 403s for passwords that contain those characters.
+
+        We construct the body manually using urllib.parse.quote() with an
+        explicit safe set that preserves the characters curl passes literally
+        (RFC 3986 unreserved set plus common sub-delimiters: ! ) * - . _ ~),
+        so the on-wire representation matches what curl -d sends.
+        """
+        from urllib.parse import quote
+
+        # Characters curl preserves unencoded in -d form data
+        _SAFE = "!)*-._~"
+        body = (
+            "j_username=" + quote(self._target.username, safe=_SAFE)
+            + "&j_password=" + quote(self._password, safe=_SAFE)
+        )
+        resp = self._client.post(
+            "/api/session/create",
+            content=body.encode("utf-8"),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
         resp.raise_for_status()
         self._token = resp.headers.get("x-xsrf-token")
         if not self._token:
-            raise ConnectionError("NSX session creation succeeded but no X-XSRF-TOKEN returned")
-        # Store cookies from response
+            raise ConnectionError(
+                "NSX session creation succeeded but no X-XSRF-TOKEN returned"
+            )
         _log.info("NSX session created for %s", self._target.host)
 
     def _headers(self) -> dict[str, str]:

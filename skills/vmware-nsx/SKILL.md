@@ -12,7 +12,7 @@ allowed-tools:
   - Bash
 metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_TARGET_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
-  Requires vmware-policy (auto-installed). All operations audited to ~/.vmware/audit.db.
+  vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
 ---
 
 # VMware NSX
