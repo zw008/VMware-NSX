@@ -1,6 +1,10 @@
 <!-- mcp-name: io.github.zw008/vmware-nsx -->
 # VMware NSX
 
+> **作者**: Wei Zhou, VMware by Broadcom — wei-wz.zhou@broadcom.com
+> 本项目由 VMware 工程师维护的社区项目，非 VMware 官方产品。
+> VMware 官方开发者工具请访问 [developer.broadcom.com](https://developer.broadcom.com)。
+
 [English](README.md) | [中文](README-CN.md)
 
 VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 31 个 MCP 工具，领域专注。

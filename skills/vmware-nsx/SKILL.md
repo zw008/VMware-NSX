@@ -4,7 +4,8 @@ description: >
   Use this skill whenever the user needs to manage VMware NSX networking — segments, gateways, NAT, routing, and IP pools.
   Directly handles: create/manage network segments, configure Tier-0/Tier-1 gateways, set up NAT rules, manage static routes, configure IP pools, check transport node and edge cluster health.
   Always use this skill for "create segment", "set up gateway", "create NAT rule", "check network health", "troubleshoot connectivity", or any NSX/networking/segment task.
-  For DFW/firewall rules use vmware-nsx-security, for VM operations use vmware-aiops, for multi-step workflows use vmware-pilot. For load balancing/AVI/AKO use vmware-avi.
+  Do NOT use for DFW firewall rules or security groups (use vmware-nsx-security), VM lifecycle (use vmware-aiops), or AVI/ALB load balancing (use vmware-avi).
+  For multi-step workflows use vmware-pilot.
 installer:
   kind: uv
   package: vmware-nsx-mgmt
@@ -129,7 +130,7 @@ vmware-nsx health alarms --target nsx-lab
 | Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | Type-safe parameters, structured output |
 
-## MCP Tools (31)
+## MCP Tools (31 — 18 read, 13 write)
 
 All MCP tools accept an optional `target` parameter to select which NSX Manager to connect to.
 

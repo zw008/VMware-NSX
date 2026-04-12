@@ -89,7 +89,7 @@ def _get_connection(target: str | None = None) -> Any:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_segments(target: str | None = None) -> list[dict]:
-    """List all NSX network segments with type, subnet, admin state, and port count.
+    """[READ] List all NSX network segments with type, subnet, admin state, and port count.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -103,7 +103,7 @@ def list_segments(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_segment(segment_id: str, target: str | None = None) -> dict:
-    """Get detailed info for a specific network segment.
+    """[READ] Get detailed info for a specific network segment.
 
     Args:
         segment_id: The segment ID (policy path name).
@@ -118,7 +118,7 @@ def get_segment(segment_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_tier0_gateways(target: str | None = None) -> list[dict]:
-    """List all Tier-0 gateways with HA mode and transit subnets.
+    """[READ] List all Tier-0 gateways with HA mode and transit subnets.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -132,7 +132,7 @@ def list_tier0_gateways(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
-    """Get detailed info for a specific Tier-0 gateway.
+    """[READ] Get detailed info for a specific Tier-0 gateway.
 
     Args:
         tier0_id: The Tier-0 gateway ID.
@@ -147,7 +147,7 @@ def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_tier1_gateways(target: str | None = None) -> list[dict]:
-    """List all Tier-1 gateways with linked Tier-0 path and route advertisement.
+    """[READ] List all Tier-1 gateways with linked Tier-0 path and route advertisement.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -161,7 +161,7 @@ def list_tier1_gateways(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
-    """Get detailed info for a specific Tier-1 gateway.
+    """[READ] Get detailed info for a specific Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -176,7 +176,7 @@ def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_transport_zones(target: str | None = None) -> list[dict]:
-    """List all transport zones with type and host switch name.
+    """[READ] List all transport zones with type and host switch name.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -190,7 +190,7 @@ def list_transport_zones(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_transport_nodes(target: str | None = None) -> list[dict]:
-    """List all transport nodes with type and status.
+    """[READ] List all transport nodes with type and status.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -204,7 +204,7 @@ def list_transport_nodes(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_edge_clusters(target: str | None = None) -> list[dict]:
-    """List all edge clusters with member count and deployment type.
+    """[READ] List all edge clusters with member count and deployment type.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -223,7 +223,7 @@ def list_edge_clusters(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
-    """List NAT rules on a Tier-1 gateway.
+    """[READ] List NAT rules on a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -238,7 +238,7 @@ def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
-    """Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
+    """[READ] Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
 
     Args:
         tier0_id: The Tier-0 gateway ID.
@@ -253,7 +253,7 @@ def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
-    """List static routes on a Tier-1 gateway.
+    """[READ] List static routes on a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -268,7 +268,7 @@ def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_ip_pools(target: str | None = None) -> list[dict]:
-    """List all IP address pools with subnets and usage summary.
+    """[READ] List all IP address pools with subnets and usage summary.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -282,7 +282,7 @@ def list_ip_pools(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
-    """Get IP pool allocation usage details (total, allocated, free).
+    """[READ] Get IP pool allocation usage details (total, allocated, free).
 
     Args:
         pool_id: The IP pool ID.
@@ -302,7 +302,7 @@ def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def list_nsx_alarms(target: str | None = None) -> list[dict]:
-    """Get all active NSX alarms with severity, feature, description, and entity.
+    """[READ] Get all active NSX alarms with severity, feature, description, and entity.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -316,7 +316,7 @@ def list_nsx_alarms(target: str | None = None) -> list[dict]:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
-    """Check status of a specific transport node (connectivity, tunnel status).
+    """[READ] Check status of a specific transport node (connectivity, tunnel status).
 
     Args:
         node_id: The transport node ID.
@@ -331,7 +331,7 @@ def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
-    """Check status of an edge cluster (member health, overall status).
+    """[READ] Check status of an edge cluster (member health, overall status).
 
     Args:
         cluster_id: The edge cluster ID.
@@ -346,7 +346,7 @@ def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_nsx_manager_status(target: str | None = None) -> dict:
-    """Get NSX Manager cluster status (node health, cluster status, version).
+    """[READ] Get NSX Manager cluster status (node health, cluster status, version).
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -365,7 +365,7 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
-    """Check logical port operational status (admin state, link state, attachment).
+    """[READ] Check logical port operational status (admin state, link state, attachment).
 
     Args:
         port_id: The logical port ID.
@@ -380,7 +380,7 @@ def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
 @mcp.tool()
 @vmware_tool(risk_level="low")
 def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
-    """Find which segment a VM is attached to via its VIF attachment.
+    """[READ] Find which segment a VM is attached to via its VIF attachment.
 
     Args:
         vm_id: The VM external ID (BIOS UUID or instance UUID from vCenter).
@@ -407,7 +407,7 @@ def create_segment(
     subnet: str | None = None,
     target: str | None = None,
 ) -> dict:
-    """Create a new network segment.
+    """[WRITE] Create a new network segment.
 
     Args:
         segment_id: Unique ID for the segment (used in policy path).
@@ -437,7 +437,7 @@ def update_segment(
     subnet: str | None = None,
     target: str | None = None,
 ) -> dict:
-    """Update an existing network segment (partial update via PATCH).
+    """[WRITE] Update an existing network segment (partial update via PATCH).
 
     Args:
         segment_id: The segment ID to update.
@@ -454,7 +454,7 @@ def update_segment(
 @mcp.tool()
 @vmware_tool(risk_level="high")
 def delete_segment(segment_id: str, target: str | None = None) -> str:
-    """Delete a network segment. WARNING: This will disconnect all attached VMs.
+    """[WRITE] Delete a network segment. WARNING: This will disconnect all attached VMs.
 
     Args:
         segment_id: The segment ID to delete.
@@ -482,7 +482,7 @@ def create_tier1_gateway(
     route_advertisement: str | None = None,
     target: str | None = None,
 ) -> dict:
-    """Create a new Tier-1 gateway.
+    """[WRITE] Create a new Tier-1 gateway.
 
     Args:
         tier1_id: Unique ID for the Tier-1 gateway.
@@ -513,7 +513,7 @@ def update_tier1_gateway(
     route_advertisement: str | None = None,
     target: str | None = None,
 ) -> dict:
-    """Update an existing Tier-1 gateway (partial update via PATCH).
+    """[WRITE] Update an existing Tier-1 gateway (partial update via PATCH).
 
     Args:
         tier1_id: The Tier-1 gateway ID to update.
@@ -536,7 +536,7 @@ def update_tier1_gateway(
 @mcp.tool()
 @vmware_tool(risk_level="high")
 def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
-    """Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
+    """[WRITE] Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
 
     Args:
         tier1_id: The Tier-1 gateway ID to delete.
@@ -560,7 +560,7 @@ def configure_tier0_bgp(
     keep_alive: int = 60,
     target: str | None = None,
 ) -> dict:
-    """Configure BGP on a Tier-0 gateway (add/update a BGP neighbor).
+    """[WRITE] Configure BGP on a Tier-0 gateway (add/update a BGP neighbor).
 
     Args:
         tier0_id: The Tier-0 gateway ID.
@@ -600,7 +600,7 @@ def create_nat_rule(
     translated_network: str = "",
     target: str | None = None,
 ) -> dict:
-    """Create a NAT rule on a Tier-1 gateway.
+    """[WRITE] Create a NAT rule on a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -630,7 +630,7 @@ def delete_nat_rule(
     rule_id: str,
     target: str | None = None,
 ) -> str:
-    """Delete a NAT rule from a Tier-1 gateway.
+    """[WRITE] Delete a NAT rule from a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -658,7 +658,7 @@ def create_static_route(
     next_hop: str,
     target: str | None = None,
 ) -> dict:
-    """Create a static route on a Tier-1 gateway.
+    """[WRITE] Create a static route on a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -680,7 +680,7 @@ def delete_static_route(
     route_id: str,
     target: str | None = None,
 ) -> str:
-    """Delete a static route from a Tier-1 gateway.
+    """[WRITE] Delete a static route from a Tier-1 gateway.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -710,7 +710,7 @@ def create_ip_pool(
     gateway_ip: str | None = None,
     target: str | None = None,
 ) -> dict:
-    """Create a new IP address pool with a static subnet allocation range.
+    """[WRITE] Create a new IP address pool with a static subnet allocation range.
 
     Args:
         pool_id: Unique ID for the IP pool.

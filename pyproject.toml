@@ -9,7 +9,7 @@ description = "VMware NSX networking management: segments, gateways, NAT, routin
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{ name = "zw008" }]
+authors = [{ name = "Wei Zhou", email = "wei-wz.zhou@broadcom.com" }]
 keywords = ["vmware", "nsx", "nsx-t", "networking", "mcp", "ai-ops"]
 classifiers = [
     "Development Status :: 4 - Beta",

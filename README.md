@@ -1,6 +1,10 @@
 <!-- mcp-name: io.github.zw008/vmware-nsx -->
 # VMware NSX
 
+> **Author**: Wei Zhou, VMware by Broadcom — wei-wz.zhou@broadcom.com
+> This is a community-driven project by a VMware engineer, not an official VMware product.
+> For official VMware developer tools see [developer.broadcom.com](https://developer.broadcom.com).
+
 [English](README.md) | [中文](README-CN.md)
 
 VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 MCP tools, domain-focused.
