@@ -198,6 +198,8 @@ docker run -d \
 
 ## Security Details
 
+> **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "NSX" are trademarks of Broadcom.
+
 ### Credential Safety
 
 - Passwords are **only loaded from environment variables** (via `.env` file), never from `config.yaml`
