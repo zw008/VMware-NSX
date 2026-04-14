@@ -86,7 +86,7 @@ def _get_connection(target: str | None = None) -> Any:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_segments(target: str | None = None) -> list[dict]:
     """[READ] List all NSX network segments with type, subnet, admin state, and port count.
@@ -94,13 +94,16 @@ def list_segments(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_segments as _list_segments
+    try:
+        from vmware_nsx.ops.inventory import list_segments as _list_segments
 
-    client = _get_connection(target)
-    return _list_segments(client)
+        client = _get_connection(target)
+        return _list_segments(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_segment(segment_id: str, target: str | None = None) -> dict:
     """[READ] Get detailed info for a specific network segment.
@@ -109,13 +112,16 @@ def get_segment(segment_id: str, target: str | None = None) -> dict:
         segment_id: The segment ID (policy path name).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import get_segment as _get_segment
+    try:
+        from vmware_nsx.ops.inventory import get_segment as _get_segment
 
-    client = _get_connection(target)
-    return _get_segment(client, segment_id)
+        client = _get_connection(target)
+        return _get_segment(client, segment_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_tier0_gateways(target: str | None = None) -> list[dict]:
     """[READ] List all Tier-0 gateways with HA mode and transit subnets.
@@ -123,13 +129,16 @@ def list_tier0_gateways(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_tier0_gateways as _list_tier0s
+    try:
+        from vmware_nsx.ops.inventory import list_tier0_gateways as _list_tier0s
 
-    client = _get_connection(target)
-    return _list_tier0s(client)
+        client = _get_connection(target)
+        return _list_tier0s(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
     """[READ] Get detailed info for a specific Tier-0 gateway.
@@ -138,13 +147,16 @@ def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
         tier0_id: The Tier-0 gateway ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import get_tier0_gateway as _get_tier0
+    try:
+        from vmware_nsx.ops.inventory import get_tier0_gateway as _get_tier0
 
-    client = _get_connection(target)
-    return _get_tier0(client, tier0_id)
+        client = _get_connection(target)
+        return _get_tier0(client, tier0_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_tier1_gateways(target: str | None = None) -> list[dict]:
     """[READ] List all Tier-1 gateways with linked Tier-0 path and route advertisement.
@@ -152,13 +164,16 @@ def list_tier1_gateways(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_tier1_gateways as _list_tier1s
+    try:
+        from vmware_nsx.ops.inventory import list_tier1_gateways as _list_tier1s
 
-    client = _get_connection(target)
-    return _list_tier1s(client)
+        client = _get_connection(target)
+        return _list_tier1s(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
     """[READ] Get detailed info for a specific Tier-1 gateway.
@@ -167,13 +182,16 @@ def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
         tier1_id: The Tier-1 gateway ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import get_tier1_gateway as _get_tier1
+    try:
+        from vmware_nsx.ops.inventory import get_tier1_gateway as _get_tier1
 
-    client = _get_connection(target)
-    return _get_tier1(client, tier1_id)
+        client = _get_connection(target)
+        return _get_tier1(client, tier1_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_transport_zones(target: str | None = None) -> list[dict]:
     """[READ] List all transport zones with type and host switch name.
@@ -181,13 +199,16 @@ def list_transport_zones(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_transport_zones as _list_tzs
+    try:
+        from vmware_nsx.ops.inventory import list_transport_zones as _list_tzs
 
-    client = _get_connection(target)
-    return _list_tzs(client)
+        client = _get_connection(target)
+        return _list_tzs(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_transport_nodes(target: str | None = None) -> list[dict]:
     """[READ] List all transport nodes with type and status.
@@ -195,13 +216,16 @@ def list_transport_nodes(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_transport_nodes as _list_tns
+    try:
+        from vmware_nsx.ops.inventory import list_transport_nodes as _list_tns
 
-    client = _get_connection(target)
-    return _list_tns(client)
+        client = _get_connection(target)
+        return _list_tns(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_edge_clusters(target: str | None = None) -> list[dict]:
     """[READ] List all edge clusters with member count and deployment type.
@@ -209,10 +233,13 @@ def list_edge_clusters(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.inventory import list_edge_clusters as _list_ecs
+    try:
+        from vmware_nsx.ops.inventory import list_edge_clusters as _list_ecs
 
-    client = _get_connection(target)
-    return _list_ecs(client)
+        client = _get_connection(target)
+        return _list_ecs(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -220,7 +247,7 @@ def list_edge_clusters(target: str | None = None) -> list[dict]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
     """[READ] List NAT rules on a Tier-1 gateway.
@@ -229,13 +256,16 @@ def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
         tier1_id: The Tier-1 gateway ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.networking import list_nat_rules as _list_nat
+    try:
+        from vmware_nsx.ops.networking import list_nat_rules as _list_nat
 
-    client = _get_connection(target)
-    return _list_nat(client, tier1_id)
+        client = _get_connection(target)
+        return _list_nat(client, tier1_id)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
     """[READ] Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
@@ -244,13 +274,16 @@ def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
         tier0_id: The Tier-0 gateway ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.networking import get_bgp_neighbors as _get_bgp
+    try:
+        from vmware_nsx.ops.networking import get_bgp_neighbors as _get_bgp
 
-    client = _get_connection(target)
-    return _get_bgp(client, tier0_id)
+        client = _get_connection(target)
+        return _get_bgp(client, tier0_id)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
     """[READ] List static routes on a Tier-1 gateway.
@@ -259,13 +292,16 @@ def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
         tier1_id: The Tier-1 gateway ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.networking import list_static_routes as _list_routes
+    try:
+        from vmware_nsx.ops.networking import list_static_routes as _list_routes
 
-    client = _get_connection(target)
-    return _list_routes(client, tier1_id)
+        client = _get_connection(target)
+        return _list_routes(client, tier1_id)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_ip_pools(target: str | None = None) -> list[dict]:
     """[READ] List all IP address pools with subnets and usage summary.
@@ -273,13 +309,16 @@ def list_ip_pools(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.networking import list_ip_pools as _list_pools
+    try:
+        from vmware_nsx.ops.networking import list_ip_pools as _list_pools
 
-    client = _get_connection(target)
-    return _list_pools(client)
+        client = _get_connection(target)
+        return _list_pools(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
     """[READ] Get IP pool allocation usage details (total, allocated, free).
@@ -288,10 +327,13 @@ def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
         pool_id: The IP pool ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.networking import get_ip_pool_usage as _get_usage
+    try:
+        from vmware_nsx.ops.networking import get_ip_pool_usage as _get_usage
 
-    client = _get_connection(target)
-    return _get_usage(client, pool_id)
+        client = _get_connection(target)
+        return _get_usage(client, pool_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -299,7 +341,7 @@ def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_nsx_alarms(target: str | None = None) -> list[dict]:
     """[READ] Get all active NSX alarms with severity, feature, description, and entity.
@@ -307,13 +349,16 @@ def list_nsx_alarms(target: str | None = None) -> list[dict]:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.health import list_nsx_alarms as _list_alarms
+    try:
+        from vmware_nsx.ops.health import list_nsx_alarms as _list_alarms
 
-    client = _get_connection(target)
-    return _list_alarms(client)
+        client = _get_connection(target)
+        return _list_alarms(client)
+    except Exception as e:
+        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
     """[READ] Check status of a specific transport node (connectivity, tunnel status).
@@ -322,13 +367,16 @@ def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
         node_id: The transport node ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.health import get_transport_node_status as _get_tn_status
+    try:
+        from vmware_nsx.ops.health import get_transport_node_status as _get_tn_status
 
-    client = _get_connection(target)
-    return _get_tn_status(client, node_id)
+        client = _get_connection(target)
+        return _get_tn_status(client, node_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
     """[READ] Check status of an edge cluster (member health, overall status).
@@ -337,13 +385,16 @@ def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
         cluster_id: The edge cluster ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.health import get_edge_cluster_status as _get_ec_status
+    try:
+        from vmware_nsx.ops.health import get_edge_cluster_status as _get_ec_status
 
-    client = _get_connection(target)
-    return _get_ec_status(client, cluster_id)
+        client = _get_connection(target)
+        return _get_ec_status(client, cluster_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_nsx_manager_status(target: str | None = None) -> dict:
     """[READ] Get NSX Manager cluster status (node health, cluster status, version).
@@ -351,10 +402,13 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.health import get_nsx_manager_status as _get_mgr_status
+    try:
+        from vmware_nsx.ops.health import get_nsx_manager_status as _get_mgr_status
 
-    client = _get_connection(target)
-    return _get_mgr_status(client)
+        client = _get_connection(target)
+        return _get_mgr_status(client)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -362,7 +416,7 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
     """[READ] Check logical port operational status (admin state, link state, attachment).
@@ -371,13 +425,16 @@ def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
         port_id: The logical port ID.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.troubleshoot import get_logical_port_status as _get_port
+    try:
+        from vmware_nsx.ops.troubleshoot import get_logical_port_status as _get_port
 
-    client = _get_connection(target)
-    return _get_port(client, port_id)
+        client = _get_connection(target)
+        return _get_port(client, port_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
     """[READ] Find which segment a VM is attached to via its VIF attachment.
@@ -386,10 +443,13 @@ def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
         vm_id: The VM external ID (BIOS UUID or instance UUID from vCenter).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm as _get_vm_seg
+    try:
+        from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm as _get_vm_seg
 
-    client = _get_connection(target)
-    return _get_vm_seg(client, vm_id)
+        client = _get_connection(target)
+        return _get_vm_seg(client, vm_id)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -397,7 +457,7 @@ def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def create_segment(
     segment_id: str,
@@ -417,19 +477,22 @@ def create_segment(
         subnet: Gateway CIDR for the segment (e.g. "192.168.1.1/24").
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.segment_mgmt import create_segment as _create
+    try:
+        from vmware_nsx.ops.segment_mgmt import create_segment as _create
 
-    client = _get_connection(target)
-    return _create(
-        client, segment_id,
-        display_name=display_name,
-        transport_zone_path=transport_zone_path,
-        vlan_ids=vlan_ids,
-        subnet=subnet,
-    )
+        client = _get_connection(target)
+        return _create(
+            client, segment_id,
+            display_name=display_name,
+            transport_zone_path=transport_zone_path,
+            vlan_ids=vlan_ids,
+            subnet=subnet,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def update_segment(
     segment_id: str,
@@ -445,13 +508,16 @@ def update_segment(
         subnet: New gateway CIDR (optional).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.segment_mgmt import update_segment as _update
+    try:
+        from vmware_nsx.ops.segment_mgmt import update_segment as _update
 
-    client = _get_connection(target)
-    return _update(client, segment_id, display_name=display_name, subnet=subnet)
+        client = _get_connection(target)
+        return _update(client, segment_id, display_name=display_name, subnet=subnet)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_segment(segment_id: str, target: str | None = None) -> str:
     """[WRITE] Delete a network segment. WARNING: This will disconnect all attached VMs.
@@ -460,11 +526,14 @@ def delete_segment(segment_id: str, target: str | None = None) -> str:
         segment_id: The segment ID to delete.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.segment_mgmt import delete_segment as _delete
+    try:
+        from vmware_nsx.ops.segment_mgmt import delete_segment as _delete
 
-    client = _get_connection(target)
-    _delete(client, segment_id)
-    return f"Segment '{segment_id}' deleted."
+        client = _get_connection(target)
+        _delete(client, segment_id)
+        return f"Segment '{segment_id}' deleted."
+    except Exception as e:
+        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -472,7 +541,7 @@ def delete_segment(segment_id: str, target: str | None = None) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def create_tier1_gateway(
     tier1_id: str,
@@ -492,19 +561,22 @@ def create_tier1_gateway(
         route_advertisement: Comma-separated route advertisement types (optional).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.gateway_mgmt import create_tier1_gateway as _create
+    try:
+        from vmware_nsx.ops.gateway_mgmt import create_tier1_gateway as _create
 
-    client = _get_connection(target)
-    return _create(
-        client, tier1_id,
-        display_name=display_name,
-        tier0_path=tier0_path,
-        edge_cluster_path=edge_cluster_path,
-        route_advertisement=route_advertisement,
-    )
+        client = _get_connection(target)
+        return _create(
+            client, tier1_id,
+            display_name=display_name,
+            tier0_path=tier0_path,
+            edge_cluster_path=edge_cluster_path,
+            route_advertisement=route_advertisement,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def update_tier1_gateway(
     tier1_id: str,
@@ -522,18 +594,21 @@ def update_tier1_gateway(
         route_advertisement: New route advertisement types (optional).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.gateway_mgmt import update_tier1_gateway as _update
+    try:
+        from vmware_nsx.ops.gateway_mgmt import update_tier1_gateway as _update
 
-    client = _get_connection(target)
-    return _update(
-        client, tier1_id,
-        display_name=display_name,
-        tier0_path=tier0_path,
-        route_advertisement=route_advertisement,
-    )
+        client = _get_connection(target)
+        return _update(
+            client, tier1_id,
+            display_name=display_name,
+            tier0_path=tier0_path,
+            route_advertisement=route_advertisement,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
     """[WRITE] Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
@@ -542,14 +617,17 @@ def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
         tier1_id: The Tier-1 gateway ID to delete.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.gateway_mgmt import delete_tier1_gateway as _delete
+    try:
+        from vmware_nsx.ops.gateway_mgmt import delete_tier1_gateway as _delete
 
-    client = _get_connection(target)
-    _delete(client, tier1_id)
-    return f"Tier-1 gateway '{tier1_id}' deleted."
+        client = _get_connection(target)
+        _delete(client, tier1_id)
+        return f"Tier-1 gateway '{tier1_id}' deleted."
+    except Exception as e:
+        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def configure_tier0_bgp(
     tier0_id: str,
@@ -571,17 +649,20 @@ def configure_tier0_bgp(
         keep_alive: Keep alive time in seconds (default 60).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.gateway_mgmt import configure_tier0_bgp as _configure
+    try:
+        from vmware_nsx.ops.gateway_mgmt import configure_tier0_bgp as _configure
 
-    client = _get_connection(target)
-    return _configure(
-        client, tier0_id,
-        local_as=local_as,
-        neighbor_address=neighbor_address,
-        remote_as=remote_as,
-        hold_time=hold_time,
-        keep_alive=keep_alive,
-    )
+        client = _get_connection(target)
+        return _configure(
+            client, tier0_id,
+            local_as=local_as,
+            neighbor_address=neighbor_address,
+            remote_as=remote_as,
+            hold_time=hold_time,
+            keep_alive=keep_alive,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -589,7 +670,7 @@ def configure_tier0_bgp(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def create_nat_rule(
     tier1_id: str,
@@ -611,19 +692,22 @@ def create_nat_rule(
         translated_network: Translated network/IP address.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.nat_mgmt import create_nat_rule as _create
+    try:
+        from vmware_nsx.ops.nat_mgmt import create_nat_rule as _create
 
-    client = _get_connection(target)
-    return _create(
-        client, tier1_id, rule_id,
-        action=action,
-        source_network=source_network,
-        destination_network=destination_network,
-        translated_network=translated_network,
-    )
+        client = _get_connection(target)
+        return _create(
+            client, tier1_id, rule_id,
+            action=action,
+            source_network=source_network,
+            destination_network=destination_network,
+            translated_network=translated_network,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_nat_rule(
     tier1_id: str,
@@ -637,11 +721,14 @@ def delete_nat_rule(
         rule_id: The NAT rule ID to delete.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.nat_mgmt import delete_nat_rule as _delete
+    try:
+        from vmware_nsx.ops.nat_mgmt import delete_nat_rule as _delete
 
-    client = _get_connection(target)
-    _delete(client, tier1_id, rule_id)
-    return f"NAT rule '{rule_id}' deleted from '{tier1_id}'."
+        client = _get_connection(target)
+        _delete(client, tier1_id, rule_id)
+        return f"NAT rule '{rule_id}' deleted from '{tier1_id}'."
+    except Exception as e:
+        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -649,7 +736,7 @@ def delete_nat_rule(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def create_static_route(
     tier1_id: str,
@@ -667,13 +754,16 @@ def create_static_route(
         next_hop: Next hop IP address.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.route_mgmt import create_static_route as _create
+    try:
+        from vmware_nsx.ops.route_mgmt import create_static_route as _create
 
-    client = _get_connection(target)
-    return _create(client, tier1_id, route_id, network=network, next_hop=next_hop)
+        client = _get_connection(target)
+        return _create(client, tier1_id, route_id, network=network, next_hop=next_hop)
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_static_route(
     tier1_id: str,
@@ -687,11 +777,14 @@ def delete_static_route(
         route_id: The static route ID to delete.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.route_mgmt import delete_static_route as _delete
+    try:
+        from vmware_nsx.ops.route_mgmt import delete_static_route as _delete
 
-    client = _get_connection(target)
-    _delete(client, tier1_id, route_id)
-    return f"Static route '{route_id}' deleted from '{tier1_id}'."
+        client = _get_connection(target)
+        _delete(client, tier1_id, route_id)
+        return f"Static route '{route_id}' deleted from '{tier1_id}'."
+    except Exception as e:
+        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -699,7 +792,7 @@ def delete_static_route(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@mcp.tool()
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="medium")
 def create_ip_pool(
     pool_id: str,
@@ -721,17 +814,20 @@ def create_ip_pool(
         gateway_ip: Gateway IP for the subnet (optional).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
-    from vmware_nsx.ops.ip_pool_mgmt import create_ip_pool as _create
+    try:
+        from vmware_nsx.ops.ip_pool_mgmt import create_ip_pool as _create
 
-    client = _get_connection(target)
-    return _create(
-        client, pool_id,
-        display_name=display_name,
-        start_ip=start_ip,
-        end_ip=end_ip,
-        cidr=cidr,
-        gateway_ip=gateway_ip,
-    )
+        client = _get_connection(target)
+        return _create(
+            client, pool_id,
+            display_name=display_name,
+            start_ip=start_ip,
+            end_ip=end_ip,
+            cidr=cidr,
+            gateway_ip=gateway_ip,
+        )
+    except Exception as e:
+        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 # ---------------------------------------------------------------------------
