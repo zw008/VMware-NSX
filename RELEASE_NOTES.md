@@ -1,3 +1,12 @@
+## v1.5.4 (2026-04-14)
+
+- Fix: CLI `segment create` TypeError — `subnet` (string) was passed to `create_segment()` which expects `subnets` (list of dicts); also parse `vlan_ids` string to `list[int]`
+- Fix: CLI `segment update` ValueError — same `subnet` vs `subnets` mismatch in `update_segment()`
+- Fix: CLI `health alarms` ImportError — `list_nsx_alarms` renamed to `list_alarms` in ops layer
+- Fix: CLI `health manager-status` ImportError — `get_nsx_manager_status` renamed to `get_manager_status` in ops layer
+- Fix: MCP server had identical mismatches for all four above (segment create/update, alarms, manager-status)
+- Ref: https://github.com/zw008/VMware-NSX/issues/3
+
 ## v1.5.0 (2026-04-12)
 
 ### Anthropic Best Practices Integration

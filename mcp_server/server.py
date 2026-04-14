@@ -350,7 +350,7 @@ def list_nsx_alarms(target: str | None = None) -> list[dict]:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.health import list_nsx_alarms as _list_alarms
+        from vmware_nsx.ops.health import list_alarms as _list_alarms
 
         client = _get_connection(target)
         return _list_alarms(client)
@@ -403,7 +403,7 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.health import get_nsx_manager_status as _get_mgr_status
+        from vmware_nsx.ops.health import get_manager_status as _get_mgr_status
 
         client = _get_connection(target)
         return _get_mgr_status(client)
@@ -481,12 +481,18 @@ def create_segment(
         from vmware_nsx.ops.segment_mgmt import create_segment as _create
 
         client = _get_connection(target)
+        parsed_vlan_ids: list[int] | None = None
+        if vlan_ids is not None:
+            parsed_vlan_ids = [int(v.strip()) for v in vlan_ids.replace("-", ",").split(",") if v.strip()]
+        parsed_subnets: list[dict[str, str]] | None = None
+        if subnet is not None:
+            parsed_subnets = [{"gateway_address": subnet}]
         return _create(
             client, segment_id,
             display_name=display_name,
             transport_zone_path=transport_zone_path,
-            vlan_ids=vlan_ids,
-            subnet=subnet,
+            vlan_ids=parsed_vlan_ids,
+            subnets=parsed_subnets,
         )
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
@@ -512,7 +518,12 @@ def update_segment(
         from vmware_nsx.ops.segment_mgmt import update_segment as _update
 
         client = _get_connection(target)
-        return _update(client, segment_id, display_name=display_name, subnet=subnet)
+        update_kwargs: dict = {}
+        if display_name is not None:
+            update_kwargs["display_name"] = display_name
+        if subnet is not None:
+            update_kwargs["subnets"] = [{"gateway_address": subnet}]
+        return _update(client, segment_id, **update_kwargs)
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 

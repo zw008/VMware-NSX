@@ -8,7 +8,7 @@ write operations (segment, gateway, NAT, route, IP pool management) with
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -455,10 +455,10 @@ def health_alarms(
     config: ConfigOption = None,
 ) -> None:
     """Show active NSX alarms."""
-    from vmware_nsx.ops.health import list_nsx_alarms
+    from vmware_nsx.ops.health import list_alarms
 
     client, _ = _get_connection(target, config)
-    alarms = list_nsx_alarms(client)
+    alarms = list_alarms(client)
     if not alarms:
         console.print("[green]No active alarms.[/]")
         return
@@ -517,10 +517,10 @@ def health_manager_status(
     config: ConfigOption = None,
 ) -> None:
     """Show NSX Manager cluster status."""
-    from vmware_nsx.ops.health import get_nsx_manager_status
+    from vmware_nsx.ops.health import get_manager_status
 
     client, _ = _get_connection(target, config)
-    status = get_nsx_manager_status(client)
+    status = get_manager_status(client)
     for k, v in status.items():
         console.print(f"  [cyan]{k}:[/] {v}")
 
@@ -595,7 +595,13 @@ def segment_create(
         )
         return
     _double_confirm("create segment", segment_id, _resolve_target(target), resource_type="Segment")
-    result = create_segment(client, segment_id, display_name=display_name, transport_zone_path=transport_zone, vlan_ids=vlan_ids, subnet=subnet)
+    parsed_vlan_ids: list[int] | None = None
+    if vlan_ids is not None:
+        parsed_vlan_ids = [int(v.strip()) for v in vlan_ids.replace("-", ",").split(",") if v.strip()]
+    parsed_subnets: list[dict[str, str]] | None = None
+    if subnet is not None:
+        parsed_subnets = [{"gateway_address": subnet}]
+    result = create_segment(client, segment_id, display_name=display_name, transport_zone_path=transport_zone, vlan_ids=parsed_vlan_ids, subnets=parsed_subnets)
     console.print(f"[green]Segment '{segment_id}' created.[/]")
     _audit.log(target=_resolve_target(target), operation="create_segment", resource=segment_id, parameters=params, result="ok")
 
@@ -628,7 +634,12 @@ def segment_update(
         )
         return
     _double_confirm("update segment", segment_id, _resolve_target(target), resource_type="Segment")
-    update_segment(client, segment_id, display_name=display_name, subnet=subnet)
+    update_kwargs: dict[str, Any] = {}
+    if display_name is not None:
+        update_kwargs["display_name"] = display_name
+    if subnet is not None:
+        update_kwargs["subnets"] = [{"gateway_address": subnet}]
+    update_segment(client, segment_id, **update_kwargs)
     console.print(f"[green]Segment '{segment_id}' updated.[/]")
     _audit.log(target=_resolve_target(target), operation="update_segment", resource=segment_id, parameters=params, result="ok")
 
