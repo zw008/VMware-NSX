@@ -1,3 +1,8 @@
+## v1.5.5 (2026-04-15)
+
+- Fix: CRITICAL — missing `import re` in `ops/segment_mgmt.py` and `ops/nat_route_mgmt.py` caused `NameError: name 're' is not defined` at runtime for all segment/NAT/route CRUD operations
+- Align with VMware skill family v1.5.5
+
 ## v1.5.4 (2026-04-14)
 
 - Fix: CLI `segment create` TypeError — `subnet` (string) was passed to `create_segment()` which expects `subnets` (list of dicts); also parse `vlan_ids` string to `list[int]`
