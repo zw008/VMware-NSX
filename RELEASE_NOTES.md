@@ -1,3 +1,7 @@
+## v1.5.6 (2026-04-15)
+
+- Align with VMware skill family v1.5.6 (AVI bugfixes + packaging hotfix)
+
 ## v1.5.5 (2026-04-15)
 
 - Fix: CRITICAL — missing `import re` in `ops/segment_mgmt.py` and `ops/nat_route_mgmt.py` caused `NameError: name 're' is not defined` at runtime for all segment/NAT/route CRUD operations
