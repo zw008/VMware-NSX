@@ -11,9 +11,14 @@ installer:
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_TARGET_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_<TARGET>_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
   vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
+  Credentials: Each NSX Manager target requires a per-target password env var in ~/.vmware-nsx/.env following the pattern VMWARE_<TARGET_NAME_UPPER>_PASSWORD. Also supports certificate-based auth. Passwords are never logged or echoed.
+  Destructive operations: Segment/gateway/NAT delete require double confirmation + --dry-run. Segment delete checks for connected ports, gateway delete checks for connected segments.
+  No webhooks, no outbound network calls, no guest operations. Local only: stdio MCP + NSX Policy API (HTTPS 443).
+  SSL bypass: verify_ssl is on by default; false option for self-signed certs in lab environments only.
+  Transitive dependencies: Only vmware-policy (audit/policy). No post-install scripts or background services.
 ---
 
 # VMware NSX
