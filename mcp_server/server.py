@@ -573,7 +573,7 @@ def create_tier1_gateway(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.gateway_mgmt import create_tier1_gateway as _create
+        from vmware_nsx.ops.segment_mgmt import create_tier1_gateway as _create
 
         client = _get_connection(target)
         return _create(
@@ -606,7 +606,7 @@ def update_tier1_gateway(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.gateway_mgmt import update_tier1_gateway as _update
+        from vmware_nsx.ops.segment_mgmt import update_tier1_gateway as _update
 
         client = _get_connection(target)
         return _update(
@@ -629,7 +629,7 @@ def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.gateway_mgmt import delete_tier1_gateway as _delete
+        from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway as _delete
 
         client = _get_connection(target)
         _delete(client, tier1_id)
@@ -642,36 +642,38 @@ def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
 @vmware_tool(risk_level="medium")
 def configure_tier0_bgp(
     tier0_id: str,
-    local_as: int,
-    neighbor_address: str,
-    remote_as: int,
-    hold_time: int = 180,
-    keep_alive: int = 60,
+    local_as_num: str,
+    enabled: bool = True,
+    ecmp: bool = True,
+    inter_sr_ibgp: bool = True,
+    locale_service_id: str = "default",
     target: str | None = None,
 ) -> dict:
-    """[WRITE] Configure BGP on a Tier-0 gateway (add/update a BGP neighbor).
+    """[WRITE] Configure BGP settings on a Tier-0 gateway's locale-service.
+
+    Note: This configures BGP *settings* (local AS, ECMP, graceful restart).
+    BGP neighbor creation is a separate Policy API object and not exposed here.
 
     Args:
         tier0_id: The Tier-0 gateway ID.
-        local_as: Local AS number.
-        neighbor_address: BGP neighbor IP address.
-        remote_as: Remote AS number.
-        hold_time: Hold down time in seconds (default 180).
-        keep_alive: Keep alive time in seconds (default 60).
+        local_as_num: Local AS number as a string (e.g. "65001").
+        enabled: Enable or disable BGP on the locale-service (default True).
+        ecmp: Enable ECMP for BGP routes (default True).
+        inter_sr_ibgp: Enable inter-SR iBGP (default True).
+        locale_service_id: Locale-service identifier (default "default").
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.gateway_mgmt import configure_tier0_bgp as _configure
+        from vmware_nsx.ops.segment_mgmt import configure_tier0_bgp as _configure
 
         client = _get_connection(target)
-        return _configure(
-            client, tier0_id,
-            local_as=local_as,
-            neighbor_address=neighbor_address,
-            remote_as=remote_as,
-            hold_time=hold_time,
-            keep_alive=keep_alive,
-        )
+        bgp_config = {
+            "local_as_num": local_as_num,
+            "enabled": enabled,
+            "ecmp": ecmp,
+            "inter_sr_ibgp": inter_sr_ibgp,
+        }
+        return _configure(client, tier0_id, locale_service_id, bgp_config)
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
@@ -704,7 +706,7 @@ def create_nat_rule(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.nat_mgmt import create_nat_rule as _create
+        from vmware_nsx.ops.nat_route_mgmt import create_nat_rule as _create
 
         client = _get_connection(target)
         return _create(
@@ -733,7 +735,7 @@ def delete_nat_rule(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.nat_mgmt import delete_nat_rule as _delete
+        from vmware_nsx.ops.nat_route_mgmt import delete_nat_rule as _delete
 
         client = _get_connection(target)
         _delete(client, tier1_id, rule_id)
@@ -766,7 +768,7 @@ def create_static_route(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.route_mgmt import create_static_route as _create
+        from vmware_nsx.ops.nat_route_mgmt import create_static_route as _create
 
         client = _get_connection(target)
         return _create(client, tier1_id, route_id, network=network, next_hop=next_hop)
@@ -789,7 +791,7 @@ def delete_static_route(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.route_mgmt import delete_static_route as _delete
+        from vmware_nsx.ops.nat_route_mgmt import delete_static_route as _delete
 
         client = _get_connection(target)
         _delete(client, tier1_id, route_id)
@@ -826,7 +828,7 @@ def create_ip_pool(
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
-        from vmware_nsx.ops.ip_pool_mgmt import create_ip_pool as _create
+        from vmware_nsx.ops.nat_route_mgmt import create_ip_pool as _create
 
         client = _get_connection(target)
         return _create(

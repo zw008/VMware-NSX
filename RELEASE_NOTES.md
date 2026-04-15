@@ -1,3 +1,10 @@
+## v1.5.8 (2026-04-15)
+
+- Fix: CRITICAL — 9 MCP tools imported non-existent ops modules (`gateway_mgmt`, `nat_mgmt`, `route_mgmt`, `ip_pool_mgmt`) causing `ModuleNotFoundError` at runtime. Corrected to `segment_mgmt` (gateway functions) and `nat_route_mgmt` (NAT/route/IP pool functions). Tools affected: create/update/delete_tier1_gateway, configure_tier0_bgp, create/delete_nat_rule, create/delete_static_route, create_ip_pool.
+- Fix: `configure_tier0_bgp` signature mismatch — MCP layer passed individual BGP neighbor params but ops expects `(client, tier0_id, locale_service_id, bgp_config dict)`. Rewrote MCP signature to match ops contract (local_as_num, enabled, ecmp, inter_sr_ibgp, locale_service_id).
+- Fix: SSL warning suppression scope — replaced process-global `warnings.filterwarnings()` with class-targeted `urllib3.disable_warnings(InsecureRequestWarning)`, which no longer accidentally suppresses SSL warnings from other libraries in the same process.
+- Align with VMware skill family v1.5.8
+
 ## v1.5.7 (2026-04-15)
 
 - Align with VMware skill family v1.5.7 (Pilot `__from_step_N__` fix + VKS SSL/timeout fix)
