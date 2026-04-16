@@ -1,3 +1,8 @@
+## v1.5.10 (2026-04-16)
+
+- Security: bump python-multipart 0.0.22→0.0.26 (DoS via large multipart preamble/epilogue)
+- Align with VMware skill family v1.5.10
+
 ## v1.5.8 (2026-04-15)
 
 - Fix: CRITICAL — 9 MCP tools imported non-existent ops modules (`gateway_mgmt`, `nat_mgmt`, `route_mgmt`, `ip_pool_mgmt`) causing `ModuleNotFoundError` at runtime. Corrected to `segment_mgmt` (gateway functions) and `nat_route_mgmt` (NAT/route/IP pool functions). Tools affected: create/update/delete_tier1_gateway, configure_tier0_bgp, create/delete_nat_rule, create/delete_static_route, create_ip_pool.
