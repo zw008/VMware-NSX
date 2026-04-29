@@ -3,6 +3,7 @@
 
 mcpServers:
   - name: vmware-nsx
-    command: vmware-nsx-mcp
+    command: vmware-nsx
+    args: [mcp]
     env:
       VMWARE_NSX_CONFIG: ~/.vmware-nsx/config.yaml

@@ -52,19 +52,23 @@ vmware-nsx can run alongside other VMware MCP skills simultaneously:
 {
   "mcpServers": {
     "vmware-nsx": {
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": { "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml" }
     },
     "vmware-nsx-security": {
-      "command": "vmware-nsx-security-mcp",
+      "command": "vmware-nsx-security",
+      "args": ["mcp"],
       "env": { "VMWARE_NSX_SECURITY_CONFIG": "~/.vmware-nsx-security/config.yaml" }
     },
     "vmware-monitor": {
-      "command": "vmware-monitor-mcp",
+      "command": "vmware-monitor",
+      "args": ["mcp"],
       "env": { "VMWARE_MONITOR_CONFIG": "~/.vmware-monitor/config.yaml" }
     },
     "vmware-storage": {
-      "command": "vmware-storage-mcp",
+      "command": "vmware-storage",
+      "args": ["mcp"],
       "env": { "VMWARE_STORAGE_CONFIG": "~/.vmware-storage/config.yaml" }
     }
   }

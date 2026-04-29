@@ -1,3 +1,12 @@
+## v1.5.15 (2026-04-29)
+
+**UX improvements from real user feedback**
+
+- **feat:** New top-level CLI subcommand `vmware-nsx mcp` starts the MCP server. Single command after `uv tool install vmware-nsx-mgmt` — no more `uvx --from`, no PyPI re-resolve, no TLS-proxy issues.
+- **feat:** Default `verify_ssl: true` on new targets (was `false`). NSX Manager with default self-signed certs requires explicit `verify_ssl: false` in `config.yaml`.
+- **docs:** README, SKILL.md, setup-guide.md, and `examples/mcp-configs/*.json` switched to `command: "vmware-nsx"`, `args: ["mcp"]`. uvx form to fallback with TLS-proxy troubleshooting note.
+- **compat:** Legacy `vmware-nsx-mcp` console script kept — existing user configs continue to work.
+
 ## v1.5.14 (2026-04-21)
 
 - Align with VMware skill family v1.5.14 (code review follow-up fixes by @yjs-2026)

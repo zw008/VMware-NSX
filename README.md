@@ -140,9 +140,11 @@ vmware-nsx doctor
 
 ## MCP Server
 
+**After `uv tool install vmware-nsx-mgmt`, start the MCP server with one command** (v1.5.15+):
+
 ```bash
-# Run directly
-uvx --from vmware-nsx-mgmt vmware-nsx-mcp
+# Recommended — single command, no network re-resolve
+vmware-nsx mcp
 
 # Or via Docker
 docker compose up -d
@@ -156,7 +158,8 @@ Add to your AI agent's MCP config:
 {
   "mcpServers": {
     "vmware-nsx": {
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": {
         "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml"
       }
@@ -164,6 +167,22 @@ Add to your AI agent's MCP config:
   }
 }
 ```
+
+<details>
+<summary>Alternative: uvx (no install) or legacy entry point</summary>
+
+```bash
+# Run without installing (requires PyPI access each launch)
+uvx --from vmware-nsx-mgmt vmware-nsx mcp
+
+# Legacy entry point (still works, kept for backward compatibility)
+vmware-nsx-mcp
+```
+
+> **Behind a corporate TLS proxy?** uvx may fail with `invalid peer certificate: UnknownIssuer`.
+> Use the recommended `vmware-nsx mcp` form above (no network needed), or set `UV_NATIVE_TLS=true`.
+
+</details>
 
 More agent config templates (Claude Code, Cursor, Goose, Continue, etc.) in [examples/mcp-configs/](examples/mcp-configs/).
 

@@ -9,7 +9,7 @@ startCommand:
     required: []
   commandFunction: |
     (config) => ({
-      command: "vmware-nsx-mcp",
-      args: [],
+      command: "vmware-nsx",
+      args: ["mcp"],
       env: config.config_path ? { VMWARE_NSX_CONFIG: config.config_path } : {}
     })

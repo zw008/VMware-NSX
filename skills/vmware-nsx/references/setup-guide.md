@@ -104,6 +104,11 @@ vmware-nsx doctor --skip-auth
 
 ## MCP Server Configuration
 
+> **v1.5.15+ recommends the single-command form `vmware-nsx mcp`.** Pre-1.5.15 used
+> `vmware-nsx-mcp`, which still works (backward compatible) but the new form
+> reuses the already-installed `vmware-nsx` binary on PATH and avoids any PyPI
+> re-resolve / TLS-proxy issues.
+
 ### Claude Code / Claude Desktop
 
 Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
@@ -112,7 +117,8 @@ Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
 {
   "mcpServers": {
     "vmware-nsx": {
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": {
         "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml"
       }
@@ -129,7 +135,8 @@ Add to Cursor MCP settings:
 {
   "mcpServers": {
     "vmware-nsx": {
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": {
         "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml"
       }
@@ -146,7 +153,8 @@ Add to `~/.config/goose/config.yaml`:
 extensions:
   vmware-nsx:
     type: stdio
-    cmd: vmware-nsx-mcp
+    cmd: vmware-nsx
+    args: [mcp]
     env:
       VMWARE_NSX_CONFIG: "~/.vmware-nsx/config.yaml"
 ```
@@ -160,7 +168,8 @@ Add to `.vscode/mcp.json`:
   "servers": {
     "vmware-nsx": {
       "type": "stdio",
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": {
         "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml"
       }
@@ -176,10 +185,18 @@ Add to `~/.continue/config.yaml`:
 ```yaml
 mcpServers:
   - name: vmware-nsx
-    command: vmware-nsx-mcp
+    command: vmware-nsx
+    args: [mcp]
     env:
       VMWARE_NSX_CONFIG: ~/.vmware-nsx/config.yaml
 ```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `invalid peer certificate: UnknownIssuer` (uvx) | Corporate TLS proxy not trusted by uv's bundled cert store. Use `vmware-nsx mcp` instead, or `export UV_NATIVE_TLS=true` |
+| `command not found: vmware-nsx` | Run `uv tool update-shell` then re-source your shell rc, or use the absolute path returned by `which vmware-nsx-mcp` |
 
 ### Docker
 
@@ -387,15 +404,18 @@ vmware-nsx can run alongside other VMware MCP skills simultaneously:
 {
   "mcpServers": {
     "vmware-nsx": {
-      "command": "vmware-nsx-mcp",
+      "command": "vmware-nsx",
+      "args": ["mcp"],
       "env": { "VMWARE_NSX_CONFIG": "~/.vmware-nsx/config.yaml" }
     },
     "vmware-nsx-security": {
-      "command": "vmware-nsx-security-mcp",
+      "command": "vmware-nsx-security",
+      "args": ["mcp"],
       "env": { "VMWARE_NSX_SECURITY_CONFIG": "~/.vmware-nsx-security/config.yaml" }
     },
     "vmware-monitor": {
-      "command": "vmware-monitor-mcp",
+      "command": "vmware-monitor",
+      "args": ["mcp"],
       "env": { "VMWARE_MONITOR_CONFIG": "~/.vmware-monitor/config.yaml" }
     }
   }

@@ -1182,5 +1182,19 @@ def mcp_config_install(
     console.print("\n[dim]Run 'vmware-nsx doctor' to verify your setup.[/]")
 
 
+@app.command("mcp")
+def mcp_cmd() -> None:
+    """Start the MCP server (stdio transport).
+
+    Single-command entry point for MCP clients:
+        vmware-nsx mcp
+
+    Equivalent to the legacy `vmware-nsx-mcp` console script.
+    """
+    from mcp_server.server import main as _mcp_main
+
+    _mcp_main()
+
+
 if __name__ == "__main__":
     app()

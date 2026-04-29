@@ -6,11 +6,15 @@ targets:
     host: nsx-manager.example.com
     username: admin
     port: 443
-    verify_ssl: true
+    # verify_ssl: true is the default (v1.5.15+).
+    # Uncomment verify_ssl: false for default NSX-T deployments with self-signed certs.
+    # verify_ssl: false
   nsx-lab:
     host: 10.0.0.50
     username: admin
     port: 443
+    # NSX Manager almost always ships with self-signed certs out of the box.
+    # Uncomment for default NSX-T deployments with self-signed certs:
     verify_ssl: false
 
 default_target: nsx-prod
