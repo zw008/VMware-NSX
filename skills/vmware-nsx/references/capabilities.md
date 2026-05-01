@@ -2,6 +2,23 @@
 
 Detailed capability reference for `vmware-nsx`.
 
+## Automation Level Reference
+
+Each operation is classified by autonomy level per the Enterprise Harness Engineering framework:
+
+| Level | Meaning | Agent autonomy | Examples in this skill |
+|:-:|---|---|---|
+| **L1** | Read-only, raw data | Always auto-run | `list_segments`, `get_segment`, `list_tier0_gateways`, `list_tier1_gateways`, `list_nat_rules`, `list_ipam_pools`, `list_routing_tables`, alarms/health queries |
+| **L2** | Read + analysis / recommendation | Always auto-run | routing path analysis, segment-to-port mapping, gateway connectivity correlation, IPAM utilization summaries |
+| **L3** | Single write — user must approve | Only after explicit confirmation; destructive ops require double-confirm + `--dry-run` + active-port checks | `create_segment`, `delete_segment`, `create_nat_rule`, `update_gateway`, `create_ipam_pool`, BGP/static route mutations |
+| **L4** | Multi-step plan / apply workflow | Plan generation auto; apply gated by user approval | *(roadmap — multi-segment rollout plans, gateway HA failover sequences)* |
+| **L5** | Auto-remediation from learned pattern | Pattern library only; requires `risk:low` + `reversible:true` + `repeatable:true` | *(roadmap — candidates: stale segment cleanup, transport-node refresh)* |
+
+**Notes**:
+- L1/L2 tools are always safe for agents to call without confirmation.
+- L3 tools always pass through the `@vmware_tool` decorator: connection check → policy check → audit log → double-confirm. Segment delete additionally verifies port count = 0.
+- For DFW/security rules see [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security).
+
 ## API Coverage
 
 vmware-nsx uses the **NSX Policy API** (not the Management API) for all operations. The Policy API provides a declarative, intent-based interface that is the recommended path for NSX-T 3.x and NSX 4.x.

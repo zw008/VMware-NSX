@@ -90,31 +90,43 @@ vmware-nsx doctor
 
 ### Create an App Network (Segment + T1 Gateway + NAT)
 
-1. Create a Tier-1 gateway → `vmware-nsx gateway create-t1 app-t1 --edge-cluster edge-cluster-01 --tier0 tier0-gw`
-2. Create a segment → `vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <subnet-cidr> --transport-zone tz-overlay`
-3. Add SNAT rule → `vmware-nsx nat create app-t1 --action SNAT --source <private-cidr> --translated <public-ip>`
-4. Verify → `vmware-nsx segment list` and `vmware-nsx nat list app-t1`
+**Pre-flight (judgment, not blind sequence)**:
+- Subnet conflict check: scan `segment list` and `ipam list-pools` for any overlap with the proposed CIDR. Overlapping subnets cause asymmetric routing or silent blackholing — NSX will not warn you.
+- Edge cluster capacity: confirm chosen `--edge-cluster` is healthy (`health edge-clusters`) and not at SR (Service Router) limit. A fully-loaded edge cluster will accept the T1 creation but routing will fail.
+- T0 uplink: the parent T0 must already be configured with BGP/static routes upstream — otherwise SNAT works internally but external traffic goes nowhere.
+- NAT IP: `--translated` IP must be from a routable address pool announced by T0; using a random IP creates a half-working network.
+- **Always `--dry-run` first** — once a segment is attached to running VMs, deleting it requires detaching every port.
 
-**Dry-run first**: Append `--dry-run` to any write command to preview without executing:
-```bash
-vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <subnet-cidr> --transport-zone tz-overlay --dry-run
-```
+**Steps**:
+1. `vmware-nsx gateway create-t1 app-t1 --edge-cluster <ec> --tier0 <t0> --dry-run` → review, then run for real
+2. `vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <cidr> --transport-zone tz-overlay`
+3. `vmware-nsx nat create app-t1 --action SNAT --source <private-cidr> --translated <pub-ip>`
+4. Verify end-to-end: `segment list`, `nat list app-t1`, AND test with a VM attached to the new segment
 
 ### Check Network Health
 
-1. NSX manager cluster status → `vmware-nsx health manager-status`
-2. Transport node status → `vmware-nsx health transport-nodes`
-3. Edge cluster status → `vmware-nsx health edge-clusters`
-4. Active alarms → `vmware-nsx health alarms`
-5. If issues found, investigate with `vmware-monitor` for vSphere-side events
+**Judgment**: don't just enumerate health endpoints — correlate them. The order below maps cause to symptom: if manager is down, transport nodes will look down too (false positive); fix top-down.
+
+1. `vmware-nsx health manager-status` — if **any** manager node is `DEGRADED` or `DOWN`, stop here and resolve before trusting downstream signals
+2. `vmware-nsx health transport-nodes` — flag nodes whose tunnel state is not `UP` for ≥ 5 min; transient blips are normal
+3. `vmware-nsx health edge-clusters` — verify SR placement is balanced; one edge holding 80% of SRs is a single point of failure
+4. `vmware-nsx health alarms` — filter to severity ≥ HIGH; lower severities are usually signal noise
+5. Cross-check with `vmware-monitor` for vSphere host events — a host losing connection to vCenter often masquerades as an NSX problem
 
 ### Troubleshoot VM Connectivity
 
-1. Find the VM's segment → `vmware-nsx troubleshoot vm-segment my-vm-01`
-2. Check logical port status → `vmware-nsx troubleshoot port-status <port-id>`
-3. Check the gateway route table → `vmware-nsx gateway routes-t1 app-t1`
-4. Check BGP neighbors on T0 → `vmware-nsx gateway bgp-neighbors tier0-gw`
-5. Review NAT rules → `vmware-nsx nat list app-t1`
+**Judgment**: connectivity failures happen at one of three layers. Identify which layer first, then drill — don't probe randomly.
+
+- **Layer 1 — VM-to-segment**: VM has no segment, wrong vNIC, or port admin-down → `troubleshoot vm-segment` + `port-status`
+- **Layer 2 — segment-to-gateway**: segment not attached to T1, T1 not connected to T0 → `gateway routes-t1` shows no default route
+- **Layer 3 — gateway-to-upstream**: T0 BGP/static missing or SNAT not configured → `bgp-neighbors`, `nat list`
+
+**Steps** (stop as soon as the failing layer is identified):
+1. Layer 1: `troubleshoot vm-segment my-vm-01` → if no port, check vSphere vNIC binding first
+2. Layer 1: `troubleshoot port-status <port-id>` → admin-down or DFW-blocked? If DFW, jump to vmware-nsx-security
+3. Layer 2: `gateway routes-t1 app-t1` → expected default route present? If not, T1↔T0 link broken
+4. Layer 3: `gateway bgp-neighbors tier0-gw` → all neighbors `ESTABLISHED`? Flapping → upstream issue
+5. Layer 3: `nat list app-t1` → SNAT rule covers the source CIDR? Mis-typed CIDR is the most common cause
 
 ### Multi-Target Operations
 
