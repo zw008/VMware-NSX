@@ -1,3 +1,12 @@
+## v1.5.18 (2026-05-02)
+
+**Family alignment + tooling normalization** — no source changes in this skill.
+
+- **dev:** Added `[dependency-groups] dev` block (PEP 735) so `uv sync --group dev` works. Canonical set: `pytest>=8.0,<10.0`, `pytest-cov`, `ruff`.
+- **test:** New `tests/eval/regression/test_release_blockers.py` (5 evals) catches the v1.5.x release blockers — missing `mcp_server` in wheel, AST-detected unimported runtime names (the v1.5.5 NSX `import re` incident is now caught at test time), Typer app load failure, module import errors. Run via `pytest tests/eval/regression/`.
+- **note:** A separate cross-skill smoke check verifies that NSX and NSX-Security stay in sync on the form-body auth pattern (v1.4.9 special-character-password fix), so the v1.5.5 sync drift can't recur silently.
+- **align:** Family version bump to v1.5.18.
+
 ## v1.5.17 (2026-05-01)
 
 **Family alignment** — no source changes in this skill.
