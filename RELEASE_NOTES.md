@@ -1,3 +1,12 @@
+## v1.5.19 (2026-05-06)
+
+**Critical fix** — restores broken CLI subcommands for gateway / NAT / route / IP pool management.
+
+- **fix(cli):** Corrected 9 broken imports in `vmware_nsx/cli.py`. Subcommands `gateway create-tier1 / update-tier1 / delete-tier1 / configure-tier0-bgp`, `nat create-rule / delete-rule`, `route create-static / delete-static`, and `ip-pool create` imported from non-existent modules `gateway_mgmt` / `nat_mgmt` / `route_mgmt` / `ip_pool_mgmt`. Actual functions live in `segment_mgmt.py` and `nat_route_mgmt.py`. Previously these commands raised `ModuleNotFoundError` at runtime (yjs review 2026-05-06; CLAUDE.md 踩坑 #27).
+- **build:** Bumped `requires-python` from `>=3.10` to `>=3.11` (regression eval suite uses `tomllib` which is Py3.11+ builtin).
+- **smoke:** Family `scripts/family_smoke.sh` now adds Check 3b — recursive `--help` on every Typer subcommand to trigger lazy imports. This is the harness change that would have caught this CLI bug before release.
+- **align:** Family version bump to v1.5.19.
+
 ## v1.5.18 (2026-05-02)
 
 **Family alignment + tooling normalization** — no source changes in this skill.

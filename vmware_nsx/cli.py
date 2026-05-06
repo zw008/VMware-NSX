@@ -693,7 +693,7 @@ def gateway_create_tier1(
     dry_run: DryRunOption = False,
 ) -> None:
     """Create a new Tier-1 gateway."""
-    from vmware_nsx.ops.gateway_mgmt import create_tier1_gateway
+    from vmware_nsx.ops.segment_mgmt import create_tier1_gateway
 
     client, _ = _get_connection(target, config)
     params = {"display_name": display_name, "tier0_path": tier0_path, "edge_cluster_path": edge_cluster_path, "route_advertisement": route_advertisement}
@@ -724,7 +724,7 @@ def gateway_update_tier1(
     dry_run: DryRunOption = False,
 ) -> None:
     """Update an existing Tier-1 gateway."""
-    from vmware_nsx.ops.gateway_mgmt import update_tier1_gateway
+    from vmware_nsx.ops.segment_mgmt import update_tier1_gateway
     from vmware_nsx.ops.inventory import get_tier1_gateway
 
     client, _ = _get_connection(target, config)
@@ -755,7 +755,7 @@ def gateway_delete_tier1(
     dry_run: DryRunOption = False,
 ) -> None:
     """Delete a Tier-1 gateway (destructive!)."""
-    from vmware_nsx.ops.gateway_mgmt import delete_tier1_gateway
+    from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway
     from vmware_nsx.ops.inventory import get_tier1_gateway
 
     client, _ = _get_connection(target, config)
@@ -789,7 +789,7 @@ def gateway_configure_tier0_bgp(
     dry_run: DryRunOption = False,
 ) -> None:
     """Configure BGP on a Tier-0 gateway."""
-    from vmware_nsx.ops.gateway_mgmt import configure_tier0_bgp
+    from vmware_nsx.ops.segment_mgmt import configure_tier0_bgp
 
     client, _ = _get_connection(target, config)
     params = {"local_as": local_as, "neighbor_address": neighbor_address, "remote_as": remote_as, "hold_time": hold_time, "keep_alive": keep_alive}
@@ -827,7 +827,7 @@ def nat_create_rule(
     dry_run: DryRunOption = False,
 ) -> None:
     """Create a NAT rule on a Tier-1 gateway."""
-    from vmware_nsx.ops.nat_mgmt import create_nat_rule
+    from vmware_nsx.ops.nat_route_mgmt import create_nat_rule
 
     client, _ = _get_connection(target, config)
     params = {"action": action, "source_network": source_network, "destination_network": destination_network, "translated_network": translated_network}
@@ -857,7 +857,7 @@ def nat_delete_rule(
     dry_run: DryRunOption = False,
 ) -> None:
     """Delete a NAT rule (destructive!)."""
-    from vmware_nsx.ops.nat_mgmt import delete_nat_rule
+    from vmware_nsx.ops.nat_route_mgmt import delete_nat_rule
 
     client, _ = _get_connection(target, config)
     resource_name = f"{tier1_id}/{rule_id}"
@@ -892,7 +892,7 @@ def route_create_static(
     dry_run: DryRunOption = False,
 ) -> None:
     """Create a static route on a Tier-1 gateway."""
-    from vmware_nsx.ops.route_mgmt import create_static_route
+    from vmware_nsx.ops.nat_route_mgmt import create_static_route
 
     client, _ = _get_connection(target, config)
     params = {"network": network, "next_hop": next_hop}
@@ -922,7 +922,7 @@ def route_delete_static(
     dry_run: DryRunOption = False,
 ) -> None:
     """Delete a static route (destructive!)."""
-    from vmware_nsx.ops.route_mgmt import delete_static_route
+    from vmware_nsx.ops.nat_route_mgmt import delete_static_route
 
     client, _ = _get_connection(target, config)
     resource_name = f"{tier1_id}/{route_id}"
@@ -959,7 +959,7 @@ def ip_pool_create(
     dry_run: DryRunOption = False,
 ) -> None:
     """Create a new IP address pool."""
-    from vmware_nsx.ops.ip_pool_mgmt import create_ip_pool
+    from vmware_nsx.ops.nat_route_mgmt import create_ip_pool
 
     client, _ = _get_connection(target, config)
     params = {"display_name": display_name, "start_ip": start_ip, "end_ip": end_ip, "cidr": cidr, "gateway_ip": gateway_ip}

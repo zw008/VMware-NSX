@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vmware-nsx-mgmt"
-version = "1.5.18"
+version = "1.5.19"
 description = "VMware NSX networking management: segments, gateways, NAT, routing, IPAM"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Wei Zhou", email = "wei-wz.zhou@broadcom.com" }]
 keywords = ["vmware", "nsx", "nsx-t", "networking", "mcp", "ai-ops"]
 classifiers = [
