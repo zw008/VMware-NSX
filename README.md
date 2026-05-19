@@ -190,6 +190,8 @@ More agent config templates (Claude Code, Cursor, Goose, Continue, etc.) in [exa
 
 | NSX Version | Support | Notes |
 |-------------|---------|-------|
+| NSX 9.1 | Full | Policy API supported. Note: VDS 7.0+ required (N-VDS removed in NSX 9). |
+| NSX 9.0 | Full | Policy API supported. Note: bare-metal agent / physical-server L2 overlay removed. |
 | NSX 4.x | Full | Latest Policy API, all features |
 | NSX-T 3.2 | Full | All features work |
 | NSX-T 3.1 | Full | Minor route table format differences |
@@ -201,8 +203,16 @@ More agent config templates (Claude Code, Cursor, Goose, Continue, etc.) in [exa
 
 | VCF Version | Bundled NSX | Support |
 |-------------|-------------|---------|
+| VCF 9.1 | NSX 9.1 | Full |
+| VCF 9.0 | NSX 9.0 | Full |
 | VCF 5.x | NSX 4.x | Full |
 | VCF 4.3-4.5 | NSX-T 3.1-3.2 | Full |
+
+#### Official Broadcom References
+
+- **SDKs**: <https://developer.broadcom.com/sdks> — VMware NSX for Python SDK (official; future migration target), VCF Python SDK
+- **REST APIs**: <https://developer.broadcom.com/xapis> — NSX-T Data Center REST API (this skill uses the Policy API subset)
+- **CLI Tools**: <https://developer.broadcom.com/tools> — VCF PowerCLI 9.1 (includes NSX cmdlets)
 
 ## Safety
 

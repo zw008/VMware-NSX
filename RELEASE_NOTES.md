@@ -1,3 +1,12 @@
+## v1.5.23 (2026-05-19)
+
+**NSX 9 / VCF 9.0 / 9.1 compatibility declared with caveats.**
+
+- **docs:** README + `references/capabilities.md` version-compatibility tables now list NSX 9.0 / 9.1 and VCF 9.0 / 9.1 explicitly. The Policy API path used by this skill is fully supported in NSX 9.
+- **docs:** Added NSX 9 caveats: (a) N-VDS removed — requires VDS 7.0+; (b) Bare-metal NSX agent removed, L2 overlay for physical servers no longer supported. Neither affects this skill's Segment/Gateway/NAT/Route/IPAM tools.
+- **docs:** Added `Official Broadcom References` pointing to the [VMware NSX for Python SDK](https://developer.broadcom.com/sdks) as a future migration path (this skill currently uses raw REST requests against the Policy API — works fine in NSX 9 but may benefit from the official SDK later).
+- **align:** Family v1.5.23 — all 9 skills tracking VCF 9.0 / 9.1 compatibility declaration.
+
 ## v1.5.22 (2026-05-08)
 
 **Family alignment** — no source changes in this skill.

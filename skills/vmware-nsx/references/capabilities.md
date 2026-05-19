@@ -150,6 +150,8 @@ vmware-nsx uses the **NSX Policy API** (not the Management API) for all operatio
 
 | NSX Version | Support Level | Notes |
 |-------------|--------------|-------|
+| NSX 9.1 | Full | Policy API supported. Note: VDS 7.0+ required (N-VDS removed in NSX 9). |
+| NSX 9.0 | Full | Policy API supported. Note: bare-metal agent / physical-server L2 overlay removed. |
 | NSX 4.2.x | Full | Latest, all features supported |
 | NSX 4.1.x | Full | All features supported |
 | NSX 4.0.x | Full | Policy API v1 fully available |
@@ -163,6 +165,8 @@ vmware-nsx uses the **NSX Policy API** (not the Management API) for all operatio
 
 | VCF Version | Bundled NSX | Support |
 |-------------|-------------|---------|
+| VCF 9.1 | NSX 9.1 | Full |
+| VCF 9.0 | NSX 9.0 | Full |
 | VCF 5.2 | NSX 4.2.x | Full |
 | VCF 5.1 | NSX 4.1.x | Full |
 | VCF 5.0 | NSX 4.0.x | Full |
