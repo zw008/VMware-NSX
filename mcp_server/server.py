@@ -36,7 +36,6 @@ For VM operations, use vmware-aiops.
 For monitoring, use vmware-monitor.
 """
 
-from __future__ import annotations
 
 import logging
 import os
