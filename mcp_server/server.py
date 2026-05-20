@@ -41,7 +41,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from mcp.server.fastmcp import FastMCP
 from vmware_policy import vmware_tool
@@ -67,10 +67,10 @@ mcp = FastMCP(
 # Connection helper
 # ---------------------------------------------------------------------------
 
-_conn_mgr: ConnectionManager | None = None
+_conn_mgr: Optional[ConnectionManager] = None
 
 
-def _get_connection(target: str | None = None) -> Any:
+def _get_connection(target: Optional[str] = None) -> Any:
     """Return an NsxClient, lazily initialising the connection manager."""
     global _conn_mgr  # noqa: PLW0603
     if _conn_mgr is None:
@@ -88,7 +88,7 @@ def _get_connection(target: str | None = None) -> Any:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_segments(target: str | None = None) -> list[dict]:
+def list_segments(target: Optional[str] = None) -> list[dict]:
     """[READ] List all NSX network segments with type, subnet, admin state, and port count.
 
     Args:
@@ -105,7 +105,7 @@ def list_segments(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_segment(segment_id: str, target: str | None = None) -> dict:
+def get_segment(segment_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get detailed info for a specific network segment.
 
     Args:
@@ -123,7 +123,7 @@ def get_segment(segment_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_tier0_gateways(target: str | None = None) -> list[dict]:
+def list_tier0_gateways(target: Optional[str] = None) -> list[dict]:
     """[READ] List all Tier-0 gateways with HA mode and transit subnets.
 
     Args:
@@ -140,7 +140,7 @@ def list_tier0_gateways(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
+def get_tier0_gateway(tier0_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get detailed info for a specific Tier-0 gateway.
 
     Args:
@@ -158,7 +158,7 @@ def get_tier0_gateway(tier0_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_tier1_gateways(target: str | None = None) -> list[dict]:
+def list_tier1_gateways(target: Optional[str] = None) -> list[dict]:
     """[READ] List all Tier-1 gateways with linked Tier-0 path and route advertisement.
 
     Args:
@@ -175,7 +175,7 @@ def list_tier1_gateways(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
+def get_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get detailed info for a specific Tier-1 gateway.
 
     Args:
@@ -193,7 +193,7 @@ def get_tier1_gateway(tier1_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_transport_zones(target: str | None = None) -> list[dict]:
+def list_transport_zones(target: Optional[str] = None) -> list[dict]:
     """[READ] List all transport zones with type and host switch name.
 
     Args:
@@ -210,7 +210,7 @@ def list_transport_zones(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_transport_nodes(target: str | None = None) -> list[dict]:
+def list_transport_nodes(target: Optional[str] = None) -> list[dict]:
     """[READ] List all transport nodes with type and status.
 
     Args:
@@ -227,7 +227,7 @@ def list_transport_nodes(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_edge_clusters(target: str | None = None) -> list[dict]:
+def list_edge_clusters(target: Optional[str] = None) -> list[dict]:
     """[READ] List all edge clusters with member count and deployment type.
 
     Args:
@@ -249,7 +249,7 @@ def list_edge_clusters(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
+def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> list[dict]:
     """[READ] List NAT rules on a Tier-1 gateway.
 
     Args:
@@ -267,7 +267,7 @@ def list_nat_rules(tier1_id: str, target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
+def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> list[dict]:
     """[READ] Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
 
     Args:
@@ -285,7 +285,7 @@ def get_bgp_neighbors(tier0_id: str, target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
+def list_static_routes(tier1_id: str, target: Optional[str] = None) -> list[dict]:
     """[READ] List static routes on a Tier-1 gateway.
 
     Args:
@@ -303,7 +303,7 @@ def list_static_routes(tier1_id: str, target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_ip_pools(target: str | None = None) -> list[dict]:
+def list_ip_pools(target: Optional[str] = None) -> list[dict]:
     """[READ] List all IP address pools with subnets and usage summary.
 
     Args:
@@ -320,7 +320,7 @@ def list_ip_pools(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
+def get_ip_pool_usage(pool_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get IP pool allocation usage details (total, allocated, free).
 
     Args:
@@ -343,7 +343,7 @@ def get_ip_pool_usage(pool_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nsx_alarms(target: str | None = None) -> list[dict]:
+def list_nsx_alarms(target: Optional[str] = None) -> list[dict]:
     """[READ] Get all active NSX alarms with severity, feature, description, and entity.
 
     Args:
@@ -360,7 +360,7 @@ def list_nsx_alarms(target: str | None = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
+def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dict:
     """[READ] Check status of a specific transport node (connectivity, tunnel status).
 
     Args:
@@ -378,7 +378,7 @@ def get_transport_node_status(node_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
+def get_edge_cluster_status(cluster_id: str, target: Optional[str] = None) -> dict:
     """[READ] Check status of an edge cluster (member health, overall status).
 
     Args:
@@ -396,7 +396,7 @@ def get_edge_cluster_status(cluster_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_nsx_manager_status(target: str | None = None) -> dict:
+def get_nsx_manager_status(target: Optional[str] = None) -> dict:
     """[READ] Get NSX Manager cluster status (node health, cluster status, version).
 
     Args:
@@ -418,7 +418,7 @@ def get_nsx_manager_status(target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
+def get_logical_port_status(port_id: str, target: Optional[str] = None) -> dict:
     """[READ] Check logical port operational status (admin state, link state, attachment).
 
     Args:
@@ -436,7 +436,7 @@ def get_logical_port_status(port_id: str, target: str | None = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_segment_port_for_vm(vm_id: str, target: str | None = None) -> dict:
+def get_segment_port_for_vm(vm_id: str, target: Optional[str] = None) -> dict:
     """[READ] Find which segment a VM is attached to via its VIF attachment.
 
     Args:
@@ -463,9 +463,9 @@ def create_segment(
     segment_id: str,
     display_name: str,
     transport_zone_path: str,
-    vlan_ids: str | None = None,
-    subnet: str | None = None,
-    target: str | None = None,
+    vlan_ids: Optional[str] = None,
+    subnet: Optional[str] = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a new network segment.
 
@@ -481,10 +481,10 @@ def create_segment(
         from vmware_nsx.ops.segment_mgmt import create_segment as _create
 
         client = _get_connection(target)
-        parsed_vlan_ids: list[int] | None = None
+        parsed_vlan_ids: Optional[list[int]] = None
         if vlan_ids is not None:
             parsed_vlan_ids = [int(v.strip()) for v in vlan_ids.replace("-", ",").split(",") if v.strip()]
-        parsed_subnets: list[dict[str, str]] | None = None
+        parsed_subnets: Optional[list[dict[str, str]]] = None
         if subnet is not None:
             parsed_subnets = [{"gateway_address": subnet}]
         return _create(
@@ -502,9 +502,9 @@ def create_segment(
 @vmware_tool(risk_level="medium")
 def update_segment(
     segment_id: str,
-    display_name: str | None = None,
-    subnet: str | None = None,
-    target: str | None = None,
+    display_name: Optional[str] = None,
+    subnet: Optional[str] = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Update an existing network segment (partial update via PATCH).
 
@@ -530,7 +530,7 @@ def update_segment(
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
-def delete_segment(segment_id: str, target: str | None = None) -> str:
+def delete_segment(segment_id: str, target: Optional[str] = None) -> str:
     """[WRITE] Delete a network segment. WARNING: This will disconnect all attached VMs.
 
     Args:
@@ -557,10 +557,10 @@ def delete_segment(segment_id: str, target: str | None = None) -> str:
 def create_tier1_gateway(
     tier1_id: str,
     display_name: str,
-    tier0_path: str | None = None,
-    edge_cluster_path: str | None = None,
-    route_advertisement: str | None = None,
-    target: str | None = None,
+    tier0_path: Optional[str] = None,
+    edge_cluster_path: Optional[str] = None,
+    route_advertisement: Optional[str] = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a new Tier-1 gateway.
 
@@ -591,10 +591,10 @@ def create_tier1_gateway(
 @vmware_tool(risk_level="medium")
 def update_tier1_gateway(
     tier1_id: str,
-    display_name: str | None = None,
-    tier0_path: str | None = None,
-    route_advertisement: str | None = None,
-    target: str | None = None,
+    display_name: Optional[str] = None,
+    tier0_path: Optional[str] = None,
+    route_advertisement: Optional[str] = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Update an existing Tier-1 gateway (partial update via PATCH).
 
@@ -621,7 +621,7 @@ def update_tier1_gateway(
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
-def delete_tier1_gateway(tier1_id: str, target: str | None = None) -> str:
+def delete_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> str:
     """[WRITE] Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
 
     Args:
@@ -647,7 +647,7 @@ def configure_tier0_bgp(
     ecmp: bool = True,
     inter_sr_ibgp: bool = True,
     locale_service_id: str = "default",
-    target: str | None = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Configure BGP settings on a Tier-0 gateway's locale-service.
 
@@ -689,10 +689,10 @@ def create_nat_rule(
     tier1_id: str,
     rule_id: str,
     action: str = "DNAT",
-    source_network: str | None = None,
-    destination_network: str | None = None,
+    source_network: Optional[str] = None,
+    destination_network: Optional[str] = None,
     translated_network: str = "",
-    target: str | None = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a NAT rule on a Tier-1 gateway.
 
@@ -725,7 +725,7 @@ def create_nat_rule(
 def delete_nat_rule(
     tier1_id: str,
     rule_id: str,
-    target: str | None = None,
+    target: Optional[str] = None,
 ) -> str:
     """[WRITE] Delete a NAT rule from a Tier-1 gateway.
 
@@ -756,7 +756,7 @@ def create_static_route(
     route_id: str,
     network: str,
     next_hop: str,
-    target: str | None = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a static route on a Tier-1 gateway.
 
@@ -781,7 +781,7 @@ def create_static_route(
 def delete_static_route(
     tier1_id: str,
     route_id: str,
-    target: str | None = None,
+    target: Optional[str] = None,
 ) -> str:
     """[WRITE] Delete a static route from a Tier-1 gateway.
 
@@ -813,8 +813,8 @@ def create_ip_pool(
     start_ip: str,
     end_ip: str,
     cidr: str,
-    gateway_ip: str | None = None,
-    target: str | None = None,
+    gateway_ip: Optional[str] = None,
+    target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a new IP address pool with a static subnet allocation range.
 
