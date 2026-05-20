@@ -11,3 +11,4 @@ build/
 .venv/
 .mcpregistry_*
 mcp-publisher
+.pytest_cache/
