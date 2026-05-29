@@ -1,3 +1,7 @@
+## v1.5.29 (2026-05-29) — Family Version Alignment
+
+No NSX-specific changes since v1.5.28. Bumped for family-wide v1.5.29 alignment.
+
 ## v1.5.28 (2026-05-20)
 
 **Fix `subclass() arg 1 must be a class` in goose/old mcp environments** —
