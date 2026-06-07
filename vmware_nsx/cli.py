@@ -708,7 +708,8 @@ def gateway_create_tier1(
         )
         return
     _double_confirm("create Tier-1 gateway", tier1_id, _resolve_target(target), resource_type="Tier-1 Gateway")
-    create_tier1_gateway(client, tier1_id, display_name=display_name, tier0_path=tier0_path, edge_cluster_path=edge_cluster_path, route_advertisement=route_advertisement)
+    ra_types = [t.strip() for t in route_advertisement.split(",") if t.strip()] if route_advertisement else None
+    create_tier1_gateway(client, tier1_id, display_name=display_name, tier0_path=tier0_path, route_advertisement_types=ra_types, edge_cluster_path=edge_cluster_path)
     console.print(f"[green]Tier-1 gateway '{tier1_id}' created.[/]")
     _audit.log(target=_resolve_target(target), operation="create_tier1_gateway", resource=tier1_id, parameters=params, result="ok")
 
@@ -742,7 +743,14 @@ def gateway_update_tier1(
         )
         return
     _double_confirm("update Tier-1 gateway", tier1_id, _resolve_target(target), resource_type="Tier-1 Gateway")
-    update_tier1_gateway(client, tier1_id, display_name=display_name, tier0_path=tier0_path, route_advertisement=route_advertisement)
+    updates: dict = {}
+    if display_name is not None:
+        updates["display_name"] = display_name
+    if tier0_path is not None:
+        updates["tier0_path"] = tier0_path
+    if route_advertisement is not None:
+        updates["route_advertisement_types"] = [t.strip() for t in route_advertisement.split(",") if t.strip()]
+    update_tier1_gateway(client, tier1_id, **updates)
     console.print(f"[green]Tier-1 gateway '{tier1_id}' updated.[/]")
     _audit.log(target=_resolve_target(target), operation="update_tier1_gateway", resource=tier1_id, parameters=params, result="ok")
 
@@ -908,7 +916,7 @@ def route_create_static(
         )
         return
     _double_confirm("create static route", resource_name, _resolve_target(target), resource_type="Static Route")
-    create_static_route(client, tier1_id, route_id, network=network, next_hop=next_hop)
+    create_static_route(client, tier1_id, route_id, network=network, next_hops=[{"ip_address": next_hop}])
     console.print(f"[green]Static route '{route_id}' created on '{tier1_id}'.[/]")
     _audit.log(target=_resolve_target(target), operation="create_static_route", resource=resource_name, parameters=params, result="ok")
 
@@ -974,7 +982,10 @@ def ip_pool_create(
         )
         return
     _double_confirm("create IP pool", pool_id, _resolve_target(target), resource_type="IP Pool")
-    create_ip_pool(client, pool_id, display_name=display_name, start_ip=start_ip, end_ip=end_ip, cidr=cidr, gateway_ip=gateway_ip)
+    subnet: dict = {"allocation_ranges": [{"start": start_ip, "end": end_ip}], "cidr": cidr}
+    if gateway_ip:
+        subnet["gateway_ip"] = gateway_ip
+    create_ip_pool(client, pool_id, display_name=display_name, subnets=[subnet])
     console.print(f"[green]IP pool '{pool_id}' created.[/]")
     _audit.log(target=_resolve_target(target), operation="create_ip_pool", resource=pool_id, parameters=params, result="ok")
 

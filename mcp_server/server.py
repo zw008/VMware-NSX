@@ -105,11 +105,19 @@ def list_segments(target: Optional[str] = None) -> list[dict]:
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_segment(segment_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Get detailed info for a specific network segment.
+    """[READ] Get full details for one network segment, including its attached ports.
+
+    No side effects. Use after list_segments to inspect a single segment — e.g.
+    check port_count before delete_segment (segments with attached ports refuse
+    deletion). Returns: id, display_name, type, admin_state, subnets,
+    transport_zone_path, connectivity_path (linked gateway), vlan_ids,
+    port_count, and the first 50 ports (id, display_name, attachment).
+    On failure returns {"error", "hint"} instead of raising.
 
     Args:
-        segment_id: The segment ID (policy path name).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        segment_id: Segment ID — the final component of the policy path
+            /infra/segments/<id>, as returned by list_segments.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.inventory import get_segment as _get_segment
@@ -140,11 +148,18 @@ def list_tier0_gateways(target: Optional[str] = None) -> list[dict]:
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_tier0_gateway(tier0_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Get detailed info for a specific Tier-0 gateway.
+    """[READ] Get configuration details for one Tier-0 gateway (north-south edge router).
+
+    No side effects. Use after list_tier0_gateways to inspect HA configuration,
+    or to build the tier0_path ("/infra/tier-0s/<id>") that create_tier1_gateway
+    needs. For BGP peering state use get_bgp_neighbors instead. Returns: id,
+    display_name, ha_mode (ACTIVE_ACTIVE or ACTIVE_STANDBY), failover_mode
+    (PREEMPTIVE or NON_PREEMPTIVE), transit_subnets, internal_transit_subnets,
+    rd_admin_field. On failure returns {"error", "hint"} instead of raising.
 
     Args:
-        tier0_id: The Tier-0 gateway ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier0_id: Tier-0 gateway ID, as returned by list_tier0_gateways.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.inventory import get_tier0_gateway as _get_tier0
@@ -193,10 +208,18 @@ def get_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> dict:
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_transport_zones(target: Optional[str] = None) -> list[dict]:
-    """[READ] List all transport zones with type and host switch name.
+    """[READ] List all NSX transport zones — the overlay/VLAN boundaries that segments attach to.
+
+    No side effects. Primary use: discover the transport zone required by
+    create_segment, whose transport_zone_path is
+    "/infra/sites/default/enforcement-points/default/transport-zones/<id>"
+    using the id returned here. Returns one dict per zone: id, display_name,
+    transport_type (e.g. OVERLAY_STANDARD or VLAN_BACKED), host_switch_name.
+    All zones are returned (typically under 20; no pagination). On failure
+    returns a single-element list containing {"error", "hint"}.
 
     Args:
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.inventory import list_transport_zones as _list_tzs
@@ -266,12 +289,20 @@ def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> list[dict]:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> list[dict]:
-    """[READ] Get BGP neighbors for a Tier-0 gateway with connection state and ASN.
+def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
+    """[READ] Get BGP configuration and neighbor status for a Tier-0 gateway.
+
+    No side effects. Use to verify dynamic routing after configure_tier0_bgp or
+    when troubleshooting north-south connectivity. Reads the gateway's first
+    locale-service, its BGP config and configured neighbors (Policy API), plus
+    realized neighbor session state (Management API) where available. Returns
+    tier0_id, locale-service info, BGP config (local AS, enabled, ECMP),
+    neighbors (peer IP, remote ASN), and session status; includes a hint when
+    the gateway has no locale-services. On failure returns {"error", "hint"}.
 
     Args:
-        tier0_id: The Tier-0 gateway ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier0_id: Tier-0 gateway ID, as returned by list_tier0_gateways.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.networking import get_bgp_neighbors as _get_bgp
@@ -320,11 +351,18 @@ def list_ip_pools(target: Optional[str] = None) -> list[dict]:
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_ip_pool_usage(pool_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Get IP pool allocation usage details (total, allocated, free).
+    """[READ] Get current IP allocations for one IP address pool.
+
+    No side effects. Use after list_ip_pools to see how much of a pool is
+    consumed — e.g. when diagnosing TEP address exhaustion or before retiring
+    a pool. Returns: pool_id, allocation_count, and allocations — one entry per
+    allocated IP with id, display_name, allocation_ip (all allocations
+    returned, no pagination). An empty allocations list means the pool is
+    unused. On failure returns {"error", "hint"} instead of raising.
 
     Args:
-        pool_id: The IP pool ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        pool_id: IP pool ID, as returned by list_ip_pools.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.networking import get_ip_pool_usage as _get_usage
@@ -360,11 +398,19 @@ def list_nsx_alarms(target: Optional[str] = None) -> list[dict]:
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Check status of a specific transport node (connectivity, tunnel status).
+    """[READ] Get realized runtime status of one transport node (ESXi host or Edge node).
+
+    No side effects. Use after list_transport_nodes (which supplies node IDs)
+    when a node looks degraded or overlay tunnels are suspect; for cluster-wide
+    edge health use get_edge_cluster_status instead. Returns: node_id, status
+    (e.g. UP, DEGRADED, DOWN, UNKNOWN), node_deployment_state,
+    control_connection_status and mgmt_connection_status (controller/manager
+    connectivity), tunnel_status (LCP connectivity plus BFD details), and
+    pnic_status. On failure returns {"error", "hint"} instead of raising.
 
     Args:
-        node_id: The transport node ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        node_id: Transport node UUID, as returned by list_transport_nodes.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.health import get_transport_node_status as _get_tn_status
@@ -466,15 +512,26 @@ def create_segment(
     subnet: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a new network segment.
+    """[WRITE] Create a new NSX network segment (overlay or VLAN-backed) via the Policy API.
+
+    Prerequisite: get the transport zone from list_transport_zones first. Pass
+    subnet for overlay routed segments, or vlan_ids for VLAN-backed transport
+    zones. Re-running with the same segment_id overwrites that segment (PUT
+    semantics). Returns the created segment dict (id, display_name, subnets,
+    transport_zone_path); on failure returns {"error", "hint"}. The operation
+    is recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        segment_id: Unique ID for the segment (used in policy path).
-        display_name: Human-readable name for the segment.
-        transport_zone_path: Full policy path to the transport zone.
-        vlan_ids: VLAN ID(s) for VLAN-backed segments (e.g. "100" or "100-200").
-        subnet: Gateway CIDR for the segment (e.g. "192.168.1.1/24").
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        segment_id: Unique segment identifier (alphanumerics, hyphens,
+            underscores only); becomes policy path /infra/segments/<segment_id>.
+        display_name: Human-readable name shown in the NSX UI.
+        transport_zone_path: Full transport zone policy path, e.g.
+            "/infra/sites/default/enforcement-points/default/transport-zones/<tz-id>".
+        vlan_ids: VLAN ID(s) for VLAN-backed segments, comma- or
+            hyphen-separated individual IDs (e.g. "100" or "100,200"). Omit for overlay.
+        subnet: Gateway IP in CIDR notation, e.g. "192.168.1.1/24" (the
+            gateway address, not the network address). Omit for VLAN-backed segments.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.segment_mgmt import create_segment as _create
@@ -561,26 +618,45 @@ def create_tier1_gateway(
     route_advertisement: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a new Tier-1 gateway.
+    """[WRITE] Create a Tier-1 gateway for routing segments, with optional Tier-0 uplink.
+
+    For north-south reachability, link it to a Tier-0 (get the path from
+    list_tier0_gateways). Side effect to note: if route_advertisement is
+    omitted, nothing is advertised to the Tier-0, so connected subnets stay
+    unreachable from outside until advertisement types are set (here or via
+    update_tier1_gateway). Re-running with the same tier1_id overwrites it
+    (PUT semantics). Returns the created gateway dict; on failure returns
+    {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: Unique ID for the Tier-1 gateway.
-        display_name: Human-readable name.
-        tier0_path: Policy path to link to a Tier-0 gateway (optional).
-        edge_cluster_path: Policy path to an edge cluster for services (optional).
-        route_advertisement: Comma-separated route advertisement types (optional).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Unique gateway identifier (alphanumerics, hyphens,
+            underscores only); becomes policy path /infra/tier-1s/<tier1_id>.
+        display_name: Human-readable name shown in the NSX UI.
+        tier0_path: Parent Tier-0 policy path, e.g. "/infra/tier-0s/<t0-id>".
+            Omit to create a standalone (unlinked) gateway.
+        edge_cluster_path: Edge cluster policy path for stateful services
+            such as NAT, e.g. "/infra/sites/default/enforcement-points/default/
+            edge-clusters/<uuid>". Optional.
+        route_advertisement: Comma-separated advertisement types. Valid values:
+            TIER1_CONNECTED, TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP,
+            TIER1_LB_SNAT, TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.segment_mgmt import create_tier1_gateway as _create
 
         client = _get_connection(target)
+        ra_types = (
+            [t.strip() for t in route_advertisement.split(",") if t.strip()]
+            if route_advertisement
+            else None
+        )
         return _create(
             client, tier1_id,
             display_name=display_name,
             tier0_path=tier0_path,
+            route_advertisement_types=ra_types,
             edge_cluster_path=edge_cluster_path,
-            route_advertisement=route_advertisement,
         )
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
@@ -595,25 +671,38 @@ def update_tier1_gateway(
     route_advertisement: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Update an existing Tier-1 gateway (partial update via PATCH).
+    """[WRITE] Partially update an existing Tier-1 gateway via PATCH.
+
+    Only the fields you pass change; omitted fields keep their current values.
+    Use get_tier1_gateway first to inspect current config. Typical uses:
+    relink the gateway to a different Tier-0, or enable route advertisement on
+    a gateway created without it. Re-applying identical values is harmless.
+    Returns the updated gateway dict; on failure returns {"error", "hint"}.
+    Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: The Tier-1 gateway ID to update.
-        display_name: New display name (optional).
-        tier0_path: New Tier-0 path to link (optional).
-        route_advertisement: New route advertisement types (optional).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Tier-1 gateway ID to update, as returned by list_tier1_gateways.
+        display_name: New display name. Optional.
+        tier0_path: New parent Tier-0 policy path, e.g. "/infra/tier-0s/<t0-id>". Optional.
+        route_advertisement: Comma-separated advertisement types. Valid values:
+            TIER1_CONNECTED, TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP,
+            TIER1_LB_SNAT, TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.segment_mgmt import update_tier1_gateway as _update
 
         client = _get_connection(target)
-        return _update(
-            client, tier1_id,
-            display_name=display_name,
-            tier0_path=tier0_path,
-            route_advertisement=route_advertisement,
-        )
+        updates: dict = {}
+        if display_name is not None:
+            updates["display_name"] = display_name
+        if tier0_path is not None:
+            updates["tier0_path"] = tier0_path
+        if route_advertisement is not None:
+            updates["route_advertisement_types"] = [
+                t.strip() for t in route_advertisement.split(",") if t.strip()
+            ]
+        return _update(client, tier1_id, **updates)
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
@@ -726,12 +815,20 @@ def delete_nat_rule(
     rule_id: str,
     target: Optional[str] = None,
 ) -> str:
-    """[WRITE] Delete a NAT rule from a Tier-1 gateway.
+    """[WRITE] Permanently delete a NAT rule from a Tier-1 gateway's USER NAT section.
+
+    Irreversible: traffic matched by the rule stops being translated
+    immediately, which can break inbound (DNAT) or outbound (SNAT)
+    connectivity. Run list_nat_rules on the same tier1_id first to confirm the
+    rule_id and review its action and networks, and confirm with the user
+    before deleting. Returns a confirmation string on success, or an
+    "Error: ..." string (rule or gateway not found, connectivity failure).
+    Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
-        rule_id: The NAT rule ID to delete.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Tier-1 gateway that owns the rule, as returned by list_tier1_gateways.
+        rule_id: NAT rule ID to delete, as returned by list_nat_rules.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import delete_nat_rule as _delete
@@ -757,20 +854,31 @@ def create_static_route(
     next_hop: str,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a static route on a Tier-1 gateway.
+    """[WRITE] Create a static route on a Tier-1 gateway via the Policy API.
+
+    Use for destinations not covered by connected or advertised routes (e.g.
+    reaching a VPN or external subnet). Note: for the Tier-0 to advertise this
+    route upstream, the gateway needs TIER1_STATIC_ROUTES route advertisement
+    (set via update_tier1_gateway). Re-running with the same route_id
+    overwrites it (PUT semantics). Returns the created route dict; on failure
+    returns {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
-        route_id: Unique ID for the static route.
-        network: Destination CIDR (e.g. "10.0.0.0/8").
-        next_hop: Next hop IP address.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Tier-1 gateway ID, as returned by list_tier1_gateways.
+        route_id: Unique route identifier (alphanumerics, hyphens, underscores only).
+        network: Destination network in CIDR notation, e.g. "10.0.0.0/8".
+        next_hop: Next-hop IPv4 address, e.g. "192.168.1.254".
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import create_static_route as _create
 
         client = _get_connection(target)
-        return _create(client, tier1_id, route_id, network=network, next_hop=next_hop)
+        return _create(
+            client, tier1_id, route_id,
+            network=network,
+            next_hops=[{"ip_address": next_hop}],
+        )
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
@@ -782,12 +890,19 @@ def delete_static_route(
     route_id: str,
     target: Optional[str] = None,
 ) -> str:
-    """[WRITE] Delete a static route from a Tier-1 gateway.
+    """[WRITE] Permanently delete a static route from a Tier-1 gateway.
+
+    Irreversible: traffic to the route's destination CIDR immediately falls
+    back to remaining routes or is dropped. Run list_static_routes on the same
+    tier1_id first to confirm the route_id, destination network, and next
+    hops, and confirm with the user before deleting. Returns a confirmation
+    string on success, or an "Error: ..." string (route or gateway not found,
+    connectivity failure). Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
-        route_id: The static route ID to delete.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Tier-1 gateway that owns the route, as returned by list_tier1_gateways.
+        route_id: Static route ID to delete, as returned by list_static_routes.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import delete_static_route as _delete
@@ -815,28 +930,39 @@ def create_ip_pool(
     gateway_ip: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a new IP address pool with a static subnet allocation range.
+    """[WRITE] Create an IP address pool with one static subnet and allocation range.
+
+    IP pools supply addresses to NSX consumers such as tunnel endpoints
+    (TEPs). Check list_ip_pools first to avoid overlapping ranges; start_ip
+    and end_ip must both fall inside cidr. Re-running with the same pool_id
+    overwrites it (PUT semantics). Returns the created pool dict; verify
+    consumption later with get_ip_pool_usage. On failure returns
+    {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        pool_id: Unique ID for the IP pool.
-        display_name: Human-readable name.
-        start_ip: Start IP address of the allocation range.
-        end_ip: End IP address of the allocation range.
-        cidr: Subnet CIDR (e.g. "192.168.1.0/24").
-        gateway_ip: Gateway IP for the subnet (optional).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        pool_id: Unique pool identifier (alphanumerics, hyphens, underscores
+            only); becomes policy path /infra/ip-pools/<pool_id>.
+        display_name: Human-readable name shown in the NSX UI.
+        start_ip: First allocatable IPv4 address, e.g. "192.168.1.10".
+        end_ip: Last allocatable IPv4 address, e.g. "192.168.1.100".
+        cidr: Subnet containing the range, in CIDR notation, e.g. "192.168.1.0/24".
+        gateway_ip: Default gateway IP for the subnet, e.g. "192.168.1.1". Optional.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import create_ip_pool as _create
 
         client = _get_connection(target)
+        subnet: dict = {
+            "allocation_ranges": [{"start": start_ip, "end": end_ip}],
+            "cidr": cidr,
+        }
+        if gateway_ip:
+            subnet["gateway_ip"] = gateway_ip
         return _create(
             client, pool_id,
             display_name=display_name,
-            start_ip=start_ip,
-            end_ip=end_ip,
-            cidr=cidr,
-            gateway_ip=gateway_ip,
+            subnets=[subnet],
         )
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}

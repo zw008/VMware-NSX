@@ -169,6 +169,7 @@ def create_tier1_gateway(
     display_name: str,
     tier0_path: str | None = None,
     route_advertisement_types: list[str] | None = None,
+    edge_cluster_path: str | None = None,
 ) -> dict:
     """Create a new Tier-1 gateway via Policy API (PUT).
 
@@ -179,6 +180,9 @@ def create_tier1_gateway(
         tier0_path: Policy path to parent Tier-0 gateway.
         route_advertisement_types: List of route types to advertise
             (e.g., TIER1_CONNECTED, TIER1_STATIC_ROUTES, TIER1_NAT).
+        edge_cluster_path: Edge cluster policy path. When given, a
+            "default" locale-service is created on the gateway pointing
+            at this edge cluster (required for stateful services like NAT).
 
     Returns:
         Created Tier-1 gateway dict from NSX API.
@@ -212,6 +216,11 @@ def create_tier1_gateway(
 
     path = f"/policy/api/v1/infra/tier-1s/{tier1_id}"
     result = client.put(path, body)
+
+    if edge_cluster_path:
+        ls_path = f"{path}/locale-services/default"
+        client.put(ls_path, {"edge_cluster_path": edge_cluster_path})
+
     _log.info("Created Tier-1 gateway %s (%s)", tier1_id, display_name)
     return result
 

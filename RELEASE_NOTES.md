@@ -1,3 +1,30 @@
+## v1.5.30 (2026-06-07) — Fix 4 broken gateway/route/pool tools + tool description quality
+
+### Fixed (critical)
+Four tools were broken since their introduction — MCP wrappers and CLI commands passed
+kwargs their ops functions don't accept, so every invocation failed with
+TypeError/ValueError (swallowed into `{"error", "hint"}` payloads):
+- `create_tier1_gateway`: passed `edge_cluster_path=`/`route_advertisement=`; now converts
+  comma-separated advertisement types to `route_advertisement_types` list, and ops gained
+  real `edge_cluster_path` support (creates the "default" locale-service on the gateway).
+- `update_tier1_gateway`: passed `None` fields and a key rejected by ops `allowed_fields`
+  (ValueError on every call); now sends only non-None fields under correct names.
+- `create_static_route`: passed `next_hop=str`; now builds `next_hops=[{"ip_address": ...}]`.
+- `create_ip_pool`: passed `start_ip/end_ip/cidr/gateway_ip`; now builds the
+  `subnets=[{allocation_ranges, cidr, gateway_ip}]` structure ops expects.
+- `get_bgp_neighbors` return annotation corrected `list[dict]` → `dict`.
+
+Same fixes applied to the CLI commands (`gateway create-tier1`, `gateway update-tier1`,
+`route create-static`, `ip-pool create`) — 踩坑 #19/#34 pattern.
+
+### Tests
+- New `tests/eval/regression/test_nsx_specific.py`: 8 tests exercising the real
+  wrapper→ops path with a mocked NSX client; any future signature drift fails CI.
+
+### Improved
+- Rewrote 13 MCP tool descriptions (per-parameter formats, return fields, sibling-tool
+  routing, PUT/PATCH semantics, audit disclosure) per Glama TDQS review.
+
 ## v1.5.29 (2026-05-29) — Family Version Alignment
 
 No NSX-specific changes since v1.5.28. Bumped for family-wide v1.5.29 alignment.
