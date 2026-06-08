@@ -568,17 +568,17 @@ Output: JSON with `cluster_id`, `overall_status`, `nodes` (each with `fqdn`, `st
 
 ### `troubleshoot port-status`
 
-Get logical port admin and operational status.
+Get port attachment and realized state for all ports on a segment.
 
 ```bash
-vmware-nsx troubleshoot port-status <port-id>
+vmware-nsx troubleshoot port-status <segment-id>
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
-| `port_id` | Yes | Logical port ID (from `segment ports` output) |
+| `segment_id` | Yes | Segment ID whose ports to inspect |
 
-Output: JSON with `admin_state`, `operational_status`, `link_state`, `attachment`, `address_bindings`, `realized_state`.
+Output: JSON per port with `id`, `display_name`, `attachment_type`, `attachment_id`, `admin_state`, and `realized_state` (attachment presence, realized-bindings count, transport node IDs). Note: the Policy API exposes no simple UP/DOWN operational flag for ports — attachment + realized bindings are the actual health signals.
 
 ### `troubleshoot vm-segment`
 
@@ -593,7 +593,7 @@ vmware-nsx troubleshoot vm-segment "Web Server 01"
 |----------|:--------:|-------------|
 | `vm_name` | Yes | VM name (searched by display name, case-insensitive) |
 
-Output: JSON array with `vm_name`, `vnic`, `segment_id`, `segment_name`, `ip_addresses`, `mac_address`, `port_id`.
+Output: JSON with `vm_display_name`, `found`, and `matched_ports` (each with `segment_id`, `segment_name`, port attachment details). VIF matching goes through `GET /api/v1/fabric/vifs?owner_vm_id=...` against port `attachment.id`.
 
 ---
 

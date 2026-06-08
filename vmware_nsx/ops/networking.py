@@ -77,7 +77,8 @@ def get_bgp_neighbors(client: NsxClient, tier0_id: str) -> dict:
         return {
             "tier0_id": tier0_id,
             "locale_services": [],
-            "bgp_neighbors": [],
+            "neighbors": [],
+            "neighbor_status": [],
             "hint": "No locale-services found on this Tier-0 gateway.",
         }
 
@@ -133,8 +134,10 @@ def get_bgp_neighbors(client: NsxClient, tier0_id: str) -> dict:
                 "neighbor_address": sanitize(n.get("neighbor_address", "")),
                 "remote_as_num": n.get("remote_as_num", ""),
                 "source_addresses": n.get("source_addresses", []),
-                "hold_down_timer": n.get("hold_down_timer", 180),
-                "keep_alive_timer": n.get("keep_alive_timer", 60),
+                # BgpNeighborConfig fields (NSX 4.2): hold_down_time /
+                # keep_alive_time (no trailing "r").
+                "hold_down_time": n.get("hold_down_time", 180),
+                "keep_alive_time": n.get("keep_alive_time", 60),
             }
             for n in neighbors
         ],
@@ -148,8 +151,10 @@ def get_bgp_neighbors(client: NsxClient, tier0_id: str) -> dict:
                 "time_since_established": s.get(
                     "time_since_established", 0
                 ),
-                "messages_received": s.get("total_in_prefix_count", 0),
-                "messages_sent": s.get("total_out_prefix_count", 0),
+                # total_*_prefix_count are BGP prefix counts, not
+                # message counts — label them honestly.
+                "in_prefix_count": s.get("total_in_prefix_count", 0),
+                "out_prefix_count": s.get("total_out_prefix_count", 0),
             }
             for s in bgp_status
         ],

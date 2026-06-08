@@ -155,8 +155,8 @@ def list_transport_zones(client: NsxClient) -> list[dict]:
         {
             "id": sanitize(tz.get("id", "")),
             "display_name": sanitize(tz.get("display_name", "")),
+            # PolicyTransportZone has no host_switch_name field.
             "transport_type": tz.get("tz_type", ""),
-            "host_switch_name": sanitize(tz.get("host_switch_name", "")),
         }
         for tz in items
     ]
@@ -184,7 +184,11 @@ def list_transport_nodes(client: NsxClient) -> list[dict]:
             {
                 "id": sanitize(n.get("id", "")),
                 "display_name": sanitize(n.get("display_name", "")),
-                "node_type": n.get("resource_type", ""),
+                # Top-level resource_type is always "TransportNode";
+                # the node kind lives in node_deployment_info.
+                "node_type": (n.get("node_deployment_info") or {}).get(
+                    "resource_type", ""
+                ),
                 "ip_addresses": ip_addresses,
                 "maintenance_mode": n.get("maintenance_mode", "DISABLED"),
             }

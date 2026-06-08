@@ -1,7 +1,12 @@
 """Safety boundary tests -- verify destructive ops have double_confirm guards.
 
-Uses Python AST parsing to verify that every destructive function in the ops/
-package contains a call to ``double_confirm`` (or ``_double_confirm``).
+Uses Python AST parsing to verify that every destructive CLI command in
+cli.py contains a call to ``double_confirm`` (or ``_double_confirm``).
+
+The guard lives in the CLI command layer (which owns the interactive
+confirmation flow), not in ops/ — ops functions are also invoked by the
+MCP server, where confirmation is the agent's responsibility and a
+blocking prompt would hang the stdio transport.
 """
 from __future__ import annotations
 
@@ -10,17 +15,15 @@ from pathlib import Path
 
 import pytest
 
-OPS_DIR = Path(__file__).resolve().parent.parent / "vmware_nsx" / "ops"
+CLI_PATH = Path(__file__).resolve().parent.parent / "vmware_nsx" / "cli.py"
 
-# (file_name, function_name) -- destructive functions that MUST call
+# CLI command functions for destructive operations that MUST call
 # double_confirm before executing the dangerous operation.
-DESTRUCTIVE_FUNCTIONS: list[tuple[str, str]] = [
-    # Segment management
-    ("segment_mgmt.py", "delete_segment"),
-    ("segment_mgmt.py", "delete_tier1_gateway"),
-    # NAT / route management
-    ("nat_route_mgmt.py", "delete_nat_rule"),
-    ("nat_route_mgmt.py", "delete_static_route"),
+DESTRUCTIVE_CLI_COMMANDS: list[str] = [
+    "segment_delete",
+    "gateway_delete_tier1",
+    "nat_delete_rule",
+    "route_delete_static",
 ]
 
 
@@ -36,12 +39,11 @@ def _has_double_confirm(file_path: Path, func_name: str) -> bool:
 
 @pytest.mark.unit
 class TestDestructiveOpsSafety:
-    """Every destructive function must include a double_confirm safety guard."""
+    """Every destructive CLI command must include a double_confirm safety guard."""
 
-    @pytest.mark.parametrize("file_name,func_name", DESTRUCTIVE_FUNCTIONS)
-    def test_has_double_confirm(self, file_name: str, func_name: str) -> None:
-        path = OPS_DIR / file_name
-        assert path.exists(), f"{path} not found"
-        assert _has_double_confirm(path, func_name), (
-            f"{func_name} in {file_name} lacks a double_confirm safety guard"
+    @pytest.mark.parametrize("func_name", DESTRUCTIVE_CLI_COMMANDS)
+    def test_has_double_confirm(self, func_name: str) -> None:
+        assert CLI_PATH.exists(), f"{CLI_PATH} not found"
+        assert _has_double_confirm(CLI_PATH, func_name), (
+            f"{func_name} in cli.py lacks a double_confirm safety guard"
         )

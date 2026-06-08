@@ -270,9 +270,8 @@ def inventory_list_transport_zones(
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
     table.add_column("Type")
-    table.add_column("Host Switch")
     for z in zones:
-        table.add_row(z["id"], z["display_name"], z["transport_type"], z.get("host_switch_name", "-"))
+        table.add_row(z["id"], z["display_name"], z["transport_type"])
     console.print(table)
 
 
@@ -364,25 +363,34 @@ def networking_bgp_neighbors(
     from vmware_nsx.ops.networking import get_bgp_neighbors
 
     client, _ = _get_connection(target, config)
-    neighbors = get_bgp_neighbors(client, tier0_id)
+    data = get_bgp_neighbors(client, tier0_id)
+    neighbors = data.get("neighbors", [])
     if not neighbors:
         console.print("[yellow]No BGP neighbors found.[/]")
         return
+    # Realized session state, keyed by peer address
+    status_by_addr = {
+        s.get("neighbor_address"): s for s in data.get("neighbor_status", [])
+    }
     table = Table(title=f"BGP Neighbors on '{tier0_id}'")
     table.add_column("Neighbor Address", style="cyan")
     table.add_column("Remote ASN")
     table.add_column("State")
     table.add_column("Hold Time")
     table.add_column("Keep Alive")
+    table.add_column("Prefixes In/Out")
     for n in neighbors:
-        state = n.get("connection_state", "UNKNOWN")
+        addr = n.get("neighbor_address", "-")
+        s = status_by_addr.get(addr, {})
+        state = s.get("connection_state", "UNKNOWN")
         style = "green" if state == "ESTABLISHED" else "red"
         table.add_row(
-            n["neighbor_address"],
+            addr,
             str(n.get("remote_as_num", "-")),
             f"[{style}]{state}[/]",
             str(n.get("hold_down_time", "-")),
             str(n.get("keep_alive_time", "-")),
+            f"{s.get('in_prefix_count', '-')}/{s.get('out_prefix_count', '-')}",
         )
     console.print(table)
 
@@ -403,7 +411,8 @@ def networking_list_static_routes(
     table.add_column("Network")
     table.add_column("Next Hops")
     for r in routes:
-        hops = ", ".join(r.get("next_hops", []))
+        # next_hops entries are dicts: {"ip_address", "admin_distance"}
+        hops = ", ".join(nh.get("ip_address", "") for nh in r.get("next_hops", []))
         table.add_row(r["id"], r["network"], hops or "-")
     console.print(table)
 
@@ -451,16 +460,23 @@ def networking_ip_pool_usage(
 
 @health_app.command("alarms")
 def health_alarms(
+    severity: Annotated[
+        str,
+        typer.Option(
+            "--severity",
+            help="Severity filter, exact match (not 'and above'): LOW, MEDIUM, HIGH, CRITICAL",
+        ),
+    ] = "MEDIUM",
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
-    """Show active NSX alarms."""
+    """Show active NSX alarms at one severity (exact match)."""
     from vmware_nsx.ops.health import list_alarms
 
     client, _ = _get_connection(target, config)
-    alarms = list_alarms(client)
+    alarms = list_alarms(client, severity=severity)
     if not alarms:
-        console.print("[green]No active alarms.[/]")
+        console.print(f"[green]No active {severity.upper()} alarms.[/]")
         return
     table = Table(title=f"NSX Alarms ({len(alarms)})")
     table.add_column("Severity")
@@ -532,30 +548,30 @@ def health_manager_status(
 
 @troubleshoot_app.command("port-status")
 def troubleshoot_port_status(
-    port_id: str,
+    segment_id: str,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
-    """Check logical port operational status."""
+    """Check realized state of all ports on a segment."""
     from vmware_nsx.ops.troubleshoot import get_logical_port_status
 
     client, _ = _get_connection(target, config)
-    status = get_logical_port_status(client, port_id)
+    status = get_logical_port_status(client, segment_id)
     for k, v in status.items():
         console.print(f"  [cyan]{k}:[/] {v}")
 
 
 @troubleshoot_app.command("vm-segment")
 def troubleshoot_vm_segment(
-    vm_id: str,
+    vm_display_name: str,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
-    """Find which segment a VM is attached to."""
+    """Find which segment a VM is attached to (lookup by display name)."""
     from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm
 
     client, _ = _get_connection(target, config)
-    result = get_segment_port_for_vm(client, vm_id)
+    result = get_segment_port_for_vm(client, vm_display_name)
     if not result:
         console.print("[yellow]No segment port found for this VM.[/]")
         return
@@ -788,33 +804,37 @@ def gateway_delete_tier1(
 def gateway_configure_tier0_bgp(
     tier0_id: str,
     local_as: Annotated[int, typer.Option("--local-as", help="Local AS number")],
-    neighbor_address: Annotated[str, typer.Option("--neighbor", help="BGP neighbor IP address")],
-    remote_as: Annotated[int, typer.Option("--remote-as", help="Remote AS number")],
-    hold_time: Annotated[int, typer.Option("--hold-time", help="Hold down time in seconds")] = 180,
-    keep_alive: Annotated[int, typer.Option("--keep-alive", help="Keep alive time in seconds")] = 60,
+    enabled: Annotated[bool, typer.Option("--enabled/--disabled", help="Enable or disable BGP")] = True,
+    ecmp: Annotated[bool, typer.Option("--ecmp/--no-ecmp", help="Enable ECMP for BGP routes")] = True,
+    inter_sr_ibgp: Annotated[bool, typer.Option("--inter-sr-ibgp/--no-inter-sr-ibgp", help="Enable inter-SR iBGP")] = True,
+    locale_service_id: Annotated[str, typer.Option("--locale-service", help="Locale-service identifier")] = "default",
     target: TargetOption = None,
     config: ConfigOption = None,
     dry_run: DryRunOption = False,
 ) -> None:
-    """Configure BGP on a Tier-0 gateway."""
+    """Configure BGP settings (local AS, ECMP, inter-SR iBGP) on a Tier-0 gateway.
+
+    Note: BGP neighbor creation is a separate Policy API object and is not
+    exposed by this command. Use 'network bgp-neighbors' to inspect neighbors.
+    """
     from vmware_nsx.ops.segment_mgmt import configure_tier0_bgp
 
     client, _ = _get_connection(target, config)
-    params = {"local_as": local_as, "neighbor_address": neighbor_address, "remote_as": remote_as, "hold_time": hold_time, "keep_alive": keep_alive}
+    bgp_config = {"local_as_num": str(local_as), "enabled": enabled, "ecmp": ecmp, "inter_sr_ibgp": inter_sr_ibgp}
     if dry_run:
         _dry_run_print(
             target=_resolve_target(target),
             resource=tier0_id,
             operation="configure_tier0_bgp",
-            api_call=f"PATCH /policy/api/v1/infra/tier-0s/{tier0_id}/locale-services/default/bgp",
-            parameters=params,
+            api_call=f"PATCH /policy/api/v1/infra/tier-0s/{tier0_id}/locale-services/{locale_service_id}/bgp",
+            parameters=bgp_config,
             resource_label="Tier-0 BGP",
         )
         return
     _double_confirm("configure BGP on Tier-0", tier0_id, _resolve_target(target), resource_type="Tier-0 BGP")
-    configure_tier0_bgp(client, tier0_id, local_as=local_as, neighbor_address=neighbor_address, remote_as=remote_as, hold_time=hold_time, keep_alive=keep_alive)
+    configure_tier0_bgp(client, tier0_id, locale_service_id=locale_service_id, bgp_config=bgp_config)
     console.print(f"[green]BGP configured on Tier-0 '{tier0_id}'.[/]")
-    _audit.log(target=_resolve_target(target), operation="configure_tier0_bgp", resource=tier0_id, parameters=params, result="ok")
+    _audit.log(target=_resolve_target(target), operation="configure_tier0_bgp", resource=tier0_id, parameters=bgp_config, result="ok")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

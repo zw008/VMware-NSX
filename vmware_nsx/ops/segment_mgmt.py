@@ -270,7 +270,11 @@ def update_tier1_gateway(
 
 
 def delete_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
-    """Delete a Tier-1 gateway.
+    """Delete a Tier-1 gateway (removing its default locale-service first).
+
+    The Policy API refuses to delete a Tier-1 that still has children;
+    create_tier1_gateway may have created a "default" locale-service for
+    the edge cluster binding, so it is deleted first (404 ignored).
 
     Args:
         client: Authenticated NSX API client.
@@ -279,9 +283,16 @@ def delete_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
     Returns:
         Dict with deletion status.
     """
+    import httpx
+
     _validate_id(tier1_id)
 
     path = f"/policy/api/v1/infra/tier-1s/{tier1_id}"
+    try:
+        client.delete(f"{path}/locale-services/default")
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
     client.delete(path)
     _log.info("Deleted Tier-1 gateway %s", tier1_id)
     return {"deleted": True, "tier1_id": tier1_id}

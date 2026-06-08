@@ -48,7 +48,8 @@ def create_nat_rule(
                 NO_SNAT, NO_DNAT, NAT64.
         source_network: Source CIDR for matching (used in SNAT/NO_SNAT).
         destination_network: Destination CIDR for matching (used in DNAT/NO_DNAT).
-        translated_network: Translated IP/CIDR (required for SNAT/DNAT).
+        translated_network: Translated IP/CIDR (required for
+            SNAT/DNAT/REFLEXIVE).
 
     Returns:
         Created NAT rule dict from NSX API.
@@ -83,7 +84,7 @@ def create_nat_rule(
         body["translated_network"] = translated_network
 
     # Validate required fields based on action
-    if action in ("SNAT", "DNAT") and not translated_network:
+    if action in ("SNAT", "DNAT", "REFLEXIVE") and not translated_network:
         raise ValueError(
             f"translated_network is required for {action} rules."
         )

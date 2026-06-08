@@ -85,8 +85,8 @@ targets:
 | NAT | `list_nat_rules`、`get_nat_rule`、`create_nat_rule`、`update_nat_rule`、`delete_nat_rule` | 读/写 |
 | 静态路由 | `list_static_routes`、`create_static_route`、`delete_static_route` | 读/写 |
 | IP 池 | `list_ip_pools`、`get_ip_pool_allocations`、`create_ip_pool`、`create_ip_pool_subnet` | 读/写 |
-| 健康 | `get_nsx_alarms`、`get_transport_node_status`、`get_edge_cluster_status`、`get_manager_cluster_status` | 只读 |
-| 排障 | `get_logical_port_status`、`find_vm_segment` | 只读 |
+| 健康 | `list_nsx_alarms`（按单一 severity 精确过滤）、`get_transport_node_status`、`get_edge_cluster_status`、`get_nsx_manager_status` | 只读 |
+| 排障 | `get_logical_port_status`（按 Segment 查看全部端口实现状态）、`get_segment_port_for_vm`（按 VM 显示名查找） | 只读 |
 
 ### 工具说明
 
@@ -131,12 +131,12 @@ targets:
 - `create_ip_pool_subnet` — 向 IP 池添加子网范围
 
 **健康与排障**
-- `get_nsx_alarms` — 列出活跃的 NSX 告警
-- `get_transport_node_status` — 传输节点连接和配置状态
+- `list_nsx_alarms` — 列出指定 severity 的活跃 NSX 告警（精确匹配，非"及以上"；需逐档查询）
+- `get_transport_node_status` — 传输节点连接状态、隧道/pNIC 计数
 - `get_edge_cluster_status` — Edge 集群成员状态
-- `get_manager_cluster_status` — NSX Manager 集群健康状态
-- `get_logical_port_status` — 逻辑端口管理/运行状态
-- `find_vm_segment` — 查找 VM 连接到哪个 Segment
+- `get_nsx_manager_status` — NSX Manager 集群健康状态
+- `get_logical_port_status` — 按 Segment 查看全部端口的实现状态（attachment、realized bindings、传输节点）
+- `get_segment_port_for_vm` — 按 VM 显示名查找其连接的 Segment（经 /fabric/vifs）
 
 ## 常见工作流
 
@@ -154,12 +154,12 @@ targets:
 1. Manager 状态：`vmware-nsx health manager-status`
 2. 传输节点：`vmware-nsx health transport-nodes`
 3. Edge 集群：`vmware-nsx health edge-clusters`
-4. 告警：`vmware-nsx health alarms`
+4. 告警：`vmware-nsx health alarms --severity HIGH`（精确匹配单一级别，需逐档查询）
 
 ### 排查 VM 连通性
 
-1. 查找 VM 所在 Segment：`vmware-nsx troubleshoot vm-segment my-vm-01`
-2. 检查端口状态：`vmware-nsx troubleshoot port-status <port-id>`
+1. 查找 VM 所在 Segment：`vmware-nsx troubleshoot vm-segment <vm-display-name>`
+2. 检查端口实现状态：`vmware-nsx troubleshoot port-status <segment-id>`（该 Segment 全部端口的 attachment / realized bindings / 传输节点）
 3. 检查路由：`vmware-nsx gateway routes-t1 app-t1`
 4. 检查 BGP：`vmware-nsx gateway bgp-neighbors tier0-gw`
 
@@ -194,10 +194,11 @@ vmware-nsx ippool create tep-pool
 vmware-nsx ippool add-subnet tep-pool --start 192.168.100.10 --end 192.168.100.50 --cidr 192.168.100.0/24
 
 # 健康与排障
-vmware-nsx health alarms
+vmware-nsx health alarms --severity HIGH   # 精确匹配：LOW | MEDIUM | HIGH | CRITICAL
 vmware-nsx health transport-nodes
 vmware-nsx health manager-status
-vmware-nsx troubleshoot vm-segment my-vm-01
+vmware-nsx troubleshoot vm-segment my-vm-01          # VM 显示名
+vmware-nsx troubleshoot port-status app-web-seg      # Segment ID
 
 # 环境诊断
 vmware-nsx doctor

@@ -22,14 +22,15 @@ def list_alarms(
     client: NsxClient,
     severity: str = "MEDIUM",
 ) -> list[dict]:
-    """List alarms filtered by minimum severity.
+    """List alarms filtered by severity (exact match).
 
-    Severity levels (ascending): LOW, MEDIUM, HIGH, CRITICAL.
-    The filter returns alarms at the specified severity and above.
+    Severity levels: LOW, MEDIUM, HIGH, CRITICAL.
+    The NSX API severity filter is an exact match — it returns only
+    alarms at the specified severity, not higher severities.
 
     Args:
         client: Authenticated NSX API client.
-        severity: Minimum severity filter (default "MEDIUM").
+        severity: Severity filter, exact match (default "MEDIUM").
 
     Returns:
         List of alarm dicts with sanitized messages.
@@ -41,12 +42,11 @@ def list_alarms(
             f"Must be one of: {', '.join(sorted(valid_severities))}"
         )
 
-    # Management API endpoint for alarms
-    data = client.get(
+    # Management API endpoint for alarms (paginated)
+    items = client.get_all(
         "/api/v1/alarms",
         params={"severity": severity.upper()},
     )
-    items = data.get("results", [])
 
     return [
         {
@@ -85,25 +85,33 @@ def get_transport_node_status(client: NsxClient, node_id: str) -> dict:
         Dict with node connectivity, tunnel, and pNIC status.
     """
     data = client.get(f"/api/v1/transport-nodes/{node_id}/status")
+    # TransportNodeStatus (NSX 4.2): mgmt_connection_status is a plain
+    # string; tunnel_status is a TunnelStatusCount; pnic_status and
+    # control_connection_status are StatusCount structs.
+    tunnel = data.get("tunnel_status") or {}
+    pnic = data.get("pnic_status") or {}
     return {
         "node_id": node_id,
         "status": data.get("status", ""),
-        "node_deployment_state": data.get("node_deployment_state", {}),
         "control_connection_status": sanitize(
-            data.get("control_connection_status", {}).get("status", "")
+            (data.get("control_connection_status") or {}).get("status", "")
         ),
         "mgmt_connection_status": sanitize(
-            data.get("mgmt_connection_status", {}).get("status", "")
+            data.get("mgmt_connection_status", "")
         ),
         "tunnel_status": {
-            "status": data.get("host_node_deployment_status", {}).get(
-                "lcp_connectivity_status", ""
-            ),
-            "bfd_status": data.get("host_node_deployment_status", {}).get(
-                "lcp_connectivity_status_details", []
-            ),
+            "status": tunnel.get("status", ""),
+            "up_count": tunnel.get("up_count", 0),
+            "down_count": tunnel.get("down_count", 0),
+            "degraded_count": tunnel.get("degraded_count", 0),
+            "bfd_status": tunnel.get("bfd_status", {}),
         },
-        "pnic_status": data.get("pnic_bond_status", []),
+        "pnic_status": {
+            "status": pnic.get("status", ""),
+            "up_count": pnic.get("up_count", 0),
+            "down_count": pnic.get("down_count", 0),
+            "degraded_count": pnic.get("degraded_count", 0),
+        },
     }
 
 
@@ -130,8 +138,15 @@ def get_edge_cluster_status(client: NsxClient, cluster_id: str) -> dict:
         "member_count": len(members),
         "members": [
             {
+                # EdgeClusterMemberStatus.transport_node is a
+                # ResourceReference (target_id / target_display_name).
                 "transport_node_id": sanitize(
-                    m.get("transport_node_id", "")
+                    (m.get("transport_node") or {}).get("target_id", "")
+                ),
+                "transport_node_name": sanitize(
+                    (m.get("transport_node") or {}).get(
+                        "target_display_name", ""
+                    )
                 ),
                 "status": m.get("status", ""),
             }
@@ -168,10 +183,10 @@ def get_manager_status(client: NsxClient) -> dict:
         "nodes": [
             {
                 "uuid": sanitize(n.get("uuid", "")),
-                "mgmt_cluster_listen_addr": sanitize(
-                    n.get("mgmt_cluster_listen_addr", {}).get(
-                        "ip_address", ""
-                    )
+                # ManagementPlaneBaseNodeInfo.mgmt_cluster_listen_ip_address
+                # is a plain string in NSX 4.2.
+                "mgmt_cluster_listen_ip_address": sanitize(
+                    n.get("mgmt_cluster_listen_ip_address", "")
                 ),
             }
             for n in nodes

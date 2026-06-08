@@ -214,7 +214,7 @@ def list_transport_zones(target: Optional[str] = None) -> list[dict]:
     create_segment, whose transport_zone_path is
     "/infra/sites/default/enforcement-points/default/transport-zones/<id>"
     using the id returned here. Returns one dict per zone: id, display_name,
-    transport_type (e.g. OVERLAY_STANDARD or VLAN_BACKED), host_switch_name.
+    transport_type (e.g. OVERLAY_STANDARD or VLAN_BACKED).
     All zones are returned (typically under 20; no pagination). On failure
     returns a single-element list containing {"error", "hint"}.
 
@@ -297,8 +297,10 @@ def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
     locale-service, its BGP config and configured neighbors (Policy API), plus
     realized neighbor session state (Management API) where available. Returns
     tier0_id, locale-service info, BGP config (local AS, enabled, ECMP),
-    neighbors (peer IP, remote ASN), and session status; includes a hint when
-    the gateway has no locale-services. On failure returns {"error", "hint"}.
+    neighbors (peer IP, remote ASN, hold_down_time, keep_alive_time), and
+    session status (connection_state, in/out prefix counts); includes a hint
+    when the gateway has no locale-services. On failure returns
+    {"error", "hint"}.
 
     Args:
         tier0_id: Tier-0 gateway ID, as returned by list_tier0_gateways.
@@ -380,17 +382,24 @@ def get_ip_pool_usage(pool_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nsx_alarms(target: Optional[str] = None) -> list[dict]:
-    """[READ] Get all active NSX alarms with severity, feature, description, and entity.
+def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> list[dict]:
+    """[READ] Get active NSX alarms at one severity, with feature, description, and entity.
+
+    Note: the NSX severity filter is an EXACT match — "MEDIUM" returns only
+    MEDIUM alarms, not MEDIUM-and-above. Query each severity separately to
+    build a full picture. Results follow pagination cursors (all alarms at
+    that severity are returned).
 
     Args:
+        severity: Exact severity to filter on: LOW, MEDIUM, HIGH, or
+            CRITICAL (default "MEDIUM").
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
         from vmware_nsx.ops.health import list_alarms as _list_alarms
 
         client = _get_connection(target)
-        return _list_alarms(client)
+        return _list_alarms(client, severity=severity)
     except Exception as e:
         return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
 
@@ -403,10 +412,11 @@ def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dic
     No side effects. Use after list_transport_nodes (which supplies node IDs)
     when a node looks degraded or overlay tunnels are suspect; for cluster-wide
     edge health use get_edge_cluster_status instead. Returns: node_id, status
-    (e.g. UP, DEGRADED, DOWN, UNKNOWN), node_deployment_state,
-    control_connection_status and mgmt_connection_status (controller/manager
-    connectivity), tunnel_status (LCP connectivity plus BFD details), and
-    pnic_status. On failure returns {"error", "hint"} instead of raising.
+    (e.g. UP, DEGRADED, DOWN, UNKNOWN), control_connection_status and
+    mgmt_connection_status (controller/manager connectivity), tunnel_status
+    (status plus up/down/degraded tunnel counts and BFD counters), and
+    pnic_status (up/down/degraded pNIC counts). On failure returns
+    {"error", "hint"} instead of raising.
 
     Args:
         node_id: Transport node UUID, as returned by list_transport_nodes.
@@ -463,36 +473,49 @@ def get_nsx_manager_status(target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_logical_port_status(port_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Check logical port operational status (admin state, link state, attachment).
+def get_logical_port_status(segment_id: str, target: Optional[str] = None) -> dict:
+    """[READ] Check realized state of all ports on a segment (first 50 ports).
+
+    For each port returns admin_state, attachment (type/id), and the
+    realized state from the Policy API: attached (attachment present),
+    realized_bindings_count, and transport_node_ids (nodes realizing the
+    port). NSX does not expose a single UP/DOWN flag per segment port —
+    an attached port with realized bindings on at least one transport
+    node is healthy.
 
     Args:
-        port_id: The logical port ID.
+        segment_id: The segment ID whose ports to inspect, as returned by
+            list_segments.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
         from vmware_nsx.ops.troubleshoot import get_logical_port_status as _get_port
 
         client = _get_connection(target)
-        return _get_port(client, port_id)
+        return _get_port(client, segment_id)
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def get_segment_port_for_vm(vm_id: str, target: Optional[str] = None) -> dict:
-    """[READ] Find which segment a VM is attached to via its VIF attachment.
+def get_segment_port_for_vm(vm_display_name: str, target: Optional[str] = None) -> dict:
+    """[READ] Find which segment(s) a VM is attached to via its VIF attachments.
+
+    Looks up the VM in the NSX fabric inventory by display name, fetches its
+    VIFs (/api/v1/fabric/vifs), and matches segment ports whose attachment id
+    equals a VIF's lport_attachment_id. Returns VM info (external_id, host,
+    power state) and matched_ports (segment id/name, port id/name).
 
     Args:
-        vm_id: The VM external ID (BIOS UUID or instance UUID from vCenter).
+        vm_display_name: The VM display name as shown in vCenter/NSX inventory.
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
         from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm as _get_vm_seg
 
         client = _get_connection(target)
-        return _get_vm_seg(client, vm_id)
+        return _get_vm_seg(client, vm_display_name)
     except Exception as e:
         return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
 
@@ -712,6 +735,10 @@ def update_tier1_gateway(
 def delete_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> str:
     """[WRITE] Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
 
+    Also removes the gateway's "default" locale-service first (the Policy
+    API refuses to delete a Tier-1 that still has children); a missing
+    locale-service is ignored.
+
     Args:
         tier1_id: The Tier-1 gateway ID to delete.
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -790,7 +817,8 @@ def create_nat_rule(
         action: NAT action: "SNAT", "DNAT", or "REFLEXIVE" (default "DNAT").
         source_network: Source network CIDR (required for SNAT).
         destination_network: Destination network CIDR (required for DNAT).
-        translated_network: Translated network/IP address.
+        translated_network: Translated network/IP address (required for
+            SNAT, DNAT, and REFLEXIVE).
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:

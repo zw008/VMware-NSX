@@ -70,12 +70,20 @@ def get_logical_port_status(client: NsxClient, segment_id: str) -> dict:
                     attachment.get("id", "")
                 ),
                 "admin_state": p.get("admin_state", "UP"),
+                # SegmentPortState (NSX 4.2) has no "state" field; report
+                # what it actually carries: attachment presence, realized
+                # bindings, and the transport nodes realizing the port.
                 "realized_state": {
-                    "state": realized_state.get("state", "UNKNOWN"),
-                    "details": sanitize(
-                        str(realized_state.get("details", "")),
-                        max_len=200,
+                    "attached": bool(realized_state.get("attachment")),
+                    "realized_bindings_count": len(
+                        realized_state.get("realized_bindings") or []
                     ),
+                    "transport_node_ids": [
+                        sanitize(str(t))
+                        for t in (
+                            realized_state.get("transport_node_ids") or []
+                        )
+                    ],
                 },
             }
         )
@@ -132,14 +140,21 @@ def get_segment_port_for_vm(
     vm = vms[0]
     vm_external_id = vm.get("external_id", "")
 
-    # Step 2: Get VIF attachments for this VM
-    vifs = vm.get("virtual_interfaces", [])
-    vif_external_ids = [
-        vif.get("external_id", "") for vif in vifs if vif.get("external_id")
+    # Step 2: Get VIFs for this VM — the fabric VirtualMachine object has
+    # no virtual_interfaces field; VIFs come from the dedicated endpoint.
+    vif_data = client.get(
+        "/api/v1/fabric/vifs",
+        params={"owner_vm_id": vm_external_id},
+    )
+    vifs = vif_data.get("results", [])
+    vif_attachment_ids = [
+        vif.get("lport_attachment_id", "")
+        for vif in vifs
+        if vif.get("lport_attachment_id")
     ]
 
-    # Step 3: Search for segment ports with matching VIF attachments
-    # Query all segments and their ports to find the match
+    # Step 3: Search for segment ports whose attachment.id matches a VIF's
+    # lport_attachment_id.
     segments = client.get_all("/policy/api/v1/infra/segments")
 
     matched_ports: list[dict] = []
@@ -156,11 +171,7 @@ def get_segment_port_for_vm(
             attachment = p.get("attachment", {})
             attachment_id = attachment.get("id", "")
 
-            # Match by VIF external ID or VM external ID
-            if attachment_id in vif_external_ids or (
-                attachment.get("type") == "VIF"
-                and attachment_id == vm_external_id
-            ):
+            if attachment_id and attachment_id in vif_attachment_ids:
                 matched_ports.append(
                     {
                         "segment_id": sanitize(seg_id),

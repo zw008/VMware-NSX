@@ -76,12 +76,12 @@ Use `--dry-run` to preview any write command first.
 1. Manager status: `vmware-nsx health manager-status`
 2. Transport nodes: `vmware-nsx health transport-nodes`
 3. Edge clusters: `vmware-nsx health edge-clusters`
-4. Alarms: `vmware-nsx health alarms`
+4. Alarms: `vmware-nsx health alarms --severity HIGH` (exact-match filter; query each severity separately)
 
 ### Troubleshoot VM Connectivity
 
-1. Find VM's segment: `vmware-nsx troubleshoot vm-segment my-vm-01`
-2. Check port status: `vmware-nsx troubleshoot port-status <port-id>`
+1. Find VM's segment: `vmware-nsx troubleshoot vm-segment <vm-display-name>`
+2. Check port realized state: `vmware-nsx troubleshoot port-status <segment-id>` (all ports on the segment: attachment, realized bindings, transport nodes)
 3. Check routes: `vmware-nsx gateway routes-t1 app-t1`
 4. Check BGP: `vmware-nsx gateway bgp-neighbors tier0-gw`
 
@@ -95,8 +95,8 @@ Use `--dry-run` to preview any write command first.
 | NAT | `list_nat_rules`, `get_nat_rule`, `create_nat_rule`, `update_nat_rule`, `delete_nat_rule` | Read/Write |
 | Static Routes | `list_static_routes`, `create_static_route`, `delete_static_route` | Read/Write |
 | IP Pools | `list_ip_pools`, `get_ip_pool_allocations`, `create_ip_pool`, `create_ip_pool_subnet` | Read/Write |
-| Health | `get_nsx_alarms`, `get_transport_node_status`, `get_edge_cluster_status`, `get_manager_cluster_status` | Read |
-| Troubleshoot | `get_logical_port_status`, `find_vm_segment` | Read |
+| Health | `list_nsx_alarms` (per-severity, exact match), `get_transport_node_status`, `get_edge_cluster_status`, `get_nsx_manager_status` | Read |
+| Troubleshoot | `get_logical_port_status` (realized state of all ports on a segment), `get_segment_port_for_vm` (lookup by VM display name) | Read |
 
 ## CLI
 
@@ -129,10 +129,11 @@ vmware-nsx ippool create tep-pool
 vmware-nsx ippool add-subnet tep-pool --start 192.168.100.10 --end 192.168.100.50 --cidr 192.168.100.0/24
 
 # Health & Troubleshooting
-vmware-nsx health alarms
+vmware-nsx health alarms --severity HIGH   # exact match: LOW | MEDIUM | HIGH | CRITICAL
 vmware-nsx health transport-nodes
 vmware-nsx health manager-status
-vmware-nsx troubleshoot vm-segment my-vm-01
+vmware-nsx troubleshoot vm-segment my-vm-01          # VM display name
+vmware-nsx troubleshoot port-status app-web-seg      # segment ID
 
 # Diagnostics
 vmware-nsx doctor
