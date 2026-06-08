@@ -1,3 +1,42 @@
+## v1.5.32 (2026-06-08) — Response parsing fixed against official NSX 4.2 SDK + 2 CLI repairs
+
+A family-wide spec audit found the status/troubleshooting read paths parsed
+fields that don't exist on the official response models (silently returning
+empty values), and two CLI commands that never worked.
+
+### Fixed — response parsing (verified against nsx-policy/nsx SDK 4.2 models)
+- Transport node status: `tunnel_status`/`pnic_status` StatusCount parsing;
+  invented `node_deployment_state`/`pnic_bond_status`/`lcp_connectivity_status`
+  removed; `mgmt_connection_status` is a plain string.
+- Edge cluster member status via `transport_node.target_id`/`target_display_name`.
+- Manager cluster: `mgmt_cluster_listen_ip_address` is a plain string.
+- BGP: config fields `hold_down_time`/`keep_alive_time`; prefix counters now
+  labeled `in_prefix_count`/`out_prefix_count` (were mislabeled as messages).
+- Port status: SegmentPortState has no UP/DOWN field — output now reports
+  attachment, realized-bindings count, and transport node IDs honestly.
+- VM-to-segment lookup via `GET /api/v1/fabric/vifs?owner_vm_id=` matching
+  `lport_attachment_id` (the previously read `virtual_interfaces` field
+  doesn't exist — the tool always returned empty matches).
+- Inventory: transport zone `host_switch_name` removed (not a Policy TZ field);
+  node type from `node_deployment_info.resource_type` (HostNode/EdgeNode).
+- Alarms: cursor pagination + exact-match `severity` filter exposed on CLI/MCP.
+
+### Fixed — CLI commands that never worked
+- `gateway configure-tier0-bgp` passed kwargs ops never accepted (TypeError on
+  every run); reworked to the real BGP-settings capability
+  (`--local-as/--enabled/--ecmp/--inter-sr-ibgp`; neighbor creation is a
+  separate API and is not exposed).
+- `network list-static-routes` crashed rendering next-hop dicts.
+
+### Hardening
+- REFLEXIVE NAT rules now require `translated_network`.
+- `delete_tier1_gateway` removes the default locale-service first.
+
+### Defense
+- New spec-conformance regression: every API call AST-checked against 2530
+  official path templates vendored from the NSX 4.2 SDKs
+  (`tests/eval/spec/nsx_api_operations.json`).
+
 ## v1.5.30 (2026-06-07) — Fix 4 broken gateway/route/pool tools + tool description quality
 
 ### Fixed (critical)
