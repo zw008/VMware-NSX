@@ -164,7 +164,8 @@ def get_segment_port_for_vm(
             ports = client.get_all(
                 f"/policy/api/v1/infra/segments/{seg_id}/ports"
             )
-        except Exception:
+        except Exception as exc:
+            _log.debug("Skipping segment %s: port query failed: %s", seg_id, exc)
             continue
 
         for p in ports:

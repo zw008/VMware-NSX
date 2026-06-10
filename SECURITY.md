@@ -23,7 +23,8 @@ Do **not** open a public GitHub issue for security vulnerabilities.
 - `.env` file permissions are verified at startup (`chmod 600` required)
 - No credentials are logged, echoed, or included in audit entries
 - Each NSX Manager target uses a separate environment variable: `VMWARE_<TARGET_NAME_UPPER>_PASSWORD`
-- Certificate-based authentication is supported for NSX Manager as an alternative to username/password
+- Authentication is username/password via the NSX session-create API (form-body encoded, so
+  passwords with special characters work correctly)
 
 ### Destructive Operation Safeguards
 

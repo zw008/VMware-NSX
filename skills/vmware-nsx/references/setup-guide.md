@@ -223,22 +223,13 @@ docker run -d \
 - The `.env` file permissions are checked at startup; a warning is logged if permissions are wider than `600` (owner read/write only)
 - The `doctor` command verifies `.env` permissions and reports failures
 
-### Certificate-Based Authentication
+### Authentication
 
-For environments using Principal Identity certificates instead of password authentication:
+Authentication is username/password against the NSX session-create API. Credentials are
+form-body encoded, so passwords containing special characters are handled correctly.
+Per-target passwords come from `~/.vmware-nsx/.env` (`VMWARE_<TARGET_NAME_UPPER>_PASSWORD`).
 
-```yaml
-targets:
-  - name: nsx-prod
-    host: nsx-mgr.example.com
-    username: principal-identity-user
-    cert_path: ~/.vmware-nsx/nsx-prod.pem
-    key_path: ~/.vmware-nsx/nsx-prod.key
-    port: 443
-    verify_ssl: true
-```
-
-When `cert_path` and `key_path` are set, the password environment variable is not required for that target.
+> Principal Identity / client-certificate authentication is not currently implemented.
 
 ### Audit Logging
 

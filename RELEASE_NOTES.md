@@ -1,3 +1,14 @@
+## v1.5.35 (2026-06-10) — security hardening: safe errors; doc accuracy
+
+### Fixed
+- **MCP tools route errors through `_safe_error()`** — full detail to the server log, a
+  generic/sanitized message to the agent (no NSX response bodies / host:port leakage).
+- **Silent `except: pass`** in troubleshoot now logs at debug.
+- **Docs corrected**: removed the documented-but-unimplemented certificate-authentication
+  section; authentication is username/password via the session-create API (form-body encoded).
+
+This release aligns the whole family back to a single version (1.5.35); vmware-policy and vmware-pilot return to the shared number after sitting at 1.5.22.
+
 ## v1.5.32 (2026-06-08) — Response parsing fixed against official NSX 4.2 SDK + 2 CLI repairs
 
 A family-wide spec audit found the status/troubleshooting read paths parsed

@@ -43,12 +43,28 @@ from pathlib import Path
 from typing import Any, Optional
 
 from mcp.server.fastmcp import FastMCP
-from vmware_policy import vmware_tool
+from vmware_policy import sanitize, vmware_tool
 
 from vmware_nsx.config import load_config
 from vmware_nsx.connection import ConnectionManager
 
 logger = logging.getLogger(__name__)
+
+_DOCTOR_HINT = "Run 'vmware-nsx doctor' to verify connectivity."
+
+
+def _safe_error(exc: Exception, tool: str) -> str:
+    """Return an agent-safe error string; log full detail server-side only.
+
+    Raw NSX exception text can carry response bodies, internal paths, or
+    host:port pairs. Full traceback goes to stderr (operator-visible); the agent
+    sees only a control-char-stripped, length-capped message. Intentional
+    validation errors (ValueError/FileNotFoundError/KeyError) pass through.
+    """
+    logger.error("Tool %s failed", tool, exc_info=True)
+    if isinstance(exc, (ValueError, FileNotFoundError, KeyError)):
+        return sanitize(str(exc), 300)
+    return f"{type(exc).__name__}: operation failed."
 
 mcp = FastMCP(
     "vmware-nsx",
@@ -99,7 +115,7 @@ def list_segments(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_segments(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -125,7 +141,7 @@ def get_segment(segment_id: str, target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_segment(client, segment_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -142,7 +158,7 @@ def list_tier0_gateways(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_tier0s(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -167,7 +183,7 @@ def get_tier0_gateway(tier0_id: str, target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_tier0(client, tier0_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -184,7 +200,7 @@ def list_tier1_gateways(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_tier1s(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -202,7 +218,7 @@ def get_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_tier1(client, tier1_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -227,7 +243,7 @@ def list_transport_zones(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_tzs(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -244,7 +260,7 @@ def list_transport_nodes(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_tns(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -261,7 +277,7 @@ def list_edge_clusters(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_ecs(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -284,7 +300,7 @@ def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_nat(client, tier1_id)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -312,7 +328,7 @@ def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_bgp(client, tier0_id)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -330,7 +346,7 @@ def list_static_routes(tier1_id: str, target: Optional[str] = None) -> list[dict
         client = _get_connection(target)
         return _list_routes(client, tier1_id)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -347,7 +363,7 @@ def list_ip_pools(target: Optional[str] = None) -> list[dict]:
         client = _get_connection(target)
         return _list_pools(client)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -372,7 +388,7 @@ def get_ip_pool_usage(pool_id: str, target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_usage(client, pool_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -401,7 +417,7 @@ def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> l
         client = _get_connection(target)
         return _list_alarms(client, severity=severity)
     except Exception as e:
-        return [{"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}]
+        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -428,7 +444,7 @@ def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dic
         client = _get_connection(target)
         return _get_tn_status(client, node_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -446,7 +462,7 @@ def get_edge_cluster_status(cluster_id: str, target: Optional[str] = None) -> di
         client = _get_connection(target)
         return _get_ec_status(client, cluster_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -463,7 +479,7 @@ def get_nsx_manager_status(target: Optional[str] = None) -> dict:
         client = _get_connection(target)
         return _get_mgr_status(client)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -494,7 +510,7 @@ def get_logical_port_status(segment_id: str, target: Optional[str] = None) -> di
         client = _get_connection(target)
         return _get_port(client, segment_id)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -517,7 +533,7 @@ def get_segment_port_for_vm(vm_display_name: str, target: Optional[str] = None) 
         client = _get_connection(target)
         return _get_vm_seg(client, vm_display_name)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -574,7 +590,7 @@ def create_segment(
             subnets=parsed_subnets,
         )
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
@@ -604,7 +620,7 @@ def update_segment(
             update_kwargs["subnets"] = [{"gateway_address": subnet}]
         return _update(client, segment_id, **update_kwargs)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
@@ -682,7 +698,7 @@ def create_tier1_gateway(
             edge_cluster_path=edge_cluster_path,
         )
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
@@ -727,7 +743,7 @@ def update_tier1_gateway(
             ]
         return _update(client, tier1_id, **updates)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
@@ -790,7 +806,7 @@ def configure_tier0_bgp(
         }
         return _configure(client, tier0_id, locale_service_id, bgp_config)
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -833,7 +849,7 @@ def create_nat_rule(
             translated_network=translated_network,
         )
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
@@ -908,7 +924,7 @@ def create_static_route(
             next_hops=[{"ip_address": next_hop}],
         )
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
@@ -993,7 +1009,7 @@ def create_ip_pool(
             subnets=[subnet],
         )
     except Exception as e:
-        return {"error": str(e), "hint": "Run 'vmware-nsx doctor' to verify connectivity."}
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 # ---------------------------------------------------------------------------
