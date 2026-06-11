@@ -497,8 +497,7 @@ def test_delete_tier1_gateway_removes_default_locale_service_first() -> None:
     """Policy API refuses deleting a Tier-1 with children; the default
     locale-service (possibly created by create_tier1_gateway) goes first,
     ignoring 404 when absent."""
-    import httpx
-
+    from vmware_nsx.connection import NsxApiError
     from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway
 
     # Case 1: locale-service exists — deleted first, then the gateway.
@@ -512,9 +511,10 @@ def test_delete_tier1_gateway_removes_default_locale_service_first() -> None:
     assert result["deleted"] is True
 
     # Case 2: locale-service absent (404) — ignored, gateway still deleted.
+    # Since the central _request() translation, the connection layer raises
+    # NsxApiError (not httpx.HTTPStatusError) for HTTP error statuses.
     client = _mock_client()
-    resp404 = httpx.Response(404, request=httpx.Request("DELETE", "https://nsx/x"))
-    err = httpx.HTTPStatusError("404", request=resp404.request, response=resp404)
+    err = NsxApiError("404", status_code=404, method="DELETE", path="/x")
     client.delete.side_effect = [err, None]
     result = delete_tier1_gateway(client, "t1-del")
     assert result["deleted"] is True

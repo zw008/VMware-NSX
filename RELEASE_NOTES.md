@@ -1,3 +1,20 @@
+## v1.5.36 (2026-06-12) — centralized HTTP error translation + SKILL.md accuracy
+
+### Fixed
+- **404/5xx no longer reach users as tracebacks (CLI) or opaque "operation failed" (MCP)** — a new
+  `NsxApiError` + central `_request()` translates status codes to teaching hints, retries transient
+  5xx once on GETs only, and re-auths once on 401 (a real 403 surfaces as a permission error, and
+  writes are never blindly re-sent). Four delete tools no longer leak raw exception text.
+- **VLAN range parsing fixed** — `segment create --vlan 100-200` created two discrete VLANs instead
+  of the range; `dhcp_ranges` on a subnet are no longer silently dropped.
+- **`is_alive` liveness probe uses a cheap any-role Policy-API GET** (`/policy/api/v1/infra`) instead
+  of the privileged Manager-API path, so least-privilege accounts don't trigger reconnect churn.
+
+### Changed
+- SKILL.md / cli-reference regenerated from the live tool registry: **32 tools (20 read / 12 write)**,
+  ~11 nonexistent tool names removed, and the false "all writes support dry-run" claim corrected
+  (dry-run is CLI-only).
+
 ## v1.5.35 (2026-06-10) — security hardening: safe errors; doc accuracy
 
 ### Fixed

@@ -1,6 +1,9 @@
 # CLI Reference
 
-Complete command reference for `vmware-nsx` CLI.
+Complete command reference for the `vmware-nsx` CLI. Command groups:
+`inventory`, `networking`, `health`, `troubleshoot` (read-only) and
+`segment`, `gateway`, `nat`, `route`, `ip-pool` (write), plus `doctor`,
+`mcp`, and `mcp-config`.
 
 ## Global Options
 
@@ -8,617 +11,449 @@ All commands accept these options:
 
 | Option | Description |
 |--------|-------------|
-| `--target <name>` | Target name from `~/.vmware-nsx/config.yaml` (defaults to first target) |
-| `--config <path>` | Override config file path |
+| `--target`, `-t <name>` | Target name from `~/.vmware-nsx/config.yaml` (defaults to the configured default target) |
+| `--config`, `-c <path>` | Override config file path |
 | `--help` | Show command help |
+
+Write commands additionally accept:
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | Print the API call that would be made without executing it |
+
+**Error handling**: operational failures (connection refused, HTTP 4xx/5xx
+from NSX Manager, missing config) print a single red `Error: ...` line with
+a remediation hint and exit with code 1 — no Python traceback.
 
 ---
 
-## Segment Commands
+## Inventory Commands (read-only)
 
-### `segment list`
+### `inventory list-segments`
 
-List all segments with type, subnet, gateway, and transport zone.
+List all network segments with type, subnet, admin state, and port count.
 
 ```bash
-vmware-nsx segment list
-vmware-nsx segment list --target nsx-prod
+vmware-nsx inventory list-segments
+vmware-nsx inventory list-segments --target nsx-prod
 ```
 
-Output columns: Name, ID, Type (OVERLAY/VLAN), Subnet, Gateway, Transport Zone, Admin State.
+### `inventory get-segment`
 
-### `segment get`
-
-Get detailed information about a specific segment.
+Get detailed info for a specific segment.
 
 ```bash
-vmware-nsx segment get app-web-seg
+vmware-nsx inventory get-segment app-web-seg
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
 | `segment_id` | Yes | Segment ID (Policy API ID, not display name) |
 
-Output: JSON with `id`, `display_name`, `type`, `subnets`, `connectivity_path` (linked gateway), `transport_zone_path`, `admin_state`, `tags`, `description`.
+### `inventory list-tier0s`
 
-### `segment create`
-
-Create a new overlay or VLAN segment.
+List all Tier-0 gateways with HA mode and transit subnets.
 
 ```bash
-vmware-nsx segment create app-web-seg \
-  --gateway app-t1 \
-  --subnet 10.10.1.1/24 \
-  --transport-zone tz-overlay
-
-vmware-nsx segment create vlan-seg-100 \
-  --vlan-ids 100 \
-  --transport-zone tz-vlan \
-  --dry-run
+vmware-nsx inventory list-tier0s
 ```
 
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `name` | Yes | - | Segment ID and display name |
-| `--gateway` | No | - | Tier-1 gateway to connect to |
-| `--subnet` | No | - | Gateway CIDR (e.g., `10.10.1.1/24`) |
-| `--transport-zone` | Yes | - | Transport zone name or path |
-| `--vlan-ids` | No | - | VLAN ID(s) for VLAN-backed segments |
-| `--description` | No | `""` | Description |
-| `--tags` | No | `[]` | Tags in `key:value` format, comma-separated |
-| `--dry-run` | No | `false` | Preview without executing |
+### `inventory get-tier0`
 
-**Safety**: Requires double confirmation. Transport zone and gateway (if specified) are validated before creation.
-
-### `segment update`
-
-Update segment properties.
+Get detailed info for a Tier-0 gateway.
 
 ```bash
-vmware-nsx segment update app-web-seg --description "Production web tier"
-vmware-nsx segment update app-web-seg --tags "env:prod,team:web" --dry-run
+vmware-nsx inventory get-tier0 tier0-gw
 ```
 
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `segment_id` | Yes | - | Segment ID |
-| `--description` | No | - | New description |
-| `--tags` | No | - | New tags (replaces existing) |
-| `--dry-run` | No | `false` | Preview without executing |
+### `inventory list-tier1s`
 
-**Safety**: Requires double confirmation. Fetches current segment state before updating.
-
-### `segment delete`
-
-Delete a segment.
+List all Tier-1 gateways with linked Tier-0 path and route advertisement.
 
 ```bash
-vmware-nsx segment delete app-web-seg
-vmware-nsx segment delete app-web-seg --dry-run
+vmware-nsx inventory list-tier1s
 ```
 
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `segment_id` | Yes | - | Segment ID |
-| `--force` | No | `false` | Skip connected-port check |
-| `--dry-run` | No | `false` | Preview without executing |
+### `inventory get-tier1`
 
-**Safety**: Requires double confirmation. Checks for connected logical ports before deletion — refuses to delete if ports exist unless `--force` is used.
-
-### `segment ports`
-
-List logical ports on a segment.
+Get detailed info for a Tier-1 gateway.
 
 ```bash
-vmware-nsx segment ports app-web-seg
+vmware-nsx inventory get-tier1 app-t1
 ```
 
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `segment_id` | Yes | Segment ID |
+### `inventory list-transport-zones`
 
-Output: JSON array with `id`, `display_name`, `admin_state`, `attachment` (VM or router interface), `address_bindings`.
+List all transport zones with type (OVERLAY / VLAN).
+
+```bash
+vmware-nsx inventory list-transport-zones
+```
+
+### `inventory list-transport-nodes`
+
+List all transport nodes with node type and status.
+
+```bash
+vmware-nsx inventory list-transport-nodes
+```
+
+### `inventory list-edge-clusters`
+
+List all edge clusters with member count and deployment type.
+
+```bash
+vmware-nsx inventory list-edge-clusters
+```
 
 ---
 
-## Gateway Commands
+## Networking Commands (read-only)
 
-### `gateway list-t0`
+### `networking list-nat-rules`
 
-List all Tier-0 gateways.
-
-```bash
-vmware-nsx gateway list-t0
-```
-
-Output columns: Name, ID, HA Mode (ACTIVE_STANDBY/ACTIVE_ACTIVE), Edge Cluster, Failover Mode.
-
-### `gateway get-t0`
-
-Get Tier-0 gateway details.
+List NAT rules on a Tier-1 gateway.
 
 ```bash
-vmware-nsx gateway get-t0 tier0-gw
+vmware-nsx networking list-nat-rules app-t1
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
-| `gateway_id` | Yes | Tier-0 gateway ID |
+| `tier1_id` | Yes | Tier-1 gateway ID |
 
-Output: JSON with `id`, `display_name`, `ha_mode`, `failover_mode`, `edge_cluster_path`, `interfaces`, `bgp_config`, `route_redistribution`.
+### `networking bgp-neighbors`
 
-### `gateway bgp-neighbors`
-
-List BGP neighbor sessions on a Tier-0 gateway.
+Show BGP neighbors for a Tier-0 gateway, including realized session state,
+remote ASN, hold/keep-alive timers, and prefix counts.
 
 ```bash
-vmware-nsx gateway bgp-neighbors tier0-gw
+vmware-nsx networking bgp-neighbors tier0-gw
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
-| `gateway_id` | Yes | Tier-0 gateway ID |
+| `tier0_id` | Yes | Tier-0 gateway ID |
 
-Output columns: Neighbor Address, Remote ASN, State (Established/Connect/Active/Idle), Prefixes Received, Uptime.
+### `networking list-static-routes`
 
-### `gateway routes-t0`
-
-Get the Tier-0 routing table.
+List static routes on a Tier-1 gateway.
 
 ```bash
-vmware-nsx gateway routes-t0 tier0-gw
-vmware-nsx gateway routes-t0 tier0-gw --source BGP
+vmware-nsx networking list-static-routes app-t1
 ```
 
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Tier-0 gateway ID |
-| `--source` | No | all | Filter by route source: `CONNECTED`, `STATIC`, `BGP` |
+### `networking list-ip-pools`
 
-Output: JSON array with `network`, `next_hop`, `source`, `admin_distance`, `interface`.
-
-### `gateway list-t1`
-
-List all Tier-1 gateways.
+List all IP address pools with usage summary.
 
 ```bash
-vmware-nsx gateway list-t1
+vmware-nsx networking list-ip-pools
 ```
 
-Output columns: Name, ID, Linked Tier-0, Edge Cluster, Route Advertisement.
+### `networking ip-pool-usage`
 
-### `gateway get-t1`
-
-Get Tier-1 gateway details.
+Show IP pool allocation usage.
 
 ```bash
-vmware-nsx gateway get-t1 app-t1
-```
-
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `gateway_id` | Yes | Tier-1 gateway ID |
-
-Output: JSON with `id`, `display_name`, `tier0_path`, `edge_cluster_path`, `route_advertisement_types`, `interfaces`, `tags`.
-
-### `gateway create-t1`
-
-Create a new Tier-1 gateway.
-
-```bash
-vmware-nsx gateway create-t1 app-t1 \
-  --edge-cluster edge-cluster-01 \
-  --tier0 tier0-gw
-
-vmware-nsx gateway create-t1 app-t1 \
-  --edge-cluster edge-cluster-01 \
-  --tier0 tier0-gw \
-  --route-advertisement connected,nat \
-  --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `name` | Yes | - | Gateway ID and display name |
-| `--edge-cluster` | No | - | Edge cluster name or path |
-| `--tier0` | No | - | Tier-0 gateway to link to |
-| `--route-advertisement` | No | - | Route types to advertise (comma-separated) |
-| `--description` | No | `""` | Description |
-| `--failover-mode` | No | `PREEMPTIVE` | Failover mode |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: Requires double confirmation. Edge cluster and Tier-0 gateway (if specified) are validated.
-
-### `gateway update-t1`
-
-Update Tier-1 gateway properties.
-
-```bash
-vmware-nsx gateway update-t1 app-t1 --route-advertisement connected,nat,static
-vmware-nsx gateway update-t1 app-t1 --description "App tier gateway" --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Tier-1 gateway ID |
-| `--route-advertisement` | No | - | Updated route advertisement types |
-| `--description` | No | - | New description |
-| `--tags` | No | - | New tags |
-| `--dry-run` | No | `false` | Preview without executing |
-
-### `gateway delete-t1`
-
-Delete a Tier-1 gateway.
-
-```bash
-vmware-nsx gateway delete-t1 app-t1
-vmware-nsx gateway delete-t1 app-t1 --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Tier-1 gateway ID |
-| `--force` | No | `false` | Skip connected-segment check |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: Requires double confirmation. Checks for connected segments before deletion.
-
-### `gateway routes-t1`
-
-Get the Tier-1 routing table.
-
-```bash
-vmware-nsx gateway routes-t1 app-t1
-```
-
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `gateway_id` | Yes | Tier-1 gateway ID |
-
----
-
-## NAT Commands
-
-### `nat list`
-
-List NAT rules on a gateway.
-
-```bash
-vmware-nsx nat list app-t1
-vmware-nsx nat list tier0-gw
-```
-
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `gateway_id` | Yes | Gateway ID (Tier-0 or Tier-1) |
-
-Output columns: Rule ID, Action (SNAT/DNAT/REFLEXIVE/NO_SNAT/NO_DNAT), Source Network, Destination Network, Translated Address, Enabled, Logging.
-
-### `nat get`
-
-Get NAT rule details.
-
-```bash
-vmware-nsx nat get app-t1 rule-01
-```
-
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `gateway_id` | Yes | Gateway ID |
-| `rule_id` | Yes | NAT rule ID |
-
-### `nat create`
-
-Create a NAT rule on a gateway.
-
-```bash
-# SNAT — all traffic from 10.10.1.0/24 appears as 172.16.0.10
-vmware-nsx nat create app-t1 \
-  --action SNAT \
-  --source 10.10.1.0/24 \
-  --translated 172.16.0.10
-
-# DNAT — external 172.16.0.20:443 maps to internal 10.10.1.5:443
-vmware-nsx nat create app-t1 \
-  --action DNAT \
-  --destination 172.16.0.20 \
-  --translated 10.10.1.5 \
-  --service TCP:443 \
-  --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Gateway ID |
-| `--action` | Yes | - | `SNAT`, `DNAT`, `REFLEXIVE`, `NO_SNAT`, `NO_DNAT` |
-| `--source` | No | - | Source network CIDR |
-| `--destination` | No | - | Destination network CIDR |
-| `--translated` | Yes | - | Translated IP address or CIDR |
-| `--service` | No | - | Service (e.g., `TCP:443`, `UDP:53`) |
-| `--rule-id` | No | auto | Custom rule ID |
-| `--enabled` | No | `true` | Enable the rule |
-| `--logging` | No | `false` | Enable logging |
-| `--priority` | No | `100` | Rule priority (lower = higher priority) |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: Requires double confirmation. Gateway existence verified. CIDR and IP address formats validated.
-
-### `nat update`
-
-Update an existing NAT rule.
-
-```bash
-vmware-nsx nat update app-t1 rule-01 --translated 172.16.0.11
-vmware-nsx nat update app-t1 rule-01 --enabled false --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Gateway ID |
-| `rule_id` | Yes | - | NAT rule ID |
-| `--translated` | No | - | New translated address |
-| `--enabled` | No | - | Enable or disable |
-| `--logging` | No | - | Enable or disable logging |
-| `--priority` | No | - | New priority |
-| `--dry-run` | No | `false` | Preview without executing |
-
-### `nat delete`
-
-Delete a NAT rule.
-
-```bash
-vmware-nsx nat delete app-t1 rule-01
-vmware-nsx nat delete app-t1 rule-01 --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Gateway ID |
-| `rule_id` | Yes | - | NAT rule ID |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: Requires double confirmation.
-
----
-
-## Static Route Commands
-
-### `route list`
-
-List static routes on a gateway.
-
-```bash
-vmware-nsx route list app-t1
-vmware-nsx route list tier0-gw
-```
-
-| Argument | Required | Description |
-|----------|:--------:|-------------|
-| `gateway_id` | Yes | Gateway ID (Tier-0 or Tier-1) |
-
-Output columns: Route ID, Network, Next Hop(s), Admin Distance.
-
-### `route create`
-
-Add a static route.
-
-```bash
-vmware-nsx route create app-t1 \
-  --network 192.168.100.0/24 \
-  --next-hop 10.10.1.254
-
-vmware-nsx route create app-t1 \
-  --network 0.0.0.0/0 \
-  --next-hop 10.10.1.1 \
-  --admin-distance 10 \
-  --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Gateway ID |
-| `--network` | Yes | - | Destination network CIDR |
-| `--next-hop` | Yes | - | Next-hop IP address |
-| `--admin-distance` | No | `1` | Administrative distance |
-| `--route-id` | No | auto | Custom route ID |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: Requires double confirmation. CIDR and IP validated.
-
-### `route delete`
-
-Remove a static route.
-
-```bash
-vmware-nsx route delete app-t1 route-01
-vmware-nsx route delete app-t1 route-01 --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `gateway_id` | Yes | - | Gateway ID |
-| `route_id` | Yes | - | Static route ID |
-| `--dry-run` | No | `false` | Preview without executing |
-
----
-
-## IP Pool Commands
-
-### `ippool list`
-
-List all IP address pools.
-
-```bash
-vmware-nsx ippool list
-```
-
-Output columns: Pool ID, Display Name, Subnets, Total IPs, Allocated, Free.
-
-### `ippool allocations`
-
-Show allocated IP addresses from a pool.
-
-```bash
-vmware-nsx ippool allocations pool-01
+vmware-nsx networking ip-pool-usage pool-01
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
 | `pool_id` | Yes | IP pool ID |
 
-Output: JSON array with `allocation_id`, `ip_address`, `intent_path` (consumer).
-
-### `ippool create`
-
-Create a new IP address pool.
-
-```bash
-vmware-nsx ippool create tep-pool --description "TEP IP pool"
-vmware-nsx ippool create tep-pool --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `name` | Yes | - | Pool ID and display name |
-| `--description` | No | `""` | Description |
-| `--dry-run` | No | `false` | Preview without executing |
-
-### `ippool add-subnet`
-
-Add a subnet range to an IP pool.
-
-```bash
-vmware-nsx ippool add-subnet tep-pool \
-  --start 192.168.100.10 \
-  --end 192.168.100.50 \
-  --cidr 192.168.100.0/24 \
-  --gateway 192.168.100.1
-
-vmware-nsx ippool add-subnet tep-pool \
-  --start 192.168.100.10 \
-  --end 192.168.100.50 \
-  --cidr 192.168.100.0/24 \
-  --dry-run
-```
-
-| Argument/Option | Required | Default | Description |
-|-----------------|:--------:|---------|-------------|
-| `pool_id` | Yes | - | IP pool ID |
-| `--start` | Yes | - | Range start IP |
-| `--end` | Yes | - | Range end IP |
-| `--cidr` | Yes | - | Subnet CIDR |
-| `--gateway` | No | - | Default gateway for the subnet |
-| `--dry-run` | No | `false` | Preview without executing |
-
-**Safety**: IP range validated (start < end, both within CIDR).
-
 ---
 
-## Health Commands
+## Health Commands (read-only)
 
 ### `health alarms`
 
-List active NSX alarms.
+Show active NSX alarms at one severity (exact match, not "and above").
 
 ```bash
 vmware-nsx health alarms
 vmware-nsx health alarms --severity CRITICAL
-vmware-nsx health alarms --severity HIGH
 ```
 
-| Option | Required | Default | Description |
-|--------|:--------:|---------|-------------|
-| `--severity` | No | all | Filter by severity: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--severity` | `MEDIUM` | Exact severity filter: LOW, MEDIUM, HIGH, CRITICAL |
 
-Output columns: Alarm ID, Severity, Feature, Entity, Description, Last Reported.
+### `health transport-node-status`
 
-### `health transport-nodes`
-
-Show transport node connectivity and configuration status.
+Check status of a specific transport node.
 
 ```bash
-vmware-nsx health transport-nodes
+vmware-nsx health transport-node-status <node-id>
 ```
 
-Output columns: Node Name, Node Type (HOST/EDGE), Status (UP/DOWN/DEGRADED), Control Connectivity, Management Connectivity, Tunnel Status.
+### `health edge-cluster-status`
 
-### `health edge-clusters`
-
-Show edge cluster member status.
+Check status of an edge cluster.
 
 ```bash
-vmware-nsx health edge-clusters
+vmware-nsx health edge-cluster-status <cluster-id>
 ```
-
-Output columns: Cluster Name, Member Count, Members (name + status), Allocation Profile, Failover Mode.
 
 ### `health manager-status`
 
-Show NSX Manager cluster health.
+Show NSX Manager cluster status.
 
 ```bash
 vmware-nsx health manager-status
 ```
 
-Output: JSON with `cluster_id`, `overall_status`, `nodes` (each with `fqdn`, `status`, `role` — MANAGER/POLICY/CONTROLLER), `mgmt_cluster_status`, `control_cluster_status`.
-
 ---
 
-## Troubleshooting Commands
+## Troubleshoot Commands (read-only)
 
 ### `troubleshoot port-status`
 
-Get port attachment and realized state for all ports on a segment.
+Check realized state of all ports on a segment.
 
 ```bash
-vmware-nsx troubleshoot port-status <segment-id>
+vmware-nsx troubleshoot port-status app-web-seg
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
-| `segment_id` | Yes | Segment ID whose ports to inspect |
-
-Output: JSON per port with `id`, `display_name`, `attachment_type`, `attachment_id`, `admin_state`, and `realized_state` (attachment presence, realized-bindings count, transport node IDs). Note: the Policy API exposes no simple UP/DOWN operational flag for ports — attachment + realized bindings are the actual health signals.
+| `segment_id` | Yes | Segment ID |
 
 ### `troubleshoot vm-segment`
 
-Find which segment(s) a VM is connected to.
+Find which segment a VM is attached to (lookup by display name).
 
 ```bash
 vmware-nsx troubleshoot vm-segment my-vm-01
-vmware-nsx troubleshoot vm-segment "Web Server 01"
 ```
 
 | Argument | Required | Description |
 |----------|:--------:|-------------|
-| `vm_name` | Yes | VM name (searched by display name, case-insensitive) |
-
-Output: JSON with `vm_display_name`, `found`, and `matched_ports` (each with `segment_id`, `segment_name`, port attachment details). VIF matching goes through `GET /api/v1/fabric/vifs?owner_vm_id=...` against port `attachment.id`.
+| `vm_display_name` | Yes | VM display name as shown in vSphere |
 
 ---
 
-## Diagnostics
+## Segment Management (write)
 
-### `doctor`
+All write commands require **double confirmation** and support `--dry-run`.
 
-Run environment and connectivity diagnostics.
+### `segment create`
+
+Create a new overlay or VLAN-backed segment.
 
 ```bash
-vmware-nsx doctor
-vmware-nsx doctor --skip-auth
+vmware-nsx segment create app-web-seg --name "App Web" --tz <transport-zone-path> --subnet 10.10.1.1/24
+
+# VLAN-backed; --vlan accepts single IDs, lists, and ranges
+vmware-nsx segment create vlan-seg --name "VLAN seg" --tz <tz-path> --vlan '100-200' --dry-run
+```
+
+| Argument/Option | Required | Description |
+|-----------------|:--------:|-------------|
+| `segment_id` | Yes | Segment ID |
+| `--name` | Yes | Display name |
+| `--tz` | Yes | Transport zone path |
+| `--vlan` | No | VLAN ID(s): `'100'`, `'100,200'`, or range `'100-200'` (ranges are passed to NSX as range strings, not expanded) |
+| `--subnet` | No | Gateway CIDR, e.g. `192.168.1.1/24` |
+| `--dry-run` | No | Preview without executing |
+
+### `segment update`
+
+Update an existing segment's display name and/or subnet.
+
+```bash
+vmware-nsx segment update app-web-seg --name "New Name"
+vmware-nsx segment update app-web-seg --subnet 10.10.2.1/24 --dry-run
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--skip-auth` | Skip the NSX Manager authentication check (useful when NSX Manager is unreachable) |
+| `--name` | New display name |
+| `--subnet` | New gateway CIDR |
 
-Checks performed:
-1. Config file exists (`~/.vmware-nsx/config.yaml`)
-2. `.env` file exists with correct permissions (600)
-3. Targets are configured in config
-4. Network connectivity to all targets (TCP port check with 5s timeout)
-5. NSX Manager authentication (actual login via REST API)
-6. MCP server module loads successfully
+### `segment delete`
+
+Delete a segment (destructive). Warns when the segment has active ports.
+
+```bash
+vmware-nsx segment delete app-web-seg --dry-run
+vmware-nsx segment delete app-web-seg
+```
+
+---
+
+## Gateway Management (write)
+
+### `gateway create-tier1`
+
+Create a new Tier-1 gateway.
+
+```bash
+vmware-nsx gateway create-tier1 app-t1 --name "App T1" --tier0 /infra/tier-0s/tier0-gw --edge-cluster <ec-path>
+```
+
+| Argument/Option | Required | Description |
+|-----------------|:--------:|-------------|
+| `tier1_id` | Yes | Tier-1 gateway ID |
+| `--name` | Yes | Display name |
+| `--tier0` | No | Tier-0 gateway path to link |
+| `--edge-cluster` | No | Edge cluster path |
+| `--advertise` | No | Route advertisement types, comma-separated (e.g. `TIER1_CONNECTED,TIER1_NAT`) |
+
+### `gateway update-tier1`
+
+Update an existing Tier-1 gateway.
+
+```bash
+vmware-nsx gateway update-tier1 app-t1 --advertise TIER1_CONNECTED,TIER1_NAT
+```
+
+| Option | Description |
+|--------|-------------|
+| `--name` | New display name |
+| `--tier0` | New Tier-0 path |
+| `--advertise` | Route advertisement types |
+
+### `gateway delete-tier1`
+
+Delete a Tier-1 gateway (destructive). Removes the default locale-service
+first when present.
+
+```bash
+vmware-nsx gateway delete-tier1 app-t1 --dry-run
+vmware-nsx gateway delete-tier1 app-t1
+```
+
+### `gateway configure-tier0-bgp`
+
+Configure BGP settings (local AS, ECMP, inter-SR iBGP) on a Tier-0 gateway.
+BGP neighbor creation is a separate Policy API object and is not exposed —
+use `networking bgp-neighbors` to inspect neighbors.
+
+```bash
+vmware-nsx gateway configure-tier0-bgp tier0-gw --local-as 65001 --ecmp
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--local-as` | (required) | Local AS number |
+| `--enabled/--disabled` | enabled | Enable or disable BGP |
+| `--ecmp/--no-ecmp` | ecmp | Enable ECMP for BGP routes |
+| `--inter-sr-ibgp/--no-inter-sr-ibgp` | enabled | Enable inter-SR iBGP |
+| `--locale-service` | `default` | Locale-service identifier |
+
+---
+
+## NAT Management (write)
+
+### `nat create-rule`
+
+Create a NAT rule on a Tier-1 gateway.
+
+```bash
+vmware-nsx nat create-rule --tier1 app-t1 --rule-id snat-1 --action SNAT --source 10.10.1.0/24 --translated 203.0.113.10
+```
+
+| Option | Required | Default | Description |
+|--------|:--------:|---------|-------------|
+| `--tier1` | Yes | - | Tier-1 gateway ID |
+| `--rule-id` | Yes | - | NAT rule ID |
+| `--action` | No | `DNAT` | NAT action: SNAT, DNAT, REFLEXIVE |
+| `--source` | No | - | Source network CIDR |
+| `--destination` | No | - | Destination network CIDR |
+| `--translated` | No | `""` | Translated network/IP |
+
+### `nat delete-rule`
+
+Delete a NAT rule (destructive).
+
+```bash
+vmware-nsx nat delete-rule --tier1 app-t1 --rule-id snat-1 --dry-run
+vmware-nsx nat delete-rule --tier1 app-t1 --rule-id snat-1
+```
+
+---
+
+## Route Management (write)
+
+### `route create-static`
+
+Create a static route on a Tier-1 gateway.
+
+```bash
+vmware-nsx route create-static --tier1 app-t1 --route-id r1 --network 10.0.0.0/8 --next-hop 10.10.1.254
+```
+
+| Option | Required | Description |
+|--------|:--------:|-------------|
+| `--tier1` | Yes | Tier-1 gateway ID |
+| `--route-id` | Yes | Static route ID |
+| `--network` | Yes | Destination CIDR |
+| `--next-hop` | Yes | Next hop IP address |
+
+### `route delete-static`
+
+Delete a static route (destructive).
+
+```bash
+vmware-nsx route delete-static --tier1 app-t1 --route-id r1
+```
+
+---
+
+## IP Pool Management (write)
+
+### `ip-pool create`
+
+Create a new IP address pool with one allocation range.
+
+```bash
+vmware-nsx ip-pool create pool-01 --name "App Pool" --start 192.168.1.10 --end 192.168.1.100 --cidr 192.168.1.0/24 --gateway 192.168.1.1
+```
+
+| Option | Required | Description |
+|--------|:--------:|-------------|
+| `--name` | Yes | Display name |
+| `--start` | Yes | Start IP address |
+| `--end` | Yes | End IP address |
+| `--cidr` | Yes | Subnet CIDR |
+| `--gateway` | No | Gateway IP |
+
+---
+
+## Diagnostics & MCP
+
+### `doctor`
+
+Check environment, config, connectivity, and NSX Manager status.
+Exits 0 when healthy, 1 otherwise.
+
+```bash
+vmware-nsx doctor
+vmware-nsx doctor --skip-auth   # skip the NSX authentication check (faster)
+```
+
+### `mcp`
+
+Start the MCP server (stdio transport). Single-command entry point for MCP
+clients — equivalent to the legacy `vmware-nsx-mcp` console script, and
+preferred in enterprise networks because it does not re-resolve PyPI.
+
+```bash
+vmware-nsx mcp
+```
+
+### `mcp-config generate / install / list`
+
+Generate or install MCP server configuration for local AI agents
+(goose, cursor, claude-code, continue, vscode-copilot, localcowork, mcp-agent).
+
+```bash
+vmware-nsx mcp-config list
+vmware-nsx mcp-config generate --agent goose
+vmware-nsx mcp-config install --agent claude-code --yes
+```
 
 ---
 
@@ -628,6 +463,7 @@ Checks performed:
 |------|---------|
 | `0` | Success |
 | `1` | Operation failed or doctor check failed |
+| `2` | MCP server started on unsupported Python (< 3.10) |
 
 ## Environment Variables
 

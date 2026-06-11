@@ -7,8 +7,9 @@ write operations (segment, gateway, NAT, route, IP pool management) with
 
 from __future__ import annotations
 
+import functools
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Callable, TypeVar
 
 import typer
 from rich.console import Console
@@ -62,6 +63,29 @@ DryRunOption = Annotated[
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
+
+_F = TypeVar("_F", bound=Callable[..., Any])
+
+
+def _cli_errors(fn: _F) -> _F:
+    """Translate known operational errors into one red line + exit code 1.
+
+    Without this, an NsxApiError (teaching error from the connection layer),
+    a missing config file, or a bad config key surfaces as a raw Python
+    traceback in the terminal. typer.Exit/typer.Abort pass through untouched.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        from vmware_nsx.connection import NsxApiError
+
+        try:
+            return fn(*args, **kwargs)
+        except (NsxApiError, FileNotFoundError, KeyError, OSError) as exc:
+            console.print(f"[red]Error: {exc}[/]")
+            raise typer.Exit(1) from exc
+
+    return wrapper  # type: ignore[return-value]
 
 
 def _get_connection(target: str | None, config_path: Path | None = None):
@@ -142,6 +166,7 @@ def _double_confirm(
 
 
 @inventory_app.command("list-segments")
+@_cli_errors
 def inventory_list_segments(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -172,6 +197,7 @@ def inventory_list_segments(
 
 
 @inventory_app.command("get-segment")
+@_cli_errors
 def inventory_get_segment(
     segment_id: str,
     target: TargetOption = None,
@@ -187,6 +213,7 @@ def inventory_get_segment(
 
 
 @inventory_app.command("list-tier0s")
+@_cli_errors
 def inventory_list_tier0s(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -207,6 +234,7 @@ def inventory_list_tier0s(
 
 
 @inventory_app.command("get-tier0")
+@_cli_errors
 def inventory_get_tier0(
     tier0_id: str,
     target: TargetOption = None,
@@ -222,6 +250,7 @@ def inventory_get_tier0(
 
 
 @inventory_app.command("list-tier1s")
+@_cli_errors
 def inventory_list_tier1s(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -242,6 +271,7 @@ def inventory_list_tier1s(
 
 
 @inventory_app.command("get-tier1")
+@_cli_errors
 def inventory_get_tier1(
     tier1_id: str,
     target: TargetOption = None,
@@ -257,6 +287,7 @@ def inventory_get_tier1(
 
 
 @inventory_app.command("list-transport-zones")
+@_cli_errors
 def inventory_list_transport_zones(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -276,6 +307,7 @@ def inventory_list_transport_zones(
 
 
 @inventory_app.command("list-transport-nodes")
+@_cli_errors
 def inventory_list_transport_nodes(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -298,6 +330,7 @@ def inventory_list_transport_nodes(
 
 
 @inventory_app.command("list-edge-clusters")
+@_cli_errors
 def inventory_list_edge_clusters(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -323,6 +356,7 @@ def inventory_list_edge_clusters(
 
 
 @networking_app.command("list-nat-rules")
+@_cli_errors
 def networking_list_nat_rules(
     tier1_id: str,
     target: TargetOption = None,
@@ -354,6 +388,7 @@ def networking_list_nat_rules(
 
 
 @networking_app.command("bgp-neighbors")
+@_cli_errors
 def networking_bgp_neighbors(
     tier0_id: str,
     target: TargetOption = None,
@@ -396,6 +431,7 @@ def networking_bgp_neighbors(
 
 
 @networking_app.command("list-static-routes")
+@_cli_errors
 def networking_list_static_routes(
     tier1_id: str,
     target: TargetOption = None,
@@ -418,6 +454,7 @@ def networking_list_static_routes(
 
 
 @networking_app.command("list-ip-pools")
+@_cli_errors
 def networking_list_ip_pools(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -438,6 +475,7 @@ def networking_list_ip_pools(
 
 
 @networking_app.command("ip-pool-usage")
+@_cli_errors
 def networking_ip_pool_usage(
     pool_id: str,
     target: TargetOption = None,
@@ -459,6 +497,7 @@ def networking_ip_pool_usage(
 
 
 @health_app.command("alarms")
+@_cli_errors
 def health_alarms(
     severity: Annotated[
         str,
@@ -498,6 +537,7 @@ def health_alarms(
 
 
 @health_app.command("transport-node-status")
+@_cli_errors
 def health_transport_node_status(
     node_id: str,
     target: TargetOption = None,
@@ -513,6 +553,7 @@ def health_transport_node_status(
 
 
 @health_app.command("edge-cluster-status")
+@_cli_errors
 def health_edge_cluster_status(
     cluster_id: str,
     target: TargetOption = None,
@@ -528,6 +569,7 @@ def health_edge_cluster_status(
 
 
 @health_app.command("manager-status")
+@_cli_errors
 def health_manager_status(
     target: TargetOption = None,
     config: ConfigOption = None,
@@ -547,6 +589,7 @@ def health_manager_status(
 
 
 @troubleshoot_app.command("port-status")
+@_cli_errors
 def troubleshoot_port_status(
     segment_id: str,
     target: TargetOption = None,
@@ -562,6 +605,7 @@ def troubleshoot_port_status(
 
 
 @troubleshoot_app.command("vm-segment")
+@_cli_errors
 def troubleshoot_vm_segment(
     vm_display_name: str,
     target: TargetOption = None,
@@ -585,6 +629,7 @@ def troubleshoot_vm_segment(
 
 
 @segment_app.command("create")
+@_cli_errors
 def segment_create(
     segment_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -596,7 +641,7 @@ def segment_create(
     dry_run: DryRunOption = False,
 ) -> None:
     """Create a new network segment."""
-    from vmware_nsx.ops.segment_mgmt import create_segment
+    from vmware_nsx.ops.segment_mgmt import create_segment, parse_vlan_ids
 
     client, _ = _get_connection(target, config)
     params = {"display_name": display_name, "transport_zone": transport_zone, "vlan_ids": vlan_ids, "subnet": subnet}
@@ -611,9 +656,12 @@ def segment_create(
         )
         return
     _double_confirm("create segment", segment_id, _resolve_target(target), resource_type="Segment")
-    parsed_vlan_ids: list[int] | None = None
+    # '100-200' is a VLAN *range* and must reach NSX as the range string —
+    # the old `.replace("-", ",")` parse silently turned it into the two
+    # discrete VLANs 100 and 200.
+    parsed_vlan_ids: list[int | str] | None = None
     if vlan_ids is not None:
-        parsed_vlan_ids = [int(v.strip()) for v in vlan_ids.replace("-", ",").split(",") if v.strip()]
+        parsed_vlan_ids = parse_vlan_ids(vlan_ids)
     parsed_subnets: list[dict[str, str]] | None = None
     if subnet is not None:
         parsed_subnets = [{"gateway_address": subnet}]
@@ -623,6 +671,7 @@ def segment_create(
 
 
 @segment_app.command("update")
+@_cli_errors
 def segment_update(
     segment_id: str,
     display_name: Annotated[str | None, typer.Option("--name", help="New display name")] = None,
@@ -661,6 +710,7 @@ def segment_update(
 
 
 @segment_app.command("delete")
+@_cli_errors
 def segment_delete(
     segment_id: str,
     target: TargetOption = None,
@@ -698,6 +748,7 @@ def segment_delete(
 
 
 @gateway_app.command("create-tier1")
+@_cli_errors
 def gateway_create_tier1(
     tier1_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -731,6 +782,7 @@ def gateway_create_tier1(
 
 
 @gateway_app.command("update-tier1")
+@_cli_errors
 def gateway_update_tier1(
     tier1_id: str,
     display_name: Annotated[str | None, typer.Option("--name", help="New display name")] = None,
@@ -772,6 +824,7 @@ def gateway_update_tier1(
 
 
 @gateway_app.command("delete-tier1")
+@_cli_errors
 def gateway_delete_tier1(
     tier1_id: str,
     target: TargetOption = None,
@@ -801,6 +854,7 @@ def gateway_delete_tier1(
 
 
 @gateway_app.command("configure-tier0-bgp")
+@_cli_errors
 def gateway_configure_tier0_bgp(
     tier0_id: str,
     local_as: Annotated[int, typer.Option("--local-as", help="Local AS number")],
@@ -843,6 +897,7 @@ def gateway_configure_tier0_bgp(
 
 
 @nat_app.command("create-rule")
+@_cli_errors
 def nat_create_rule(
     tier1_id: Annotated[str, typer.Option("--tier1", help="Tier-1 gateway ID")],
     rule_id: Annotated[str, typer.Option("--rule-id", help="NAT rule ID")],
@@ -877,6 +932,7 @@ def nat_create_rule(
 
 
 @nat_app.command("delete-rule")
+@_cli_errors
 def nat_delete_rule(
     tier1_id: Annotated[str, typer.Option("--tier1", help="Tier-1 gateway ID")],
     rule_id: Annotated[str, typer.Option("--rule-id", help="NAT rule ID to delete")],
@@ -910,6 +966,7 @@ def nat_delete_rule(
 
 
 @route_app.command("create-static")
+@_cli_errors
 def route_create_static(
     tier1_id: Annotated[str, typer.Option("--tier1", help="Tier-1 gateway ID")],
     route_id: Annotated[str, typer.Option("--route-id", help="Static route ID")],
@@ -942,6 +999,7 @@ def route_create_static(
 
 
 @route_app.command("delete-static")
+@_cli_errors
 def route_delete_static(
     tier1_id: Annotated[str, typer.Option("--tier1", help="Tier-1 gateway ID")],
     route_id: Annotated[str, typer.Option("--route-id", help="Static route ID to delete")],
@@ -975,6 +1033,7 @@ def route_delete_static(
 
 
 @ip_pool_app.command("create")
+@_cli_errors
 def ip_pool_create(
     pool_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -1016,6 +1075,7 @@ def ip_pool_create(
 
 
 @app.command("doctor")
+@_cli_errors
 def doctor_cmd(
     skip_auth: Annotated[
         bool,
@@ -1060,6 +1120,7 @@ _AGENT_INSTALL_PATHS: dict[str, Path] = {
 
 
 @mcp_config_app.command("generate")
+@_cli_errors
 def mcp_config_generate(
     agent: Annotated[
         str,
@@ -1110,6 +1171,7 @@ def mcp_config_generate(
 
 
 @mcp_config_app.command("list")
+@_cli_errors
 def mcp_config_list() -> None:
     """List all supported agents."""
     table = Table(title="Supported Agents")
@@ -1121,6 +1183,7 @@ def mcp_config_list() -> None:
 
 
 @mcp_config_app.command("install")
+@_cli_errors
 def mcp_config_install(
     agent: Annotated[
         str,
@@ -1214,6 +1277,7 @@ def mcp_config_install(
 
 
 @app.command("mcp")
+@_cli_errors
 def mcp_cmd() -> None:
     """Start the MCP server (stdio transport).
 

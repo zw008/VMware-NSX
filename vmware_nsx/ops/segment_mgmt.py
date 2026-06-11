@@ -24,6 +24,23 @@ def _validate_id(resource_id: str) -> str:
     return resource_id
 
 
+def parse_vlan_ids(vlan_ids: str) -> list[int | str]:
+    """Parse a comma-separated VLAN spec into NSX vlan_ids entries.
+
+    Plain numbers become ints; tokens containing '-' (e.g. "100-200") pass
+    through as range strings — the NSX Policy API natively accepts VLAN
+    ranges. The old `.replace("-", ",")` parse silently turned the range
+    '100-200' into the two discrete VLANs 100 and 200.
+    """
+    parsed: list[int | str] = []
+    for token in vlan_ids.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        parsed.append(token if "-" in token else int(token))
+    return parsed
+
+
 # ---------------------------------------------------------------------------
 # Segment CRUD
 # ---------------------------------------------------------------------------
@@ -35,8 +52,8 @@ def create_segment(
     display_name: str,
     transport_zone_path: str,
     gateway_path: str | None = None,
-    subnets: list[dict[str, str]] | None = None,
-    vlan_ids: list[int] | None = None,
+    subnets: list[dict[str, Any]] | None = None,
+    vlan_ids: list[int | str] | None = None,
 ) -> dict:
     """Create a new network segment via Policy API (PUT).
 
@@ -48,7 +65,8 @@ def create_segment(
         gateway_path: Policy path to Tier-0/Tier-1 gateway (for routed segments).
         subnets: List of subnet dicts, each with "gateway_address" and
                  optionally "dhcp_ranges".
-        vlan_ids: List of VLAN IDs (for VLAN-backed segments).
+        vlan_ids: List of VLAN IDs (for VLAN-backed segments); entries may
+                  be ints or range strings like "100-200".
 
     Returns:
         Created segment dict from NSX API.
@@ -64,11 +82,14 @@ def create_segment(
         body["connectivity_path"] = gateway_path
 
     if subnets:
-        body["subnets"] = [
-            {"gateway_address": sub["gateway_address"]}
-            for sub in subnets
-            if "gateway_address" in sub
-        ]
+        body["subnets"] = []
+        for sub in subnets:
+            if "gateway_address" not in sub:
+                continue
+            entry: dict[str, Any] = {"gateway_address": sub["gateway_address"]}
+            if sub.get("dhcp_ranges"):
+                entry["dhcp_ranges"] = sub["dhcp_ranges"]
+            body["subnets"].append(entry)
 
     if vlan_ids:
         body["vlan_ids"] = vlan_ids
@@ -283,15 +304,15 @@ def delete_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
     Returns:
         Dict with deletion status.
     """
-    import httpx
+    from vmware_nsx.connection import NsxApiError
 
     _validate_id(tier1_id)
 
     path = f"/policy/api/v1/infra/tier-1s/{tier1_id}"
     try:
         client.delete(f"{path}/locale-services/default")
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code != 404:
+    except NsxApiError as exc:
+        if exc.status_code != 404:
             raise
     client.delete(path)
     _log.info("Deleted Tier-1 gateway %s", tier1_id)

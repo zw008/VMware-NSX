@@ -4,13 +4,13 @@ This module exposes VMware NSX network management tools via the Model
 Context Protocol (MCP) using stdio transport.  Each ``@mcp.tool()``
 function delegates to the corresponding function in the ``vmware_nsx``
 package (ops.inventory, ops.networking, ops.health, ops.troubleshoot,
-ops.segment_mgmt, ops.gateway_mgmt, ops.nat_mgmt, ops.route_mgmt,
-ops.ip_pool_mgmt).
+ops.segment_mgmt, ops.nat_route_mgmt).
 
 Tool categories
 ---------------
 * **Read-only** (no side effects): list_segments, get_segment,
-  list_tier0_gateways, list_tier1_gateways, list_transport_zones,
+  list_tier0_gateways, get_tier0_gateway, list_tier1_gateways,
+  get_tier1_gateway, list_transport_zones,
   list_transport_nodes, list_edge_clusters, list_nat_rules,
   get_bgp_neighbors, list_static_routes, list_ip_pools,
   get_ip_pool_usage, list_nsx_alarms, get_transport_node_status,
@@ -46,7 +46,7 @@ from mcp.server.fastmcp import FastMCP
 from vmware_policy import sanitize, vmware_tool
 
 from vmware_nsx.config import load_config
-from vmware_nsx.connection import ConnectionManager
+from vmware_nsx.connection import ConnectionManager, NsxApiError
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +59,11 @@ def _safe_error(exc: Exception, tool: str) -> str:
     Raw NSX exception text can carry response bodies, internal paths, or
     host:port pairs. Full traceback goes to stderr (operator-visible); the agent
     sees only a control-char-stripped, length-capped message. Intentional
-    validation errors (ValueError/FileNotFoundError/KeyError) pass through.
+    validation errors (ValueError/FileNotFoundError/KeyError) and the
+    connection layer's teaching errors (NsxApiError) pass through.
     """
     logger.error("Tool %s failed", tool, exc_info=True)
-    if isinstance(exc, (ValueError, FileNotFoundError, KeyError)):
+    if isinstance(exc, (ValueError, FileNotFoundError, KeyError, NsxApiError)):
         return sanitize(str(exc), 300)
     return f"{type(exc).__name__}: operation failed."
 
@@ -639,7 +640,7 @@ def delete_segment(segment_id: str, target: Optional[str] = None) -> str:
         _delete(client, segment_id)
         return f"Segment '{segment_id}' deleted."
     except Exception as e:
-        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
+        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -766,7 +767,7 @@ def delete_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> str:
         _delete(client, tier1_id)
         return f"Tier-1 gateway '{tier1_id}' deleted."
     except Exception as e:
-        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
+        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
@@ -881,7 +882,7 @@ def delete_nat_rule(
         _delete(client, tier1_id, rule_id)
         return f"NAT rule '{rule_id}' deleted from '{tier1_id}'."
     except Exception as e:
-        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
+        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -955,7 +956,7 @@ def delete_static_route(
         _delete(client, tier1_id, route_id)
         return f"Static route '{route_id}' deleted from '{tier1_id}'."
     except Exception as e:
-        return f"Error: {e}. Run 'vmware-nsx doctor' to verify connectivity."
+        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

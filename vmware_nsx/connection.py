@@ -9,6 +9,7 @@ Supports both Policy API (/policy/api/v1/) and Management API (/api/v1/).
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import httpx
@@ -16,6 +17,62 @@ import httpx
 from vmware_nsx.config import AppConfig, TargetConfig, load_config
 
 _log = logging.getLogger("vmware-nsx.connection")
+
+# Transient gateway statuses worth one automatic retry (the manager may be
+# busy or a service may still be coming up). Only idempotent GETs are
+# retried; 4xx client errors are NOT retried.
+_TRANSIENT_STATUS = frozenset({502, 503, 504})
+_RETRY_DELAY_SEC = 2.0
+
+# Safety cap for paginated collection — search/filter beats dumping
+# unbounded lists into agent context (family "search over list" rule).
+_MAX_ITEMS = 1000
+
+
+class NsxApiError(Exception):
+    """An NSX Manager API call returned an error or failed to connect.
+
+    Carries a teaching message (status + path + how to fix) so end users see
+    an actionable line instead of a raw httpx traceback. ``status_code`` is
+    None for transport/timeout failures (no HTTP response was received).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        method: str | None = None,
+        path: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.method = method
+        self.path = path
+
+
+def _hint_for_status(status_code: int, path: str) -> str:
+    """Return a short, actionable remediation hint for an HTTP error status."""
+    if status_code == 404:
+        return (
+            f"Resource not found at {path} — run the corresponding list "
+            "command (e.g. list_segments / list_tier1_gateways) to get the "
+            "exact ID."
+        )
+    if status_code == 403:
+        return "Permission denied — your NSX role lacks privilege for this path."
+    if status_code == 401:
+        return (
+            "Authentication failed even after re-creating the session — "
+            "check the username and password for this target."
+        )
+    if status_code == 400:
+        return "Bad request — check the parameters and payload for this call."
+    if status_code in _TRANSIENT_STATUS:
+        return "NSX manager not ready / gateway error — retry shortly."
+    if status_code >= 500:
+        return "Server-side error — retry shortly; check NSX Manager health."
+    return "Check the request and try again."
 
 
 class NsxClient:
@@ -65,12 +122,30 @@ class NsxClient:
             "j_username=" + quote(self._target.username, safe=_SAFE)
             + "&j_password=" + quote(self._password, safe=_SAFE)
         )
-        resp = self._client.post(
-            "/api/session/create",
-            content=body.encode("utf-8"),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        resp.raise_for_status()
+        try:
+            resp = self._client.post(
+                "/api/session/create",
+                content=body.encode("utf-8"),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            raise NsxApiError(
+                f"Could not connect to NSX Manager {self._target.host}:"
+                f"{self._target.port}: {exc}. Check the host/port and "
+                "network, then retry.",
+                method="POST",
+                path="/api/session/create",
+            ) from exc
+        if resp.status_code >= 400:
+            raise NsxApiError(
+                f"NSX session creation failed with HTTP {resp.status_code}. "
+                "Check the username and password for this target — the "
+                "per-target env var follows the pattern "
+                "VMWARE_<TARGET_NAME_UPPER>_PASSWORD in ~/.vmware-nsx/.env.",
+                status_code=resp.status_code,
+                method="POST",
+                path="/api/session/create",
+            )
         self._token = resp.headers.get("x-xsrf-token")
         if not self._token:
             raise ConnectionError(
@@ -85,24 +160,109 @@ class NsxClient:
             h["X-XSRF-TOKEN"] = self._token
         return h
 
-    def get(self, path: str, params: dict[str, Any] | None = None) -> dict:
-        """Single GET request. Returns JSON response."""
-        resp = self._client.get(path, headers=self._headers(), params=params)
-        if resp.status_code in (401, 403):
-            _log.info("Session expired, re-authenticating...")
-            self._create_session()
-            resp = self._client.get(path, headers=self._headers(), params=params)
-        resp.raise_for_status()
-        return resp.json()
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
+        retries: int = 1,
+    ) -> httpx.Response:
+        """Send one request, recovering from auth and transient failures.
 
-    def get_all(self, path: str, params: dict[str, Any] | None = None) -> list[dict]:
-        """Paginated GET. Follows cursor until all results collected."""
+        Layered per the error-recovery contract: (1) transport/timeout
+        failures and transient gateway statuses (502/503/504) are retried
+        once after a short delay — but only for idempotent GETs; a write
+        (POST/PUT/PATCH/DELETE) that timed out may already have been applied,
+        so blind re-sends are dangerous. (2) a 401 triggers a single session
+        re-creation, with the re-issued request inside the same protected
+        loop so transport errors after re-auth are still translated. A 403
+        is NOT re-authed — it is a real RBAC denial and must surface as a
+        permission error. (3) any remaining error status is translated into
+        an ``NsxApiError`` carrying a teaching message, so callers never
+        surface a raw httpx traceback. 4xx client errors are NOT retried.
+        """
+        if method != "GET":
+            retries = 0
+        attempt = 0
+        reauthed = False
+        while True:
+            try:
+                resp = self._client.request(
+                    method, path, headers=self._headers(), params=params, json=json_data
+                )
+            except (httpx.TimeoutException, httpx.TransportError) as exc:
+                if attempt < retries:
+                    attempt += 1
+                    time.sleep(_RETRY_DELAY_SEC)
+                    continue
+                raise NsxApiError(
+                    f"NSX Manager {method} {path} could not connect: {exc}. "
+                    "Check the host/port and network, then retry.",
+                    method=method,
+                    path=path,
+                ) from exc
+
+            if resp.status_code == 401 and not reauthed:
+                # Re-create the session once, then re-issue through the top
+                # of the loop so the retry is covered by the same transport-
+                # error handling (the `reauthed` flag bounds this to one).
+                _log.info("Session expired on %s %s, re-authenticating...", method, path)
+                self._create_session()
+                reauthed = True
+                continue
+
+            if resp.status_code in _TRANSIENT_STATUS and attempt < retries:
+                attempt += 1
+                time.sleep(_RETRY_DELAY_SEC)
+                continue
+
+            if resp.status_code >= 400:
+                raise NsxApiError(
+                    f"NSX Manager {method} {path} returned HTTP "
+                    f"{resp.status_code}. {_hint_for_status(resp.status_code, path)}",
+                    status_code=resp.status_code,
+                    method=method,
+                    path=path,
+                )
+            return resp
+
+    def get(self, path: str, params: dict[str, Any] | None = None, *, retries: int = 1) -> dict:
+        """Single GET request. Returns JSON response.
+
+        Pass retries=0 for probes where an error status is itself the answer
+        (e.g. is_alive reading a 503 as "not ready") to skip the back-off.
+        """
+        resp = self._request("GET", path, params=params, retries=retries)
+        return resp.json() if resp.content else {}
+
+    def get_all(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        max_items: int = _MAX_ITEMS,
+    ) -> list[dict]:
+        """Paginated GET. Follows cursor until all results collected.
+
+        Collection stops at ``max_items`` (default 1000) as a safety cap —
+        callers wanting more should filter server-side instead of dumping
+        unbounded lists into agent context.
+        """
         all_results: list[dict] = []
         params = dict(params) if params else {}
         while True:
             data = self.get(path, params=params)
             results = data.get("results", [])
             all_results.extend(results)
+            if len(all_results) >= max_items:
+                _log.warning(
+                    "get_all(%s) hit the %d-item safety cap; results truncated. "
+                    "Use a server-side filter to narrow the query.",
+                    path,
+                    max_items,
+                )
+                return all_results[:max_items]
             cursor = data.get("cursor")
             if not cursor:
                 break
@@ -111,44 +271,45 @@ class NsxClient:
 
     def post(self, path: str, json_data: dict[str, Any] | None = None) -> dict:
         """POST request for write operations."""
-        resp = self._client.post(path, headers=self._headers(), json=json_data)
-        if resp.status_code in (401, 403):
-            self._create_session()
-            resp = self._client.post(path, headers=self._headers(), json=json_data)
-        resp.raise_for_status()
+        resp = self._request("POST", path, json_data=json_data)
         return resp.json() if resp.content else {}
 
     def put(self, path: str, json_data: dict[str, Any]) -> dict:
         """PUT request (create or replace)."""
-        resp = self._client.put(path, headers=self._headers(), json=json_data)
-        if resp.status_code in (401, 403):
-            self._create_session()
-            resp = self._client.put(path, headers=self._headers(), json=json_data)
-        resp.raise_for_status()
+        resp = self._request("PUT", path, json_data=json_data)
         return resp.json() if resp.content else {}
 
     def patch(self, path: str, json_data: dict[str, Any]) -> dict:
         """PATCH request (partial update)."""
-        resp = self._client.patch(path, headers=self._headers(), json=json_data)
-        if resp.status_code in (401, 403):
-            self._create_session()
-            resp = self._client.patch(path, headers=self._headers(), json=json_data)
-        resp.raise_for_status()
+        resp = self._request("PATCH", path, json_data=json_data)
         return resp.json() if resp.content else {}
 
     def delete(self, path: str) -> None:
         """DELETE request."""
-        resp = self._client.delete(path, headers=self._headers())
-        if resp.status_code in (401, 403):
-            self._create_session()
-            resp = self._client.delete(path, headers=self._headers())
-        resp.raise_for_status()
+        self._request("DELETE", path)
 
     def is_alive(self) -> bool:
-        """Check if session is still valid."""
+        """Check if the cached client + session are still usable.
+
+        Probes a cheap Policy-API object readable by any role
+        (GET /policy/api/v1/infra, the always-present infra root) instead of
+        the old /api/v1/cluster/status Manager-API endpoint, which required
+        high privileges — a least-privilege service account (which CLAUDE.md
+        RECOMMENDS) got 403 there, and since is_alive() returns False on a
+        403, every connect() tore down and rebuilt the session = connection
+        churn on every command (踩坑 #21, mirroring VMware-NSX-Security).
+        The infra root is preferred over /infra/domains/default because the
+        default domain is not guaranteed to exist in every plain NSX-T
+        deployment, whereas the infra root always is. A reachable manager
+        returning 5xx is still "alive": the session works, the platform just
+        isn't ready. Only auth failures (401/403) or transport errors mean
+        the cached client is stale. retries=0 keeps the probe snappy.
+        """
         try:
-            self.get("/api/v1/cluster/status")
+            self._request("GET", "/policy/api/v1/infra", retries=0)
             return True
+        except NsxApiError as exc:
+            return exc.status_code is not None and exc.status_code not in (401, 403)
         except Exception:
             return False
 

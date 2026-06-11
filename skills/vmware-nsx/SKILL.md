@@ -25,7 +25,7 @@ compatibility: >
 
 > **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "NSX" are trademarks of Broadcom. Source code is publicly auditable at [github.com/zw008/VMware-NSX](https://github.com/zw008/VMware-NSX) under the MIT license.
 
-VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, routing, and IPAM.
+VMware NSX networking management — 32 MCP tools for segments, gateways, NAT, routing, and IPAM.
 
 > Domain-focused networking skill for NSX-T / NSX 4.x Policy API.
 > **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity), [vmware-avi](https://github.com/zw008/VMware-AVI) (AVI/ALB/AKO), [vmware-harden](https://github.com/zw008/VMware-Harden) (compliance baselines).
@@ -33,17 +33,19 @@ VMware NSX networking management — 31 MCP tools for segments, gateways, NAT, r
 
 ## What This Skill Does
 
-| Category | Tools | Count |
-|----------|-------|:-----:|
-| **Segments** | list, get details, create, update, delete, list ports | 6 |
-| **Tier-0 Gateways** | list, get details, BGP neighbors, route table | 4 |
-| **Tier-1 Gateways** | list, get details, create, update, delete, route table | 6 |
-| **NAT** | list rules, get rule details, create rule, update rule, delete rule | 5 |
-| **Static Routes** | list, create, delete | 3 |
-| **IP Pools** | list, get allocations, create pool, create subnet | 4 |
-| **Health & Troubleshooting** | NSX alarms, transport node status, edge cluster status, manager cluster status, logical port status, VM-to-segment lookup | 6 |
+| Category | Tools | Count | Read / Write |
+|----------|-------|:-----:|:------------:|
+| **Segments** | list, get details, create, update, delete | 5 | 2R / 3W |
+| **Tier-0 Gateways** | list, get details, BGP neighbors, configure BGP | 4 | 3R / 1W |
+| **Tier-1 Gateways** | list, get details, create, update, delete | 5 | 2R / 3W |
+| **NAT** | list rules, create rule, delete rule | 3 | 1R / 2W |
+| **Static Routes** | list, create, delete | 3 | 1R / 2W |
+| **IP Pools** | list, get usage, create pool | 3 | 2R / 1W |
+| **Fabric Inventory** | transport zones, transport nodes, edge clusters | 3 | 3R / 0W |
+| **Health** | NSX alarms, transport node status, edge cluster status, manager status | 4 | 4R / 0W |
+| **Troubleshooting** | logical port status, VM-to-segment lookup | 2 | 2R / 0W |
 
-**Total**: 31 tools (18 read-only + 13 write)
+**Total**: 32 tools (20 read-only + 12 write)
 
 ## Quick Install
 
@@ -92,42 +94,43 @@ vmware-nsx doctor
 ### Create an App Network (Segment + T1 Gateway + NAT)
 
 **Pre-flight (judgment, not blind sequence)**:
-- Subnet conflict check: scan `segment list` and `ipam list-pools` for any overlap with the proposed CIDR. Overlapping subnets cause asymmetric routing or silent blackholing — NSX will not warn you.
-- Edge cluster capacity: confirm chosen `--edge-cluster` is healthy (`health edge-clusters`) and not at SR (Service Router) limit. A fully-loaded edge cluster will accept the T1 creation but routing will fail.
+- Subnet conflict check: scan `inventory list-segments` and `networking list-ip-pools` for any overlap with the proposed CIDR. Overlapping subnets cause asymmetric routing or silent blackholing — NSX will not warn you.
+- Edge cluster capacity: confirm chosen `--edge-cluster` is healthy (`inventory list-edge-clusters` + `health edge-cluster-status <id>`) and not at SR (Service Router) limit. A fully-loaded edge cluster will accept the T1 creation but routing will fail.
 - T0 uplink: the parent T0 must already be configured with BGP/static routes upstream — otherwise SNAT works internally but external traffic goes nowhere.
 - NAT IP: `--translated` IP must be from a routable address pool announced by T0; using a random IP creates a half-working network.
 - **Always `--dry-run` first** — once a segment is attached to running VMs, deleting it requires detaching every port.
 
 **Steps**:
-1. `vmware-nsx gateway create-t1 app-t1 --edge-cluster <ec> --tier0 <t0> --dry-run` → review, then run for real
-2. `vmware-nsx segment create app-web-seg --gateway app-t1 --subnet <cidr> --transport-zone tz-overlay`
-3. `vmware-nsx nat create app-t1 --action SNAT --source <private-cidr> --translated <pub-ip>`
-4. Verify end-to-end: `segment list`, `nat list app-t1`, AND test with a VM attached to the new segment
+1. `vmware-nsx gateway create-tier1 app-t1 --name app-t1 --edge-cluster <ec-path> --tier0 <t0-path> --dry-run` → review, then run for real
+2. `vmware-nsx segment create app-web-seg --name app-web-seg --tz <tz-overlay-path> --subnet <gw-cidr>`
+3. `vmware-nsx nat create-rule --tier1 app-t1 --rule-id snat-1 --action SNAT --source <private-cidr> --translated <pub-ip>`
+4. Verify end-to-end: `inventory list-segments`, `networking list-nat-rules app-t1`, AND test with a VM attached to the new segment
+5. **On failure**: a connection error or HTTP error prints a single teaching line (e.g. 403 → check NSX role privileges; 404 → run the matching list command for the exact ID). Run `vmware-nsx doctor` to verify connectivity and credentials, fix, and re-run the failed step — earlier completed steps are idempotent PUTs and safe to re-apply.
 
 ### Check Network Health
 
 **Judgment**: don't just enumerate health endpoints — correlate them. The order below maps cause to symptom: if manager is down, transport nodes will look down too (false positive); fix top-down.
 
 1. `vmware-nsx health manager-status` — if **any** manager node is `DEGRADED` or `DOWN`, stop here and resolve before trusting downstream signals
-2. `vmware-nsx health transport-nodes` — flag nodes whose tunnel state is not `UP` for ≥ 5 min; transient blips are normal
-3. `vmware-nsx health edge-clusters` — verify SR placement is balanced; one edge holding 80% of SRs is a single point of failure
-4. `vmware-nsx health alarms` — filter to severity ≥ HIGH; lower severities are usually signal noise
+2. `vmware-nsx inventory list-transport-nodes` then `health transport-node-status <id>` for any node not `UP` — flag nodes down ≥ 5 min; transient blips are normal
+3. `vmware-nsx inventory list-edge-clusters` then `health edge-cluster-status <id>` — verify SR placement is balanced; one edge holding 80% of SRs is a single point of failure
+4. `vmware-nsx health alarms --severity HIGH` (repeat with `CRITICAL`) — severity filter is exact-match, not "and above"
 5. Cross-check with `vmware-monitor` for vSphere host events — a host losing connection to vCenter often masquerades as an NSX problem
 
 ### Troubleshoot VM Connectivity
 
 **Judgment**: connectivity failures happen at one of three layers. Identify which layer first, then drill — don't probe randomly.
 
-- **Layer 1 — VM-to-segment**: VM has no segment, wrong vNIC, or port admin-down → `troubleshoot vm-segment` + `port-status`
-- **Layer 2 — segment-to-gateway**: segment not attached to T1, T1 not connected to T0 → `gateway routes-t1` shows no default route
-- **Layer 3 — gateway-to-upstream**: T0 BGP/static missing or SNAT not configured → `bgp-neighbors`, `nat list`
+- **Layer 1 — VM-to-segment**: VM has no segment, wrong vNIC, or port admin-down → `troubleshoot vm-segment` + `troubleshoot port-status`
+- **Layer 2 — segment-to-gateway**: segment not attached to T1, T1 not connected to T0 → `inventory get-tier1` shows no Tier-0 path
+- **Layer 3 — gateway-to-upstream**: T0 BGP/static missing or SNAT not configured → `networking bgp-neighbors`, `networking list-nat-rules`
 
 **Steps** (stop as soon as the failing layer is identified):
 1. Layer 1: `troubleshoot vm-segment my-vm-01` → if no port, check vSphere vNIC binding first
-2. Layer 1: `troubleshoot port-status <port-id>` → admin-down or DFW-blocked? If DFW, jump to vmware-nsx-security
-3. Layer 2: `gateway routes-t1 app-t1` → expected default route present? If not, T1↔T0 link broken
-4. Layer 3: `gateway bgp-neighbors tier0-gw` → all neighbors `ESTABLISHED`? Flapping → upstream issue
-5. Layer 3: `nat list app-t1` → SNAT rule covers the source CIDR? Mis-typed CIDR is the most common cause
+2. Layer 1: `troubleshoot port-status <segment-id>` → admin-down or DFW-blocked? If DFW, jump to vmware-nsx-security
+3. Layer 2: `inventory get-tier1 app-t1` → Tier-0 path present and route advertisement enabled? If not, T1↔T0 link broken
+4. Layer 3: `networking bgp-neighbors tier0-gw` → all neighbors `ESTABLISHED`? Flapping → upstream issue
+5. Layer 3: `networking list-nat-rules app-t1` → SNAT rule covers the source CIDR? Mis-typed CIDR is the most common cause
 
 ### Multi-Target Operations
 
@@ -135,10 +138,10 @@ All commands accept `--target <name>` to operate against a specific NSX Manager 
 
 ```bash
 # Default target (first in config.yaml)
-vmware-nsx segment list
+vmware-nsx inventory list-segments
 
 # Specific target
-vmware-nsx segment list --target nsx-prod
+vmware-nsx inventory list-segments --target nsx-prod
 vmware-nsx health alarms --target nsx-lab
 ```
 
@@ -150,99 +153,97 @@ vmware-nsx health alarms --target nsx-lab
 | Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | Type-safe parameters, structured output |
 
-## MCP Tools (31 — 18 read, 13 write)
+## MCP Tools (32 — 20 read, 12 write)
 
 All MCP tools accept an optional `target` parameter to select which NSX Manager to connect to.
 
 | Category | Tool | Type | Description |
 |----------|------|:----:|-------------|
-| Segment | `list_segments` | Read | List all segments with type, subnet, gateway, transport zone |
+| Segment | `list_segments` | Read | List all segments with type, subnet, admin state, port count |
 | | `get_segment` | Read | Get segment details including ports and subnet config |
 | | `create_segment` | Write | Create overlay or VLAN segment with subnet and gateway |
-| | `update_segment` | Write | Update segment properties (description, tags, DHCP) |
-| | `delete_segment` | Write | Delete a segment (checks for connected ports first) |
-| | `list_segment_ports` | Read | List logical ports on a segment with status |
-| Tier-0 GW | `list_tier0_gateways` | Read | List Tier-0 gateways with HA mode and edge cluster |
-| | `get_tier0_gateway` | Read | Get Tier-0 details: interfaces, routing config, BGP |
-| | `get_tier0_bgp_neighbors` | Read | List BGP neighbor sessions with state, ASN, routes |
-| | `get_tier0_route_table` | Read | Get Tier-0 routing table (connected, static, BGP) |
-| Tier-1 GW | `list_tier1_gateways` | Read | List Tier-1 gateways with linked Tier-0 and edge cluster |
-| | `get_tier1_gateway` | Read | Get Tier-1 details: interfaces, route advertisement |
+| | `update_segment` | Write | Update segment properties (name, subnets, gateway link) |
+| | `delete_segment` | Write | Delete a segment (warns on connected ports) |
+| Tier-0 GW | `list_tier0_gateways` | Read | List Tier-0 gateways with HA mode and transit subnets |
+| | `get_tier0_gateway` | Read | Get Tier-0 details: HA mode, failover, transit subnets |
+| | `get_bgp_neighbors` | Read | List BGP neighbor sessions with state, ASN, prefixes |
+| | `configure_tier0_bgp` | Write | Configure BGP (local AS, ECMP, inter-SR iBGP) on a Tier-0 |
+| Tier-1 GW | `list_tier1_gateways` | Read | List Tier-1 gateways with linked Tier-0 and route advertisement |
+| | `get_tier1_gateway` | Read | Get Tier-1 details: Tier-0 link, route advertisement |
 | | `create_tier1_gateway` | Write | Create Tier-1 gateway with edge cluster and Tier-0 link |
-| | `update_tier1_gateway` | Write | Update Tier-1 properties (route advertisement, tags) |
-| | `delete_tier1_gateway` | Write | Delete a Tier-1 gateway (checks for connected segments) |
-| | `get_tier1_route_table` | Read | Get Tier-1 routing table |
+| | `update_tier1_gateway` | Write | Update Tier-1 properties (route advertisement, Tier-0 link) |
+| | `delete_tier1_gateway` | Write | Delete a Tier-1 gateway (removes default locale-service first) |
 | NAT | `list_nat_rules` | Read | List NAT rules on a Tier-1 gateway |
-| | `get_nat_rule` | Read | Get NAT rule details (action, source, destination, translated) |
 | | `create_nat_rule` | Write | Create SNAT/DNAT/reflexive NAT rule on a gateway |
-| | `update_nat_rule` | Write | Update NAT rule properties |
 | | `delete_nat_rule` | Write | Delete a NAT rule |
-| Static Routes | `list_static_routes` | Read | List static routes on a Tier-0 or Tier-1 gateway |
+| Static Routes | `list_static_routes` | Read | List static routes on a Tier-1 gateway |
 | | `create_static_route` | Write | Add a static route with network and next-hop |
 | | `delete_static_route` | Write | Remove a static route |
-| IP Pools | `list_ip_pools` | Read | List IP pools with usage statistics |
-| | `get_ip_pool_allocations` | Read | Show allocated IPs from a pool |
-| | `create_ip_pool` | Write | Create a new IP address pool |
-| | `create_ip_pool_subnet` | Write | Add a subnet/range to an IP pool |
-| Health | `get_nsx_alarms` | Read | List active NSX alarms with severity and entity |
+| IP Pools | `list_ip_pools` | Read | List IP pools with usage summary |
+| | `get_ip_pool_usage` | Read | Show allocation usage for a pool |
+| | `create_ip_pool` | Write | Create a new IP address pool with allocation ranges |
+| Fabric | `list_transport_zones` | Read | List transport zones with type (OVERLAY/VLAN) |
+| | `list_transport_nodes` | Read | List transport nodes with node type and status |
+| | `list_edge_clusters` | Read | List edge clusters with member count and deployment type |
+| Health | `list_nsx_alarms` | Read | List active NSX alarms filtered by severity |
 | | `get_transport_node_status` | Read | Transport node connectivity and config status |
 | | `get_edge_cluster_status` | Read | Edge cluster member status and failover config |
-| | `get_manager_cluster_status` | Read | NSX Manager cluster health and node roles |
-| Troubleshoot | `get_logical_port_status` | Read | Logical port admin/operational status and link state |
-| | `find_vm_segment` | Read | Find which segment(s) a VM is connected to by name |
+| | `get_nsx_manager_status` | Read | NSX Manager cluster health and node roles |
+| Troubleshoot | `get_logical_port_status` | Read | Realized state of all ports on a segment |
+| | `get_segment_port_for_vm` | Read | Find which segment a VM is connected to by display name |
 
-**Read/write split**: 18 tools are read-only, 13 modify state. Write tools require explicit parameters and are audit-logged. All write operations support dry-run mode.
+**Read/write split**: 20 tools are read-only, 12 modify state. Write tools require explicit parameters and are audit-logged. Dry-run preview (`--dry-run`) is a CLI feature; MCP write tools execute directly.
 
 ## CLI Quick Reference
 
 ```bash
-# Segments
-vmware-nsx segment list [--target <name>]
-vmware-nsx segment get <segment-name>
-vmware-nsx segment create <name> --gateway <t1> --subnet <cidr> --transport-zone <tz> [--dry-run]
-vmware-nsx segment update <name> --description "new desc" [--dry-run]
-vmware-nsx segment delete <name> [--dry-run]
-vmware-nsx segment ports <segment-name>
+# Inventory (read-only)
+vmware-nsx inventory list-segments [--target <name>]
+vmware-nsx inventory get-segment <segment-id>
+vmware-nsx inventory list-tier0s
+vmware-nsx inventory get-tier0 <tier0-id>
+vmware-nsx inventory list-tier1s
+vmware-nsx inventory get-tier1 <tier1-id>
+vmware-nsx inventory list-transport-zones
+vmware-nsx inventory list-transport-nodes
+vmware-nsx inventory list-edge-clusters
 
-# Tier-0 Gateways
-vmware-nsx gateway list-t0
-vmware-nsx gateway get-t0 <name>
-vmware-nsx gateway bgp-neighbors <t0-name>
-vmware-nsx gateway routes-t0 <t0-name>
+# Networking (read-only)
+vmware-nsx networking list-nat-rules <tier1-id>
+vmware-nsx networking bgp-neighbors <tier0-id>
+vmware-nsx networking list-static-routes <tier1-id>
+vmware-nsx networking list-ip-pools
+vmware-nsx networking ip-pool-usage <pool-id>
 
-# Tier-1 Gateways
-vmware-nsx gateway list-t1
-vmware-nsx gateway get-t1 <name>
-vmware-nsx gateway create-t1 <name> --edge-cluster <ec> --tier0 <t0> [--dry-run]
-vmware-nsx gateway update-t1 <name> --route-advertisement connected,nat [--dry-run]
-vmware-nsx gateway delete-t1 <name> [--dry-run]
-vmware-nsx gateway routes-t1 <t1-name>
+# Segment management (write)
+vmware-nsx segment create <id> --name <name> --tz <tz-path> [--vlan '100' | '100-200'] [--subnet <gw-cidr>] [--dry-run]
+vmware-nsx segment update <id> [--name <name>] [--subnet <gw-cidr>] [--dry-run]
+vmware-nsx segment delete <id> [--dry-run]
 
-# NAT
-vmware-nsx nat list <gateway-name>
-vmware-nsx nat get <gateway-name> <rule-id>
-vmware-nsx nat create <gateway-name> --action SNAT --source <cidr> --translated <ip> [--dry-run]
-vmware-nsx nat update <gateway-name> <rule-id> --translated <new-ip> [--dry-run]
-vmware-nsx nat delete <gateway-name> <rule-id> [--dry-run]
+# Gateway management (write)
+vmware-nsx gateway create-tier1 <id> --name <name> [--tier0 <t0-path>] [--edge-cluster <ec-path>] [--dry-run]
+vmware-nsx gateway update-tier1 <id> [--name <name>] [--tier0 <t0-path>] [--advertise <types>] [--dry-run]
+vmware-nsx gateway delete-tier1 <id> [--dry-run]
+vmware-nsx gateway configure-tier0-bgp <tier0-id> --local-as <asn> [--ecmp/--no-ecmp] [--dry-run]
 
-# Static Routes
-vmware-nsx route list <gateway-name>
-vmware-nsx route create <gateway-name> --network <cidr> --next-hop <ip> [--dry-run]
-vmware-nsx route delete <gateway-name> <route-id> [--dry-run]
+# NAT (write)
+vmware-nsx nat create-rule --tier1 <id> --rule-id <id> --action SNAT --source <cidr> --translated <ip> [--dry-run]
+vmware-nsx nat delete-rule --tier1 <id> --rule-id <id> [--dry-run]
 
-# IP Pools
-vmware-nsx ippool list
-vmware-nsx ippool allocations <pool-id>
-vmware-nsx ippool create <name> [--dry-run]
-vmware-nsx ippool add-subnet <pool-id> --start <ip> --end <ip> --cidr <cidr> [--dry-run]
+# Static routes (write)
+vmware-nsx route create-static --tier1 <id> --route-id <id> --network <cidr> --next-hop <ip> [--dry-run]
+vmware-nsx route delete-static --tier1 <id> --route-id <id> [--dry-run]
 
-# Health & Troubleshooting
+# IP pools (write)
+vmware-nsx ip-pool create <pool-id> --name <name> --start <ip> --end <ip> --cidr <cidr> [--gateway <ip>] [--dry-run]
+
+# Health & Troubleshooting (read-only)
 vmware-nsx health alarms [--severity CRITICAL]
-vmware-nsx health transport-nodes
-vmware-nsx health edge-clusters
+vmware-nsx health transport-node-status <node-id>
+vmware-nsx health edge-cluster-status <cluster-id>
 vmware-nsx health manager-status
-vmware-nsx troubleshoot port-status <port-id>
-vmware-nsx troubleshoot vm-segment <vm-name>
+vmware-nsx troubleshoot port-status <segment-id>
+vmware-nsx troubleshoot vm-segment <vm-display-name>
 
 # Diagnostics
 vmware-nsx doctor [--skip-auth]
@@ -254,11 +255,11 @@ vmware-nsx doctor [--skip-auth]
 
 ### "Segment not found" when querying
 
-Segment display names and Policy API IDs can differ. Use `vmware-nsx segment list` to get the exact ID. The Policy API uses the segment `id` field, not `display_name`. Common mistakes: using the display name with spaces instead of the hyphenated ID.
+Segment display names and Policy API IDs can differ. Use `vmware-nsx inventory list-segments` to get the exact ID. The Policy API uses the segment `id` field, not `display_name`. Common mistakes: using the display name with spaces instead of the hyphenated ID.
 
 ### NAT rule creation fails with "gateway not found"
 
-NAT rules are created on Tier-1 gateways (or Tier-0 for some topologies). Verify the gateway name with `vmware-nsx gateway list-t1`. The gateway must have an edge cluster assigned for NAT to function.
+NAT rules are created on Tier-1 gateways (or Tier-0 for some topologies). Verify the gateway name with `vmware-nsx inventory list-tier1s`. The gateway must have an edge cluster assigned for NAT to function.
 
 ### BGP neighbor shows "Connect" or "Active" state
 
@@ -282,10 +283,10 @@ The password environment variable is missing. Variable names follow the pattern 
 
 ## Safety
 
-- **Read-heavy**: 18 of 31 tools are read-only (list, get, status, health, troubleshoot)
+- **Read-heavy**: 20 of 32 tools are read-only (list, get, status, health, troubleshoot)
 - **Audit logging**: All operations logged to `~/.vmware/audit.db` (SQLite WAL, via vmware-policy) with timestamp, user, target, operation, parameters, and result
 - **Double confirmation**: CLI write commands require two separate confirmation prompts before executing
-- **Dry-run mode**: All write commands support `--dry-run` to preview API calls without executing
+- **Dry-run mode**: All CLI write commands support `--dry-run` to preview API calls without executing (MCP write tools execute directly and are audit-logged)
 - **Dependency checks**: Segment delete checks for connected ports; gateway delete checks for connected segments; prevents accidental cascade failures
 - **Input validation**: CIDR networks validated, IP addresses checked, gateway existence verified before NAT/route operations
 - **Prompt injection defense**: NSX object names returned from the API are sanitized via `_sanitize()` — strips control characters, truncates to 500 chars
