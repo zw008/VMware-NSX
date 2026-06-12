@@ -375,12 +375,20 @@ def test_skill_md_counts_match_live_registry() -> None:
 # ── no bare raise_for_status outside the connection layer ───────────────
 
 
+def _cli_source_files() -> list[Path]:
+    """CLI source files — the cli/ package (split by group) or legacy cli.py."""
+    cli_pkg = REPO_ROOT / "vmware_nsx" / "cli"
+    if cli_pkg.is_dir():
+        return [p for p in cli_pkg.rglob("*.py") if "__pycache__" not in p.parts]
+    return [REPO_ROOT / "vmware_nsx" / "cli.py"]
+
+
 def test_no_raw_raise_for_status_outside_connection_layer() -> None:
     offenders = []
     for py in [
         *(REPO_ROOT / "vmware_nsx" / "ops").glob("*.py"),
-        REPO_ROOT / "vmware_nsx" / "cli.py",
-        *(REPO_ROOT / "mcp_server").glob("*.py"),
+        *_cli_source_files(),
+        *(p for p in (REPO_ROOT / "mcp_server").rglob("*.py") if "__pycache__" not in p.parts),
     ]:
         if "raise_for_status" in py.read_text():
             offenders.append(str(py.relative_to(REPO_ROOT)))
@@ -429,7 +437,7 @@ def test_cli_translates_missing_config_to_exit_1() -> None:
 def test_every_cli_command_has_error_decorator() -> None:
     """Every @<group>.command() must be wrapped by @_cli_errors so no
     command can leak a raw traceback."""
-    src = (REPO_ROOT / "vmware_nsx" / "cli.py").read_text()
+    src = "\n".join(p.read_text() for p in _cli_source_files())
     blocks = re.findall(r"^(@[a-z_]*app\.command\([^\n]*\)\n)(@_cli_errors\n)?", src, re.MULTILINE)
     undecorated = [b[0].strip() for b in blocks if not b[1]]
     assert not undecorated, f"CLI commands missing @_cli_errors: {undecorated}"

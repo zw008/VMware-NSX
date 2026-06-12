@@ -15,7 +15,14 @@ from pathlib import Path
 
 import pytest
 
-CLI_PATH = Path(__file__).resolve().parent.parent / "vmware_nsx" / "cli.py"
+_CLI_BASE = Path(__file__).resolve().parent.parent / "vmware_nsx" / "cli"
+# The CLI is a package (vmware_nsx/cli/) split by command group; fall back to
+# the legacy single-module layout (vmware_nsx/cli.py) if present.
+CLI_SOURCES: list[Path] = (
+    sorted(_CLI_BASE.glob("*.py"))
+    if _CLI_BASE.is_dir()
+    else [_CLI_BASE.with_suffix(".py")]
+)
 
 # CLI command functions for destructive operations that MUST call
 # double_confirm before executing the dangerous operation.
@@ -27,13 +34,13 @@ DESTRUCTIVE_CLI_COMMANDS: list[str] = [
 ]
 
 
-def _has_double_confirm(file_path: Path, func_name: str) -> bool:
-    """Return True if *func_name* in *file_path* references ``double_confirm``."""
-    tree = ast.parse(file_path.read_text())
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
-            source = ast.dump(node)
-            return "double_confirm" in source
+def _has_double_confirm(sources: list[Path], func_name: str) -> bool:
+    """Return True if *func_name* in any of *sources* references ``double_confirm``."""
+    for file_path in sources:
+        tree = ast.parse(file_path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
+                return "double_confirm" in ast.dump(node)
     return False
 
 
@@ -43,7 +50,7 @@ class TestDestructiveOpsSafety:
 
     @pytest.mark.parametrize("func_name", DESTRUCTIVE_CLI_COMMANDS)
     def test_has_double_confirm(self, func_name: str) -> None:
-        assert CLI_PATH.exists(), f"{CLI_PATH} not found"
-        assert _has_double_confirm(CLI_PATH, func_name), (
-            f"{func_name} in cli.py lacks a double_confirm safety guard"
+        assert CLI_SOURCES, "no CLI source files found"
+        assert _has_double_confirm(CLI_SOURCES, func_name), (
+            f"{func_name} in the CLI package lacks a double_confirm safety guard"
         )

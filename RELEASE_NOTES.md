@@ -1,3 +1,10 @@
+## v1.5.38 (2026-06-12) — backlog finish: cli/server split
+
+### Changed
+- Split the oversized `cli.py` (1334 lines) and `mcp_server/server.py` into `cli/*` and
+  `mcp_server/tools/*` packages, all under the 800-line cap. Behavior-preserving — 33 tools and 38 CLI
+  commands byte-for-byte identical; lazy-import `--help` speed (踩坑 #27) preserved. (#12)
+
 ## v1.5.37 (2026-06-12) — backlog: IP-pool lifecycle, tier-0 routes, faster VM lookup
 
 ### Fixed
