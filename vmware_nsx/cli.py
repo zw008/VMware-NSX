@@ -37,7 +37,7 @@ segment_app = typer.Typer(help="Segment management: create, update, delete (writ
 gateway_app = typer.Typer(help="Gateway management: create/update/delete Tier-1, configure Tier-0 BGP.")
 nat_app = typer.Typer(help="NAT rule management: create, delete.")
 route_app = typer.Typer(help="Static route management: create, delete.")
-ip_pool_app = typer.Typer(help="IP pool management: create.")
+ip_pool_app = typer.Typer(help="IP pool management: create, delete.")
 
 app.add_typer(inventory_app, name="inventory")
 app.add_typer(networking_app, name="networking")
@@ -1067,6 +1067,33 @@ def ip_pool_create(
     create_ip_pool(client, pool_id, display_name=display_name, subnets=[subnet])
     console.print(f"[green]IP pool '{pool_id}' created.[/]")
     _audit.log(target=_resolve_target(target), operation="create_ip_pool", resource=pool_id, parameters=params, result="ok")
+
+
+@ip_pool_app.command("delete")
+@_cli_errors
+def ip_pool_delete(
+    pool_id: str,
+    target: TargetOption = None,
+    config: ConfigOption = None,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Delete an IP address pool (destructive!)."""
+    from vmware_nsx.ops.nat_route_mgmt import delete_ip_pool
+
+    client, _ = _get_connection(target, config)
+    if dry_run:
+        _dry_run_print(
+            target=_resolve_target(target),
+            resource=pool_id,
+            operation="delete_ip_pool",
+            api_call=f"DELETE /policy/api/v1/infra/ip-pools/{pool_id}",
+            resource_label="IP Pool",
+        )
+        return
+    _double_confirm("delete IP pool", pool_id, _resolve_target(target), resource_type="IP Pool")
+    delete_ip_pool(client, pool_id)
+    console.print(f"[green]IP pool '{pool_id}' deleted.[/]")
+    _audit.log(target=_resolve_target(target), operation="delete_ip_pool", resource=pool_id, parameters={}, result="ok")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -420,6 +420,19 @@ vmware-nsx ip-pool create pool-01 --name "App Pool" --start 192.168.1.10 --end 1
 | `--cidr` | Yes | Subnet CIDR |
 | `--gateway` | No | Gateway IP |
 
+### `ip-pool delete`
+
+Delete an IP address pool (destructive — double-confirm; supports `--dry-run`).
+
+```bash
+vmware-nsx ip-pool delete pool-01 --dry-run
+vmware-nsx ip-pool delete pool-01
+```
+
+| Option | Required | Description |
+|--------|:--------:|-------------|
+| `--dry-run` | No | Preview the DELETE without performing it |
+
 ---
 
 ## Diagnostics & MCP

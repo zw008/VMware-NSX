@@ -153,8 +153,96 @@ def get_segment_port_for_vm(
         if vif.get("lport_attachment_id")
     ]
 
-    # Step 3: Search for segment ports whose attachment.id matches a VIF's
-    # lport_attachment_id.
+    # Step 3: Find segment ports whose attachment.id matches a VIF's
+    # lport_attachment_id. The Policy search API resolves this directly per
+    # VIF instead of an O(segments×ports) full inventory scan; fall back to
+    # the scan only if search returns nothing/errors (keeps correctness).
+    matched_ports = _search_segment_ports(client, vif_attachment_ids)
+    if not matched_ports:
+        matched_ports = _scan_segment_ports(client, vif_attachment_ids)
+
+    return {
+        "vm_display_name": sanitized_name,
+        "found": True,
+        "vm_external_id": sanitize(vm_external_id),
+        "host_id": sanitize(vm.get("host_id", "")),
+        "power_state": vm.get("power_state", ""),
+        "matched_ports": matched_ports,
+        "port_count": len(matched_ports),
+    }
+
+
+def _format_matched_port(seg_id: str, seg_name: str, port: dict) -> dict:
+    """Shape a SegmentPort dict into the matched-port summary."""
+    attachment = port.get("attachment", {})
+    return {
+        "segment_id": sanitize(seg_id),
+        "segment_name": sanitize(seg_name),
+        "port_id": sanitize(port.get("id", "")),
+        "port_name": sanitize(port.get("display_name", "")),
+        "attachment_id": sanitize(attachment.get("id", "")),
+    }
+
+
+def _segment_id_from_path(port_path: str) -> str:
+    """Extract the segment id from a SegmentPort policy path.
+
+    Path shape: /infra/segments/<seg-id>/ports/<port-id>.
+    """
+    parts = port_path.split("/")
+    if "segments" in parts:
+        idx = parts.index("segments")
+        if idx + 1 < len(parts):
+            return parts[idx + 1]
+    return ""
+
+
+def _search_segment_ports(
+    client: NsxClient,
+    vif_attachment_ids: list[str],
+) -> list[dict]:
+    """Resolve matching segment ports via the Policy search API.
+
+    Issues one search query per VIF attachment id, avoiding a full
+    inventory scan. Returns an empty list on any error so the caller can
+    fall back to the scan (keeps correctness).
+    """
+    matched_ports: list[dict] = []
+    for attachment_id in vif_attachment_ids:
+        query = (
+            f"resource_type:SegmentPort AND attachment.id:{attachment_id}"
+        )
+        try:
+            data = client.get(
+                "/policy/api/v1/search/query",
+                params={"query": query},
+            )
+        except Exception as exc:
+            _log.debug(
+                "Segment port search failed for attachment %s: %s",
+                attachment_id,
+                exc,
+            )
+            return []
+
+        for port in data.get("results", []):
+            seg_id = _segment_id_from_path(port.get("path", ""))
+            matched_ports.append(
+                _format_matched_port(
+                    seg_id, port.get("parent_display_name", ""), port
+                )
+            )
+    return matched_ports
+
+
+def _scan_segment_ports(
+    client: NsxClient,
+    vif_attachment_ids: list[str],
+) -> list[dict]:
+    """Full inventory scan fallback: enumerate every segment's ports.
+
+    Used only when the search API returns nothing/errors.
+    """
     segments = client.get_all("/policy/api/v1/infra/segments")
 
     matched_ports: list[dict] = []
@@ -169,30 +257,10 @@ def get_segment_port_for_vm(
             continue
 
         for p in ports:
-            attachment = p.get("attachment", {})
-            attachment_id = attachment.get("id", "")
-
+            attachment_id = p.get("attachment", {}).get("id", "")
             if attachment_id and attachment_id in vif_attachment_ids:
                 matched_ports.append(
-                    {
-                        "segment_id": sanitize(seg_id),
-                        "segment_name": sanitize(
-                            seg.get("display_name", "")
-                        ),
-                        "port_id": sanitize(p.get("id", "")),
-                        "port_name": sanitize(
-                            p.get("display_name", "")
-                        ),
-                        "attachment_id": sanitize(attachment_id),
-                    }
+                    _format_matched_port(seg_id, seg.get("display_name", ""), p)
                 )
 
-    return {
-        "vm_display_name": sanitized_name,
-        "found": True,
-        "vm_external_id": sanitize(vm_external_id),
-        "host_id": sanitize(vm.get("host_id", "")),
-        "power_state": vm.get("power_state", ""),
-        "matched_ports": matched_ports,
-        "port_count": len(matched_ports),
-    }
+    return matched_ports

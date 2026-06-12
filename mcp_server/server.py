@@ -21,7 +21,8 @@ Tool categories
   delete_segment, create_tier1_gateway, update_tier1_gateway,
   delete_tier1_gateway, configure_tier0_bgp, create_nat_rule,
   delete_nat_rule, create_static_route, delete_static_route,
-  create_ip_pool — should be gated by the AI agent's confirmation flow.
+  create_ip_pool, delete_ip_pool — should be gated by the AI agent's
+  confirmation flow.
 
 Security considerations
 -----------------------
@@ -334,18 +335,23 @@ def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_static_routes(tier1_id: str, target: Optional[str] = None) -> list[dict]:
-    """[READ] List static routes on a Tier-1 gateway.
+def list_static_routes(
+    tier1_id: str,
+    gateway_type: str = "tier1",
+    target: Optional[str] = None,
+) -> list[dict]:
+    """[READ] List static routes on a Tier-0 or Tier-1 gateway.
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
+        tier1_id: The gateway ID (Tier-0 or Tier-1, per gateway_type).
+        gateway_type: Either "tier0" or "tier1" (default "tier1").
         target: Optional NSX Manager target name from config. Uses default if omitted.
     """
     try:
         from vmware_nsx.ops.networking import list_static_routes as _list_routes
 
         client = _get_connection(target)
-        return _list_routes(client, tier1_id)
+        return _list_routes(client, tier1_id, gateway_type=gateway_type)
     except Exception as e:
         return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
 
@@ -897,9 +903,10 @@ def create_static_route(
     route_id: str,
     network: str,
     next_hop: str,
+    gateway_type: str = "tier1",
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a static route on a Tier-1 gateway via the Policy API.
+    """[WRITE] Create a static route on a Tier-0 or Tier-1 gateway via the Policy API.
 
     Use for destinations not covered by connected or advertised routes (e.g.
     reaching a VPN or external subnet). Note: for the Tier-0 to advertise this
@@ -909,10 +916,12 @@ def create_static_route(
     returns {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: Tier-1 gateway ID, as returned by list_tier1_gateways.
+        tier1_id: Gateway ID (Tier-0 or Tier-1, per gateway_type), as returned
+            by list_tier0_gateways / list_tier1_gateways.
         route_id: Unique route identifier (alphanumerics, hyphens, underscores only).
         network: Destination network in CIDR notation, e.g. "10.0.0.0/8".
         next_hop: Next-hop IPv4 address, e.g. "192.168.1.254".
+        gateway_type: Either "tier0" or "tier1" (default "tier1").
         target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
@@ -923,6 +932,7 @@ def create_static_route(
             client, tier1_id, route_id,
             network=network,
             next_hops=[{"ip_address": next_hop}],
+            gateway_type=gateway_type,
         )
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
@@ -933,9 +943,10 @@ def create_static_route(
 def delete_static_route(
     tier1_id: str,
     route_id: str,
+    gateway_type: str = "tier1",
     target: Optional[str] = None,
 ) -> str:
-    """[WRITE] Permanently delete a static route from a Tier-1 gateway.
+    """[WRITE] Permanently delete a static route from a Tier-0 or Tier-1 gateway.
 
     Irreversible: traffic to the route's destination CIDR immediately falls
     back to remaining routes or is dropped. Run list_static_routes on the same
@@ -945,15 +956,17 @@ def delete_static_route(
     connectivity failure). Recorded in the audit log (~/.vmware/audit.db).
 
     Args:
-        tier1_id: Tier-1 gateway that owns the route, as returned by list_tier1_gateways.
+        tier1_id: Gateway that owns the route (Tier-0 or Tier-1, per gateway_type),
+            as returned by list_tier0_gateways / list_tier1_gateways.
         route_id: Static route ID to delete, as returned by list_static_routes.
+        gateway_type: Either "tier0" or "tier1" (default "tier1").
         target: NSX Manager name from config.yaml. Uses the default target if omitted.
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import delete_static_route as _delete
 
         client = _get_connection(target)
-        _delete(client, tier1_id, route_id)
+        _delete(client, tier1_id, route_id, gateway_type=gateway_type)
         return f"Static route '{route_id}' deleted from '{tier1_id}'."
     except Exception as e:
         return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
@@ -1011,6 +1024,36 @@ def create_ip_pool(
         )
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
+
+
+@mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
+@vmware_tool(risk_level="high")
+def delete_ip_pool(
+    pool_id: str,
+    target: Optional[str] = None,
+) -> str:
+    """[WRITE] Permanently delete an IP address pool.
+
+    Irreversible: consumers (e.g. transport endpoints) that draw addresses
+    from this pool can no longer allocate, and NSX rejects the delete if the
+    pool still has active allocations. Run list_ip_pools and get_ip_pool_usage
+    on the same pool_id first to confirm the pool is unused, and confirm with
+    the user before deleting. Returns a confirmation string on success, or an
+    "Error: ..." string (pool not found, still in use, connectivity failure).
+    Recorded in the audit log (~/.vmware/audit.db).
+
+    Args:
+        pool_id: IP pool ID to delete, as returned by list_ip_pools.
+        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+    """
+    try:
+        from vmware_nsx.ops.nat_route_mgmt import delete_ip_pool as _delete
+
+        client = _get_connection(target)
+        _delete(client, pool_id)
+        return f"IP pool '{pool_id}' deleted."
+    except Exception as e:
+        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
 
 
 # ---------------------------------------------------------------------------

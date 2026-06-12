@@ -40,12 +40,12 @@ VMware NSX networking management — 32 MCP tools for segments, gateways, NAT, r
 | **Tier-1 Gateways** | list, get details, create, update, delete | 5 | 2R / 3W |
 | **NAT** | list rules, create rule, delete rule | 3 | 1R / 2W |
 | **Static Routes** | list, create, delete | 3 | 1R / 2W |
-| **IP Pools** | list, get usage, create pool | 3 | 2R / 1W |
+| **IP Pools** | list, get usage, create pool, delete pool | 4 | 2R / 2W |
 | **Fabric Inventory** | transport zones, transport nodes, edge clusters | 3 | 3R / 0W |
 | **Health** | NSX alarms, transport node status, edge cluster status, manager status | 4 | 4R / 0W |
 | **Troubleshooting** | logical port status, VM-to-segment lookup | 2 | 2R / 0W |
 
-**Total**: 32 tools (20 read-only + 12 write)
+**Total**: 33 tools (20 read-only + 13 write)
 
 ## Quick Install
 
@@ -153,7 +153,7 @@ vmware-nsx health alarms --target nsx-lab
 | Cloud models (Claude, GPT-4o) | Either | MCP gives structured JSON I/O |
 | Automated pipelines | **MCP** | Type-safe parameters, structured output |
 
-## MCP Tools (32 — 20 read, 12 write)
+## MCP Tools (33 — 20 read, 13 write)
 
 All MCP tools accept an optional `target` parameter to select which NSX Manager to connect to.
 
@@ -182,6 +182,7 @@ All MCP tools accept an optional `target` parameter to select which NSX Manager 
 | IP Pools | `list_ip_pools` | Read | List IP pools with usage summary |
 | | `get_ip_pool_usage` | Read | Show allocation usage for a pool |
 | | `create_ip_pool` | Write | Create a new IP address pool with allocation ranges |
+| | `delete_ip_pool` | Write | Permanently delete an IP address pool |
 | Fabric | `list_transport_zones` | Read | List transport zones with type (OVERLAY/VLAN) |
 | | `list_transport_nodes` | Read | List transport nodes with node type and status |
 | | `list_edge_clusters` | Read | List edge clusters with member count and deployment type |

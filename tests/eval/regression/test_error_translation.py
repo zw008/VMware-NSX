@@ -306,6 +306,7 @@ def test_safe_error_passes_nsx_api_error_through_and_redacts_generic() -> None:
         ("delete_tier1_gateway", {"tier1_id": "t1-x"}),
         ("delete_nat_rule", {"tier1_id": "t1-x", "rule_id": "r-x"}),
         ("delete_static_route", {"tier1_id": "t1-x", "route_id": "r-x"}),
+        ("delete_ip_pool", {"pool_id": "pool-x"}),
     ],
 )
 def test_delete_tools_route_errors_through_safe_error(tool_name, kwargs) -> None:

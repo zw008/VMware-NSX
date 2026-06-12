@@ -1,3 +1,17 @@
+## v1.5.37 (2026-06-12) — backlog: IP-pool lifecycle, tier-0 routes, faster VM lookup
+
+### Fixed
+- `create_ip_pool` reports partial state on a mid-loop subnet failure instead of leaving a silent
+  half-built pool. (#8)
+- VM→segment-port lookup uses the Policy search API instead of an O(segments×ports) full scan. (#11)
+
+### Added
+- `delete_ip_pool` (ops + CLI with `--dry-run`/confirm + audited MCP tool) — pools were uncreatable-then-
+  unremovable despite the docstring. (#9)
+- MCP static-route tools take a `gateway_type` param so Tier-0 routes work (ops already supported it). (#10)
+
+Tool count 32 → 33 (20 read / 13 write).
+
 ## v1.5.36 (2026-06-12) — centralized HTTP error translation + SKILL.md accuracy
 
 ### Fixed

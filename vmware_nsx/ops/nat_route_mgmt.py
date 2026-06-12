@@ -255,7 +255,15 @@ def create_ip_pool(
             - gateway_ip (str, optional): Gateway IP for the subnet.
 
     Returns:
-        Created IP pool dict from NSX API.
+        Dict reporting partial state so a mid-loop subnet failure doesn't
+        raise past the first error or leave the caller blind:
+            - created (bool): True once the pool object itself was PUT.
+            - pool_id (str): The pool identifier.
+            - subnets_created (list[str]): IDs of subnets successfully PUT.
+            - subnets_failed (list[dict]): One {"subnet", "error"} per subnet
+              whose PUT failed (the pool and earlier subnets stay in place —
+              this is the less-destructive report-partial-state approach; the
+              caller can retry the failed subnets or clean up explicitly).
     """
     _validate_id(pool_id)
 
@@ -275,9 +283,14 @@ def create_ip_pool(
     }
 
     path = f"/policy/api/v1/infra/ip-pools/{pool_id}"
-    result = client.put(path, body)
+    client.put(path, body)
 
-    # Create IP subnets as sub-resources (IpAddressPoolStaticSubnet)
+    # Create IP subnets as sub-resources (IpAddressPoolStaticSubnet). A subnet
+    # PUT can fail mid-loop (overlapping range, transient API error); rather
+    # than raise — which would leave a half-built pool with no signal of how
+    # far we got — record per-subnet outcomes and report partial state.
+    subnets_created: list[str] = []
+    subnets_failed: list[dict[str, Any]] = []
     for idx, sub in enumerate(subnets):
         subnet_id = f"{pool_id}-subnet-{idx}"
         subnet_body: dict[str, Any] = {
@@ -296,12 +309,49 @@ def create_ip_pool(
             f"/policy/api/v1/infra/ip-pools/{pool_id}"
             f"/ip-subnets/{subnet_id}"
         )
-        client.put(subnet_path, subnet_body)
+        try:
+            client.put(subnet_path, subnet_body)
+            subnets_created.append(subnet_id)
+        except Exception as exc:  # noqa: BLE001 — report, don't raise past first
+            subnets_failed.append({"subnet": subnet_id, "error": str(exc)})
+            _log.warning(
+                "IP pool %s subnet %s failed: %s",
+                pool_id,
+                subnet_id,
+                exc,
+            )
 
     _log.info(
-        "Created IP pool %s (%s) with %d subnet(s)",
+        "Created IP pool %s (%s): %d/%d subnet(s) created",
         pool_id,
         display_name,
+        len(subnets_created),
         len(subnets),
     )
-    return result
+    return {
+        "created": True,
+        "pool_id": pool_id,
+        "subnets_created": subnets_created,
+        "subnets_failed": subnets_failed,
+    }
+
+
+def delete_ip_pool(
+    client: NsxClient,
+    pool_id: str,
+) -> dict:
+    """Delete an IP pool via Policy API (DELETE).
+
+    Args:
+        client: Authenticated NSX API client.
+        pool_id: IP pool identifier to delete.
+
+    Returns:
+        Dict with deletion status.
+    """
+    _validate_id(pool_id)
+
+    path = f"/policy/api/v1/infra/ip-pools/{pool_id}"
+    client.delete(path)
+    _log.info("Deleted IP pool %s", pool_id)
+    return {"deleted": True, "pool_id": pool_id}

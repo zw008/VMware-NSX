@@ -385,7 +385,9 @@ def test_logical_port_status_reports_honest_realized_state() -> None:
 
 def test_get_segment_port_for_vm_uses_fabric_vifs() -> None:
     """fabric VirtualMachine has no virtual_interfaces — VIFs come from
-    GET /api/v1/fabric/vifs?owner_vm_id=..., matched on lport_attachment_id."""
+    GET /api/v1/fabric/vifs?owner_vm_id=..., matched on lport_attachment_id.
+
+    Port resolution goes through the Policy search API, not a full scan."""
     from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm
 
     client = _mock_client()
@@ -400,6 +402,56 @@ def test_get_segment_port_for_vm_uses_fabric_vifs() -> None:
         if path == "/api/v1/fabric/vifs":
             assert params == {"owner_vm_id": "vm-ext-1"}
             return {"results": [{"lport_attachment_id": "att-1", "external_id": "vif-1"}]}
+        if path == "/policy/api/v1/search/query":
+            assert params == {
+                "query": "resource_type:SegmentPort AND attachment.id:att-1"
+            }
+            return {
+                "results": [
+                    {
+                        "id": "p1",
+                        "display_name": "port-1",
+                        "path": "/infra/segments/seg-1/ports/p1",
+                        "parent_display_name": "Seg 1",
+                        "attachment": {"id": "att-1", "type": "PARENT"},
+                    }
+                ]
+            }
+        raise AssertionError(f"unexpected GET {path}")
+
+    client.get.side_effect = _get
+    # get_all must NOT be used on the search path — enumerating all
+    # segments/ports is the O(N×M) scan this fix replaces.
+    client.get_all.side_effect = AssertionError("must not scan: use search API")
+
+    result = get_segment_port_for_vm(client, "web-01")
+
+    assert result["found"] is True
+    assert result["port_count"] == 1
+    assert result["matched_ports"][0]["port_id"] == "p1"
+    assert result["matched_ports"][0]["segment_id"] == "seg-1"
+    assert result["matched_ports"][0]["segment_name"] == "Seg 1"
+    client.get_all.assert_not_called()
+
+
+def test_get_segment_port_for_vm_falls_back_to_scan_on_empty_search() -> None:
+    """If the search API returns nothing/errors, fall back to the full
+    segment/port scan so correctness is preserved."""
+    from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm
+
+    client = _mock_client()
+
+    def _get(path, params=None):
+        if path == "/api/v1/fabric/virtual-machines":
+            return {
+                "results": [
+                    {"external_id": "vm-ext-1", "host_id": "h1", "power_state": "VM_RUNNING"}
+                ]
+            }
+        if path == "/api/v1/fabric/vifs":
+            return {"results": [{"lport_attachment_id": "att-1", "external_id": "vif-1"}]}
+        if path == "/policy/api/v1/search/query":
+            return {"results": []}  # search yields nothing -> fall back
         raise AssertionError(f"unexpected GET {path}")
 
     def _get_all(path, params=None):
@@ -421,6 +473,8 @@ def test_get_segment_port_for_vm_uses_fabric_vifs() -> None:
     assert result["port_count"] == 1
     assert result["matched_ports"][0]["port_id"] == "p1"
     assert result["matched_ports"][0]["segment_id"] == "seg-1"
+    # the fallback scan was actually exercised
+    client.get_all.assert_any_call("/policy/api/v1/infra/segments")
 
 
 def test_list_alarms_exact_severity_and_pagination() -> None:
