@@ -9,7 +9,15 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
-@vmware_tool(risk_level="medium")
+@vmware_tool(
+    risk_level="medium",
+    undo=lambda params, result: {
+        "tool": "delete_tier1_gateway",
+        "params": {"tier1_id": params.get("tier1_id"), "target": params.get("target")},
+        "skill": "nsx",
+        "note": "Inverse of create_tier1_gateway: delete the created Tier-1 gateway.",
+    },
+)
 def create_tier1_gateway(
     tier1_id: str,
     display_name: str,

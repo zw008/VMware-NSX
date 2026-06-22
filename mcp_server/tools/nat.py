@@ -9,7 +9,19 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
-@vmware_tool(risk_level="medium")
+@vmware_tool(
+    risk_level="medium",
+    undo=lambda params, result: {
+        "tool": "delete_nat_rule",
+        "params": {
+            "tier1_id": params.get("tier1_id"),
+            "rule_id": params.get("rule_id"),
+            "target": params.get("target"),
+        },
+        "skill": "nsx",
+        "note": "Inverse of create_nat_rule: delete the created NAT rule.",
+    },
+)
 def create_nat_rule(
     tier1_id: str,
     rule_id: str,

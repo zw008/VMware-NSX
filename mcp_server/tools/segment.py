@@ -9,7 +9,15 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})
-@vmware_tool(risk_level="medium")
+@vmware_tool(
+    risk_level="medium",
+    undo=lambda params, result: {
+        "tool": "delete_segment",
+        "params": {"segment_id": params.get("segment_id"), "target": params.get("target")},
+        "skill": "nsx",
+        "note": "Inverse of create_segment: delete the created segment.",
+    },
+)
 def create_segment(
     segment_id: str,
     display_name: str,
