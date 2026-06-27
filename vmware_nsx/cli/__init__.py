@@ -126,6 +126,33 @@ mcp_config_install = mcp_config.mcp_config_install
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# INIT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@app.command("init")
+@_cli_errors
+def init_cmd(
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Overwrite an existing config without asking"),
+    ] = False,
+    skip_test: Annotated[
+        bool,
+        typer.Option("--skip-test", help="Do not run the doctor connection test at the end"),
+    ] = False,
+) -> None:
+    """Guided first-run setup: write config.yaml + .env, then verify the connection.
+
+    Prompts for an NSX Manager target, stores the password grep-safe (0600 .env,
+    never plaintext on disk), and offers to run `vmware-nsx doctor`.
+    """
+    from vmware_nsx.init_wizard import run_init
+
+    raise typer.Exit(run_init(force=force, skip_test=skip_test))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DOCTOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -156,6 +183,7 @@ def mcp_cmd() -> None:
     Equivalent to the legacy `vmware-nsx-mcp` console script.
     """
     import sys
+
     if sys.version_info < (3, 10):
         msg = (
             f"ERROR: vmware-nsx MCP server requires Python >= 3.10 "

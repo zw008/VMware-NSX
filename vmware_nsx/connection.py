@@ -51,6 +51,28 @@ class NsxApiError(Exception):
         self.path = path
 
 
+def _is_tls_error(exc: Exception) -> bool:
+    """Return True if *exc* (or a cause in its chain) is a TLS/cert failure.
+
+    httpx wraps the underlying ssl.SSLError / ssl.SSLCertVerificationError in a
+    ConnectError, so we walk __cause__/__context__ and also fall back to a text
+    match on the message ("certificate verify failed", "ssl").
+    """
+    import ssl
+
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if isinstance(cur, ssl.SSLError):
+            return True
+        text = str(cur).lower()
+        if "certificate verify failed" in text or "ssl" in text or "tls" in text:
+            return True
+        cur = cur.__cause__ or cur.__context__
+    return False
+
+
 def _hint_for_status(status_code: int, path: str) -> str:
     """Return a short, actionable remediation hint for an HTTP error status."""
     if status_code == 404:
@@ -89,6 +111,7 @@ class NsxClient:
         # the process-global side-effects of warnings.filterwarnings().
         if not target.verify_ssl:
             import urllib3
+
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         # No client-level auth — credentials are sent via form body in
@@ -119,8 +142,10 @@ class NsxClient:
         # Characters curl preserves unencoded in -d form data
         _SAFE = "!)*-._~"
         body = (
-            "j_username=" + quote(self._target.username, safe=_SAFE)
-            + "&j_password=" + quote(self._password, safe=_SAFE)
+            "j_username="
+            + quote(self._target.username, safe=_SAFE)
+            + "&j_password="
+            + quote(self._password, safe=_SAFE)
         )
         try:
             resp = self._client.post(
@@ -129,28 +154,48 @@ class NsxClient:
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
+            hint = "Check the host/port and network, then retry."
+            # A TLS/certificate failure (self-signed NSX Managers ship with
+            # one) surfaces as a TransportError wrapping an SSL error. Teach
+            # the verify_ssl fix rather than leaving a raw stack trace.
+            if _is_tls_error(exc):
+                hint = (
+                    "This looks like a TLS certificate failure. NSX Managers "
+                    "almost always ship with a self-signed certificate — set "
+                    "verify_ssl: false for this target in ~/.vmware-nsx/config.yaml "
+                    "(or re-run 'vmware-nsx init' and answer No to TLS verification)."
+                )
             raise NsxApiError(
-                f"Could not connect to NSX Manager {self._target.host}:"
-                f"{self._target.port}: {exc}. Check the host/port and "
-                "network, then retry.",
+                f"Could not connect to NSX Manager {self._target.host}:{self._target.port}: {exc}. {hint}",
                 method="POST",
                 path="/api/session/create",
             ) from exc
+        if resp.status_code in (401, 403):
+            raise NsxApiError(
+                f"NSX session creation failed with HTTP {resp.status_code} "
+                "(authentication rejected). Fix the credentials for this "
+                "target: the password lives in ~/.vmware-nsx/.env under "
+                "VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD, and the username in "
+                "~/.vmware-nsx/config.yaml. Special characters in the password "
+                "are sent safely via form-body auth, so a literal '!' or ')' is "
+                "fine — re-run 'vmware-nsx init' to reset the credentials.",
+                status_code=resp.status_code,
+                method="POST",
+                path="/api/session/create",
+            )
         if resp.status_code >= 400:
             raise NsxApiError(
                 f"NSX session creation failed with HTTP {resp.status_code}. "
-                "Check the username and password for this target — the "
-                "per-target env var follows the pattern "
-                "VMWARE_<TARGET_NAME_UPPER>_PASSWORD in ~/.vmware-nsx/.env.",
+                "Check the username (~/.vmware-nsx/config.yaml) and password "
+                "(~/.vmware-nsx/.env, VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD) "
+                "for this target.",
                 status_code=resp.status_code,
                 method="POST",
                 path="/api/session/create",
             )
         self._token = resp.headers.get("x-xsrf-token")
         if not self._token:
-            raise ConnectionError(
-                "NSX session creation succeeded but no X-XSRF-TOKEN returned"
-            )
+            raise ConnectionError("NSX session creation succeeded but no X-XSRF-TOKEN returned")
         _log.info("NSX session created for %s", self._target.host)
 
     def _headers(self) -> dict[str, str]:
@@ -189,9 +234,7 @@ class NsxClient:
         reauthed = False
         while True:
             try:
-                resp = self._client.request(
-                    method, path, headers=self._headers(), params=params, json=json_data
-                )
+                resp = self._client.request(method, path, headers=self._headers(), params=params, json=json_data)
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 if attempt < retries:
                     attempt += 1

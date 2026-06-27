@@ -51,6 +51,7 @@ VMware NSX networking management — 32 MCP tools for segments, gateways, NAT, r
 
 ```bash
 uv tool install vmware-nsx-mgmt
+vmware-nsx init      # guided setup: writes config + .env (chmod 600, password grep-safe), then verifies
 vmware-nsx doctor
 ```
 

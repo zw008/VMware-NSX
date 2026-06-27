@@ -16,6 +16,7 @@ each ops function leaking raw httpx tracebacks. Also pins:
 * CLI: VLAN range '100-200' is passed through as a range string
 * ops: create_segment keeps documented dhcp_ranges
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,9 +40,7 @@ def _make_client(handler, *, token: str | None = "xsrf-tok") -> NsxClient:
     """Build an NsxClient wired to an httpx.MockTransport, skipping the
     real __init__ (which would dial out and create a session)."""
     client = NsxClient.__new__(NsxClient)
-    client._target = SimpleNamespace(
-        host="nsx.example", port=443, username="admin", verify_ssl=True
-    )
+    client._target = SimpleNamespace(host="nsx.example", port=443, username="admin", verify_ssl=True)
     client._password = "pw"
     client._base_url = "https://nsx.example:443"
     client._token = token
@@ -92,7 +91,13 @@ def test_session_create_failure_raises_credential_hint() -> None:
         client._create_session()
     err = exc_info.value
     assert err.status_code == 403
-    assert "VMWARE_<TARGET_NAME_UPPER>_PASSWORD" in str(err)
+    # Names the exact loader env-var pattern (NSX_ prefix) + where the
+    # username lives, and reaffirms form-body auth handles special chars
+    # (踩坑 #10/#21).
+    msg = str(err)
+    assert "VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD" in msg
+    assert "config.yaml" in msg
+    assert "form-body" in msg
 
 
 # ── central _request() translation ──────────────────────────────────────
@@ -241,9 +246,7 @@ def test_is_alive_uses_cheap_policy_probe_no_retry() -> None:
     # Documented semantics: 5xx=alive, 401/403=dead. A 403 on the probe marks
     # the session dead (rebuild), matching VMware-NSX-Security exactly.
     client_403 = _make_client(lambda r: httpx.Response(403))
-    assert client_403.is_alive() is False, (
-        "403 = dead session per documented 5xx=alive / 401/403=dead semantics"
-    )
+    assert client_403.is_alive() is False, "403 = dead session per documented 5xx=alive / 401/403=dead semantics"
 
 
 def test_is_alive_treats_503_as_alive_and_401_as_dead() -> None:
@@ -289,7 +292,9 @@ def test_safe_error_passes_nsx_api_error_through_and_redacts_generic() -> None:
 
     teaching = NsxApiError(
         "NSX Manager GET /x returned HTTP 404. Resource not found.",
-        status_code=404, method="GET", path="/x",
+        status_code=404,
+        method="GET",
+        path="/x",
     )
     assert "404" in _safe_error(teaching, "test")
 
@@ -407,8 +412,7 @@ def test_cli_translates_nsx_api_error_to_red_line_and_exit_1() -> None:
     import vmware_nsx.cli as cli
 
     err = NsxApiError(
-        "NSX Manager GET /policy/api/v1/infra/segments returned HTTP 403. "
-        "Permission denied.",
+        "NSX Manager GET /policy/api/v1/infra/segments returned HTTP 403. Permission denied.",
         status_code=403,
     )
     with patch.object(cli, "_get_connection", side_effect=err):
@@ -425,7 +429,8 @@ def test_cli_translates_missing_config_to_exit_1() -> None:
     import vmware_nsx.cli as cli
 
     with patch.object(
-        cli, "_get_connection",
+        cli,
+        "_get_connection",
         side_effect=FileNotFoundError("Config file not found: ~/.vmware-nsx/config.yaml"),
     ):
         result = CliRunner().invoke(cli.app, ["health", "manager-status"])
@@ -506,6 +511,4 @@ def test_create_segment_includes_dhcp_ranges_when_present() -> None:
         "gateway_address": "10.0.0.1/24",
         "dhcp_ranges": ["10.0.0.10-10.0.0.100"],
     }
-    assert body["subnets"][1] == {"gateway_address": "10.0.1.1/24"}, (
-        "dhcp_ranges key must be absent when not provided"
-    )
+    assert body["subnets"][1] == {"gateway_address": "10.0.1.1/24"}, "dhcp_ranges key must be absent when not provided"
