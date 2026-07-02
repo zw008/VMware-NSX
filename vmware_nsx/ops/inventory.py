@@ -12,15 +12,24 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger("vmware-nsx.inventory")
 
+# Default page/limit for list operations — matches the family list-tool
+# convention (bounded results, agent narrows with a filter for more).
+_DEFAULT_LIST_LIMIT = 50
+
+# Ports embedded in a single-segment detail view are bounded to this many.
+_SEGMENT_PORT_SAMPLE = 50
+
 
 # ---------------------------------------------------------------------------
 # Segments
 # ---------------------------------------------------------------------------
 
 
-def list_segments(client: NsxClient) -> list[dict]:
-    """List all network segments."""
-    items = client.get_all("/policy/api/v1/infra/segments")
+def list_segments(client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT) -> list[dict]:
+    """List network segments (bounded to ``limit``, default 50)."""
+    items = client.get_all(
+        "/policy/api/v1/infra/segments", page_size=limit, limit=limit
+    )
     return [
         {
             "id": sanitize(s.get("id", "")),
@@ -45,10 +54,16 @@ def list_segments(client: NsxClient) -> list[dict]:
 def get_segment(client: NsxClient, segment_id: str) -> dict:
     """Get segment details including ports."""
     seg = client.get(f"/policy/api/v1/infra/segments/{segment_id}")
-    # Get ports on this segment
+    # Fetch only a bounded sample of ports rather than draining the whole
+    # collection just to slice the first N; report the true total from
+    # pagination metadata (fall back to what we fetched if it is absent).
+    ports_path = f"/policy/api/v1/infra/segments/{segment_id}/ports"
     ports = client.get_all(
-        f"/policy/api/v1/infra/segments/{segment_id}/ports"
+        ports_path, page_size=_SEGMENT_PORT_SAMPLE, limit=_SEGMENT_PORT_SAMPLE
     )
+    total_port_count = client.get_count(ports_path)
+    if total_port_count is None:
+        total_port_count = len(ports)
     return {
         "id": sanitize(seg.get("id", "")),
         "display_name": sanitize(seg.get("display_name", "")),
@@ -58,14 +73,14 @@ def get_segment(client: NsxClient, segment_id: str) -> dict:
         "transport_zone_path": sanitize(seg.get("transport_zone_path", "")),
         "connectivity_path": sanitize(seg.get("connectivity_path", "")),
         "vlan_ids": seg.get("vlan_ids", []),
-        "port_count": len(ports),
+        "port_count": total_port_count,
         "ports": [
             {
                 "id": sanitize(p.get("id", "")),
                 "display_name": sanitize(p.get("display_name", "")),
                 "attachment": p.get("attachment", {}),
             }
-            for p in ports[:50]  # Limit to 50 ports
+            for p in ports
         ],
     }
 
@@ -75,9 +90,13 @@ def get_segment(client: NsxClient, segment_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def list_tier0_gateways(client: NsxClient) -> list[dict]:
-    """List all Tier-0 gateways."""
-    items = client.get_all("/policy/api/v1/infra/tier-0s")
+def list_tier0_gateways(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List Tier-0 gateways (bounded to ``limit``, default 50)."""
+    items = client.get_all(
+        "/policy/api/v1/infra/tier-0s", page_size=limit, limit=limit
+    )
     return [
         {
             "id": sanitize(t.get("id", "")),
@@ -110,9 +129,13 @@ def get_tier0_gateway(client: NsxClient, tier0_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def list_tier1_gateways(client: NsxClient) -> list[dict]:
-    """List all Tier-1 gateways."""
-    items = client.get_all("/policy/api/v1/infra/tier-1s")
+def list_tier1_gateways(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List Tier-1 gateways (bounded to ``limit``, default 50)."""
+    items = client.get_all(
+        "/policy/api/v1/infra/tier-1s", page_size=limit, limit=limit
+    )
     return [
         {
             "id": sanitize(t.get("id", "")),
@@ -144,13 +167,15 @@ def get_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def list_transport_zones(client: NsxClient) -> list[dict]:
-    """List all transport zones."""
+def list_transport_zones(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List transport zones (bounded to ``limit``, default 50)."""
     path = (
         "/policy/api/v1/infra/sites/default"
         "/enforcement-points/default/transport-zones"
     )
-    items = client.get_all(path)
+    items = client.get_all(path, page_size=limit, limit=limit)
     return [
         {
             "id": sanitize(tz.get("id", "")),
@@ -167,9 +192,13 @@ def list_transport_zones(client: NsxClient) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def list_transport_nodes(client: NsxClient) -> list[dict]:
-    """List all transport nodes (ESXi hosts, Edge nodes)."""
-    items = client.get_all("/api/v1/transport-nodes")
+def list_transport_nodes(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List transport nodes (ESXi hosts, Edge nodes; bounded to ``limit``)."""
+    items = client.get_all(
+        "/api/v1/transport-nodes", page_size=limit, limit=limit
+    )
     result: list[dict] = []
     for n in items:
         ip_addresses: list[str] = []
@@ -201,9 +230,13 @@ def list_transport_nodes(client: NsxClient) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def list_edge_clusters(client: NsxClient) -> list[dict]:
-    """List all edge clusters."""
-    items = client.get_all("/api/v1/edge-clusters")
+def list_edge_clusters(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List edge clusters (bounded to ``limit``, default 50)."""
+    items = client.get_all(
+        "/api/v1/edge-clusters", page_size=limit, limit=limit
+    )
     return [
         {
             "id": sanitize(ec.get("id", "")),

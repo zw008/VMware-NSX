@@ -1,3 +1,18 @@
+## v1.7.2 (2026-07-02) — list pagination + port-status N+1
+
+### Changed
+- **List operations now default to at most 50 items** (previously drained up to
+  1000 into agent context) and report the true total via a lightweight count
+  probe. `get_all` gained optional `page_size` / `limit`; MCP/CLI signatures are
+  unchanged (callers pick up the 50-item default).
+
+### Fixed
+- **Port-status & segment-scan round-trip storms.** `get_logical_port_status`
+  issued a per-port `/state` GET (up to 51 round-trips per call); the segment-port
+  fallback scanned every segment in the estate. Port status is now bounded to
+  ≤50 ports, and the fallback is capped at 200 segments with a truncation warning
+  (the Policy Search API path is preferred and unchanged).
+
 ## v1.7.1 (2026-07-02) — family version alignment
 
 No code changes. Version bump to stay aligned with the v1.7.1 family release

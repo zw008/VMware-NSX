@@ -12,13 +12,19 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger("vmware-nsx.networking")
 
+# Default page/limit for list operations — matches the family list-tool
+# convention (bounded results, agent narrows with a filter for more).
+_DEFAULT_LIST_LIMIT = 50
+
 
 # ---------------------------------------------------------------------------
 # NAT Rules
 # ---------------------------------------------------------------------------
 
 
-def list_nat_rules(client: NsxClient, tier1_id: str) -> list[dict]:
+def list_nat_rules(
+    client: NsxClient, tier1_id: str, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
     """List all user-defined NAT rules on a Tier-1 gateway.
 
     Args:
@@ -32,7 +38,7 @@ def list_nat_rules(client: NsxClient, tier1_id: str) -> list[dict]:
         f"/policy/api/v1/infra/tier-1s/{tier1_id}"
         "/nat/USER/nat-rules"
     )
-    items = client.get_all(path)
+    items = client.get_all(path, page_size=limit, limit=limit)
     return [
         {
             "id": sanitize(r.get("id", "")),
@@ -170,6 +176,7 @@ def list_static_routes(
     client: NsxClient,
     gateway_id: str,
     gateway_type: str = "tier1",
+    limit: int = _DEFAULT_LIST_LIMIT,
 ) -> list[dict]:
     """List static routes on a gateway (Tier-0 or Tier-1).
 
@@ -183,7 +190,7 @@ def list_static_routes(
     """
     gw_resource = "tier-0s" if gateway_type == "tier0" else "tier-1s"
     path = f"/policy/api/v1/infra/{gw_resource}/{gateway_id}/static-routes"
-    items = client.get_all(path)
+    items = client.get_all(path, page_size=limit, limit=limit)
     return [
         {
             "id": sanitize(r.get("id", "")),
@@ -208,13 +215,17 @@ def list_static_routes(
 # ---------------------------------------------------------------------------
 
 
-def list_ip_pools(client: NsxClient) -> list[dict]:
-    """List all IP pools.
+def list_ip_pools(
+    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+) -> list[dict]:
+    """List IP pools (bounded to ``limit``, default 50).
 
     Returns:
         List of IP pool dicts with id, display_name, and usage summary.
     """
-    items = client.get_all("/policy/api/v1/infra/ip-pools")
+    items = client.get_all(
+        "/policy/api/v1/infra/ip-pools", page_size=limit, limit=limit
+    )
     return [
         {
             "id": sanitize(p.get("id", "")),
@@ -225,21 +236,28 @@ def list_ip_pools(client: NsxClient) -> list[dict]:
     ]
 
 
-def get_ip_pool_usage(client: NsxClient, pool_id: str) -> dict:
+def get_ip_pool_usage(
+    client: NsxClient, pool_id: str, limit: int = _DEFAULT_LIST_LIMIT
+) -> dict:
     """Get IP allocation details for a specific IP pool.
 
     Args:
         client: Authenticated NSX API client.
         pool_id: IP pool identifier.
+        limit: Max allocations returned (default 50). ``allocation_count``
+            still reports the true total from pagination metadata.
 
     Returns:
         Dict with pool info and list of current allocations.
     """
     path = f"/policy/api/v1/infra/ip-pools/{pool_id}/ip-allocations"
-    allocations = client.get_all(path)
+    allocations = client.get_all(path, page_size=limit, limit=limit)
+    total = client.get_count(path)
+    if total is None:
+        total = len(allocations)
     return {
         "pool_id": pool_id,
-        "allocation_count": len(allocations),
+        "allocation_count": total,
         "allocations": [
             {
                 "id": sanitize(a.get("id", "")),

@@ -156,20 +156,27 @@ def delete_segment(client: NsxClient, segment_id: str) -> dict:
     """
     _validate_id(segment_id)
 
-    # Safety check: verify no ports are attached
-    ports = client.get_all(
-        f"/policy/api/v1/infra/segments/{segment_id}/ports"
-    )
-    if ports:
+    # Safety check: verify no ports are attached. Probe with a single-item
+    # page — one attached port is enough to block deletion, so there's no
+    # need to drain the whole port collection.
+    ports_path = f"/policy/api/v1/infra/segments/{segment_id}/ports"
+    probe = client.get_all(ports_path, page_size=1, limit=1)
+    if probe:
+        # Non-empty: fetch the accurate total and a small id sample for the
+        # error message (fall back to what we probed if metadata is absent).
+        total = client.get_count(ports_path)
+        sample = client.get_all(ports_path, page_size=10, limit=10)
+        if total is None:
+            total = len(sample)
         return {
             "deleted": False,
             "segment_id": segment_id,
             "error": (
-                f"Segment has {len(ports)} active port(s). "
+                f"Segment has {total} active port(s). "
                 "Detach all ports before deleting."
             ),
             "port_ids": [
-                sanitize(p.get("id", "")) for p in ports[:10]
+                sanitize(p.get("id", "")) for p in sample[:10]
             ],
         }
 

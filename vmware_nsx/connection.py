@@ -285,23 +285,40 @@ class NsxClient:
         path: str,
         params: dict[str, Any] | None = None,
         max_items: int = _MAX_ITEMS,
+        *,
+        page_size: int | None = None,
+        limit: int | None = None,
     ) -> list[dict]:
-        """Paginated GET. Follows cursor until all results collected.
+        """Paginated GET. Follows cursor until enough results are collected.
 
-        Collection stops at ``max_items`` (default 1000) as a safety cap —
-        callers wanting more should filter server-side instead of dumping
-        unbounded lists into agent context.
+        Callers should bound the query rather than draining the whole
+        collection into agent context (family "search over list" rule):
+
+        * ``page_size`` — sets the server-side per-page size, so each round
+          trip returns at most this many results.
+        * ``limit`` — stops following cursors once ``limit`` items have been
+          collected. Hitting the requested ``limit`` is expected and silent.
+        * ``max_items`` — a safety backstop (default 1000). Truncating here
+          logs a warning, since it means the caller under-specified the query.
+
+        When both ``page_size`` and ``limit`` are omitted, behaviour is
+        unchanged: follow every cursor up to the ``max_items`` backstop.
         """
         all_results: list[dict] = []
         params = dict(params) if params else {}
+        if page_size is not None:
+            params["page_size"] = page_size
         while True:
             data = self.get(path, params=params)
-            results = data.get("results", [])
-            all_results.extend(results)
+            all_results.extend(data.get("results", []))
+            # Requested limit reached — expected, no warning.
+            if limit is not None and len(all_results) >= limit:
+                return all_results[:limit]
+            # Safety backstop reached — the caller should have filtered.
             if len(all_results) >= max_items:
                 _log.warning(
                     "get_all(%s) hit the %d-item safety cap; results truncated. "
-                    "Use a server-side filter to narrow the query.",
+                    "Use a server-side filter or a limit to narrow the query.",
                     path,
                     max_items,
                 )
@@ -311,6 +328,23 @@ class NsxClient:
                 break
             params["cursor"] = cursor
         return all_results
+
+    def get_count(
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> int | None:
+        """Return the server-reported total size of a paginated collection.
+
+        Fetches a single minimal page (``page_size=1``) and reads the
+        ListResult ``result_count`` field, so a caller can report an
+        accurate total without draining the whole collection just to
+        ``len()`` it. Returns None when the field is absent (older APIs);
+        callers should fall back to the length of what they did fetch.
+        """
+        p = dict(params) if params else {}
+        p["page_size"] = 1
+        data = self.get(path, params=p)
+        count = data.get("result_count")
+        return count if isinstance(count, int) else None
 
     def post(self, path: str, json_data: dict[str, Any] | None = None) -> dict:
         """POST request for write operations."""

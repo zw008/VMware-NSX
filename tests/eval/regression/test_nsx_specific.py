@@ -288,7 +288,7 @@ def test_bgp_neighbor_config_and_status_fields() -> None:
 
     client = _mock_client()
 
-    def _get_all(path, params=None):
+    def _get_all(path, params=None, max_items=1000, *, page_size=None, limit=None):
         if path.endswith("/locale-services"):
             return [{"id": "default"}]
         if path.endswith("/bgp/neighbors"):
@@ -437,6 +437,7 @@ def test_get_segment_port_for_vm_uses_fabric_vifs() -> None:
 def test_get_segment_port_for_vm_falls_back_to_scan_on_empty_search() -> None:
     """If the search API returns nothing/errors, fall back to the full
     segment/port scan so correctness is preserved."""
+    from vmware_nsx.ops import troubleshoot
     from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm
 
     client = _mock_client()
@@ -454,7 +455,7 @@ def test_get_segment_port_for_vm_falls_back_to_scan_on_empty_search() -> None:
             return {"results": []}  # search yields nothing -> fall back
         raise AssertionError(f"unexpected GET {path}")
 
-    def _get_all(path, params=None):
+    def _get_all(path, params=None, max_items=1000, *, page_size=None, limit=None):
         if path == "/policy/api/v1/infra/segments":
             return [{"id": "seg-1", "display_name": "Seg 1"}]
         if path.endswith("/ports"):
@@ -473,8 +474,12 @@ def test_get_segment_port_for_vm_falls_back_to_scan_on_empty_search() -> None:
     assert result["port_count"] == 1
     assert result["matched_ports"][0]["port_id"] == "p1"
     assert result["matched_ports"][0]["segment_id"] == "seg-1"
-    # the fallback scan was actually exercised
-    client.get_all.assert_any_call("/policy/api/v1/infra/segments")
+    # the fallback scan was actually exercised (now bounded via page_size/limit)
+    client.get_all.assert_any_call(
+        "/policy/api/v1/infra/segments",
+        page_size=troubleshoot._MAX_SCAN_SEGMENTS,
+        limit=troubleshoot._MAX_SCAN_SEGMENTS,
+    )
 
 
 def test_list_alarms_exact_severity_and_pagination() -> None:

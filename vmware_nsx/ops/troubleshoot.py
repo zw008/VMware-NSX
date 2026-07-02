@@ -12,6 +12,16 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger("vmware-nsx.troubleshoot")
 
+# Cap the per-port realized-state round trips: at most this many ports are
+# fetched and probed (one GET .../state each), so a busy segment can't turn a
+# single call into hundreds of round trips.
+_PORT_SAMPLE_LIMIT = 50
+
+# Cap the fallback full-inventory scan (only reached when the Policy search
+# API returns nothing). Scanning the whole estate is O(#segments) port lists;
+# bound it and warn rather than hammer every segment.
+_MAX_SCAN_SEGMENTS = 200
+
 
 # ---------------------------------------------------------------------------
 # Logical Port Status
@@ -34,13 +44,22 @@ def get_logical_port_status(client: NsxClient, segment_id: str) -> dict:
     # Get segment info
     seg = client.get(f"/policy/api/v1/infra/segments/{segment_id}")
 
-    # Get ports on this segment
+    # Fetch only a bounded sample of ports — we make one per-port state call
+    # below, so draining the whole collection would be O(#ports) round trips.
+    ports_path = f"/policy/api/v1/infra/segments/{segment_id}/ports"
     ports = client.get_all(
-        f"/policy/api/v1/infra/segments/{segment_id}/ports"
+        ports_path,
+        page_size=_PORT_SAMPLE_LIMIT,
+        limit=_PORT_SAMPLE_LIMIT,
     )
+    # Report the true total (don't silently drop the count) from pagination
+    # metadata; fall back to what we fetched if the API omits result_count.
+    total_port_count = client.get_count(ports_path)
+    if total_port_count is None:
+        total_port_count = len(ports)
 
     port_details: list[dict] = []
-    for p in ports[:50]:  # Limit to 50 ports to avoid excessive API calls
+    for p in ports:
         port_id = p.get("id", "")
         attachment = p.get("attachment", {})
 
@@ -92,7 +111,8 @@ def get_logical_port_status(client: NsxClient, segment_id: str) -> dict:
         "segment_id": segment_id,
         "segment_name": sanitize(seg.get("display_name", "")),
         "admin_state": seg.get("admin_state", "UP"),
-        "port_count": len(ports),
+        "port_count": total_port_count,
+        "ports_shown": len(port_details),
         "ports": port_details,
     }
 
@@ -241,9 +261,23 @@ def _scan_segment_ports(
 ) -> list[dict]:
     """Full inventory scan fallback: enumerate every segment's ports.
 
-    Used only when the search API returns nothing/errors.
+    Used only when the search API returns nothing/errors. The scan is
+    bounded to ``_MAX_SCAN_SEGMENTS`` segments so it cannot fan out across
+    the whole estate; if that cap is hit the result may be incomplete and a
+    warning is logged advising the caller to narrow the query.
     """
-    segments = client.get_all("/policy/api/v1/infra/segments")
+    segments = client.get_all(
+        "/policy/api/v1/infra/segments",
+        page_size=_MAX_SCAN_SEGMENTS,
+        limit=_MAX_SCAN_SEGMENTS,
+    )
+    if len(segments) >= _MAX_SCAN_SEGMENTS:
+        _log.warning(
+            "Segment-port fallback scan hit the %d-segment cap; results may "
+            "be incomplete. The Policy search API is the reliable path — "
+            "narrow the query or check search availability.",
+            _MAX_SCAN_SEGMENTS,
+        )
 
     matched_ports: list[dict] = []
     for seg in segments:
