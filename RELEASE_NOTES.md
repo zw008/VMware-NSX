@@ -1,3 +1,9 @@
+## v1.7.5 (2026-07-13) — internal dead-code cleanup + family version alignment
+
+### Internal
+- Removed unused `import os` (doctor) and an unused assignment in the segment
+  CLI. No behavior change; MCP tool surface unchanged (33).
+
 ## v1.7.4 (2026-07-13) — family version alignment
 
 ## v1.7.3 (2026-07-03) — family version alignment

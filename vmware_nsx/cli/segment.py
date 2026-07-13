@@ -55,7 +55,7 @@ def segment_create(
     parsed_subnets: list[dict[str, str]] | None = None
     if subnet is not None:
         parsed_subnets = [{"gateway_address": subnet}]
-    result = create_segment(client, segment_id, display_name=display_name, transport_zone_path=transport_zone, vlan_ids=parsed_vlan_ids, subnets=parsed_subnets)
+    create_segment(client, segment_id, display_name=display_name, transport_zone_path=transport_zone, vlan_ids=parsed_vlan_ids, subnets=parsed_subnets)
     console.print(f"[green]Segment '{segment_id}' created.[/]")
     cli._audit.log(target=cli._resolve_target(target), operation="create_segment", resource=segment_id, parameters=params, result="ok")
 
