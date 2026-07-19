@@ -242,6 +242,51 @@ whitespace are handled correctly).
 > Secrets Manager, or a Kubernetes Secret) into the `*_PASSWORD` environment
 > variable at process start. The code reads the env var either way.
 
+## Read-Only Mode
+
+Off by default. When on, all 13 write tools are removed from the MCP registry at start-up,
+so `list_tools()` never offers them — the model cannot call what it cannot see, and no
+prompt discipline is required. The 20 read tools are unaffected. This is for audits, PoCs,
+demos, and deployments driven by a local or otherwise untrusted model.
+
+Three ways to turn it on, highest precedence first:
+
+| Setting | Scope |
+|---------|-------|
+| `VMWARE_NSX_READ_ONLY=true` | this skill only |
+| `VMWARE_READ_ONLY=true` | every installed VMware skill — one variable puts the whole estate into an audit posture |
+| `read_only: true` in `~/.vmware-nsx/config.yaml` | this skill, persisted to disk |
+
+Precedence is **per-skill env → family env → config → off**. The environment variables come
+first so a deployment can be locked down from the MCP client's `env` block without editing
+any config file:
+
+```json
+{
+  "mcpServers": {
+    "vmware-nsx": {
+      "command": "vmware-nsx",
+      "args": ["mcp"],
+      "env": { "VMWARE_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+An empty string (`"VMWARE_READ_ONLY": ""`) counts as unset, not as an explicit off — a
+template leftover is not a decision, and treating it as one would let it override
+`read_only: true` in config.
+
+**Fail-closed.** If read-only mode is requested but cannot be *proven* — the tool registry
+cannot be enumerated, or a removal does not take effect — the server refuses to start rather
+than serve write tools it promised to withhold. A misspelled value is handled differently:
+`VMWARE_READ_ONLY=ture` does not abort, it resolves to **on** with a warning, so a typo
+locks the deployment down instead of quietly leaving it open.
+
+**Verifying it took.** `vmware-nsx doctor` reports the resolved state and which setting it
+came from — including the case where an unrecognised value enabled the mode by accident. The
+MCP server's start-up log additionally names every tool that was withheld.
+
 ## Security Details
 
 > **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "NSX" are trademarks of Broadcom.

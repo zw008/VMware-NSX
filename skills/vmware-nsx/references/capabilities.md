@@ -43,6 +43,10 @@ Tool names are exactly as registered on the MCP server; endpoints and methods ar
 from the corresponding `vmware_nsx/ops/` implementation. Anything not listed here does
 not exist.
 
+Under read-only mode (`VMWARE_READ_ONLY=true`) the 13 tools marked Write below never appear
+in `list_tools()`. Classification follows each tool's `[READ]`/`[WRITE]` docstring marker;
+see README.
+
 ### Segments (5 tools — 2 read, 3 write)
 
 | Capability | Tool | API Endpoint | Method |

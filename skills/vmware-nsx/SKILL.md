@@ -192,6 +192,15 @@ Write tools require explicit parameters and are audit-logged. Dry-run preview (`
 
 Every list-returning tool above returns `{items, returned, limit, total, truncated, hint}`, not a bare array. Rows live under `items`: empty `items` with `truncated: false` means the query genuinely matched nothing — report that, not a tool failure. `truncated: true` means more rows exist — never describe the result as the complete set; re-query as `hint` instructs. Field semantics, `total` sourcing, and an example payload: `references/capabilities.md`.
 
+## Read-Only Mode
+
+If a write tool described above is absent from `list_tools()`, this deployment is in
+read-only mode: `VMWARE_READ_ONLY=true` (or `VMWARE_NSX_READ_ONLY`, or `read_only: true` in
+config.yaml) withholds all 13 write tools at start-up, leaving the 20 read tools. That is a
+deliberate lockdown, not a fault — do not retry, and do not look for another tool that
+achieves the same change. Name the blocked operation and say an operator must clear the
+switch and restart the server. Read tools are unaffected.
+
 ## CLI Quick Reference
 
 ```bash
