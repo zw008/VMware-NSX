@@ -49,11 +49,16 @@ class FakeNsxClient:
         *,
         page_size: int | None = None,
         limit: int | None = None,
+        total_sink: Any = None,
     ) -> list[dict]:
         effective = min(
             self.backing_count,
             limit if limit is not None else max_items,
         )
+        # Mirrors the real client: pages carry the collection's result_count,
+        # so a bounded caller can still state the true total.
+        if total_sink is not None:
+            total_sink.value = self.backing_count
         self.get_all_calls.append(
             {
                 "path": path,

@@ -7,7 +7,7 @@
 
 [English](README.md) | [中文](README-CN.md)
 
-VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 MCP tools, domain-focused.
+VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 33 MCP tools, domain-focused.
 
 > NSX Policy API skill for NSX-T 3.0+ and NSX 4.x.
 
@@ -17,12 +17,14 @@ VMware NSX networking management: segments, gateways, NAT, routing, IPAM — 31 
 
 | Skill | Scope | Tools | Install |
 |-------|-------|:-----:|---------|
-| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** ⭐ entry point | VM lifecycle, deployment, guest ops, clusters | 31 | `uv tool install vmware-aiops` |
-| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** | Read-only monitoring, alarms, events, VM info | 8 | `uv tool install vmware-monitor` |
+| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** ⭐ entry point | VM lifecycle, deployment, guest ops, clusters | 49 | `uv tool install vmware-aiops` |
+| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** | Read-only monitoring, alarms, events, VM info | 27 | `uv tool install vmware-monitor` |
 | **[vmware-storage](https://github.com/zw008/VMware-Storage)** | Datastores, iSCSI, vSAN | 11 | `uv tool install vmware-storage` |
 | **[vmware-vks](https://github.com/zw008/VMware-VKS)** | Tanzu Namespaces, TKC cluster lifecycle | 20 | `uv tool install vmware-vks` |
-| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW microsegmentation, security groups, Traceflow | 20 | `uv tool install vmware-nsx-security` |
-| **[vmware-aria](https://github.com/zw008/VMware-Aria)** | Aria Ops metrics, alerts, capacity planning | 18 | `uv tool install vmware-aria` |
+| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW microsegmentation, security groups, Traceflow | 21 | `uv tool install vmware-nsx-security` |
+| **[vmware-aria](https://github.com/zw008/VMware-Aria)** | Aria Ops metrics, alerts, capacity planning | 28 | `uv tool install vmware-aria` |
+| **[vmware-avi](https://github.com/zw008/VMware-AVI)** | AVI/NSX ALB load balancing, AKO | 28 | `uv tool install vmware-avi` |
+| **[vmware-harden](https://github.com/zw008/VMware-Harden)** | Compliance baselines, drift detection | 6 | `uv tool install vmware-harden` |
 
 ## Quick Install
 
@@ -48,17 +50,45 @@ chmod 600 ~/.vmware-nsx/.env
 vmware-nsx doctor
 ```
 
+## Read-Only Mode
+
+A prompt instruction is advisory — a model can ignore it. Read-only mode is structural: set `VMWARE_READ_ONLY=true` and all 13 write tools (segment/Tier-1/NAT create-update-delete, static routes, IP pools) are removed from the MCP registry at startup — `list_tools()` never offers them, so the model cannot call what it cannot see. The 20 read tools remain. Off by default, and fail-closed: if the mode is requested but cannot be guaranteed, the server refuses to start.
+
+Three ways to enable:
+
+```json
+{
+  "mcpServers": {
+    "vmware-nsx": {
+      "command": "vmware-nsx",
+      "args": ["mcp"],
+      "env": { "VMWARE_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+- Per-skill override: `VMWARE_NSX_READ_ONLY=true` (takes precedence over the family-wide `VMWARE_READ_ONLY`)
+- Config alternative: `read_only: true` in `~/.vmware-nsx/config.yaml`
+
+Precedence: per-skill env → family env → config → off. Startup logs list exactly which tools were withheld.
+
 ## What This Skill Does
 
-| Category | Tools | Count |
-|----------|-------|:-----:|
-| **Segments** | list, get, create, update, delete, ports | 6 |
-| **Tier-0 Gateways** | list, get, BGP neighbors, route table | 4 |
-| **Tier-1 Gateways** | list, get, create, update, delete, route table | 6 |
-| **NAT** | list, get, create, update, delete | 5 |
-| **Static Routes** | list, create, delete | 3 |
-| **IP Pools** | list, allocations, create, add subnet | 4 |
-| **Health & Troubleshooting** | alarms, transport nodes, edge clusters, manager status, port status, VM-to-segment | 6 |
+| Category | Tools | Count | Read / Write |
+|----------|-------|:-----:|:------------:|
+| **Segments** | list, get, create, update, delete | 5 | 2R / 3W |
+| **Tier-0 Gateways** | list, get, BGP neighbors, configure BGP | 4 | 3R / 1W |
+| **Tier-1 Gateways** | list, get, create, update, delete | 5 | 2R / 3W |
+| **NAT** | list, create, delete | 3 | 1R / 2W |
+| **Static Routes** | list, create, delete | 3 | 1R / 2W |
+| **IP Pools** | list, usage, create, delete | 4 | 2R / 2W |
+| **Fabric Inventory** | transport zones, transport nodes, edge clusters | 3 | 3R / 0W |
+| **Health & Troubleshooting** | alarms, transport node status, edge cluster status, manager status, port status, VM-to-segment | 6 | 6R / 0W |
+
+**Total**: 33 tools (20 read-only + 13 write)
+
+- **Read-only mode** — one env var strips every write tool from the MCP registry; ideal for audits, PoCs, and untrusted/local models — see [Read-Only Mode](#read-only-mode)
 
 ## Common Workflows
 
@@ -85,18 +115,21 @@ Use `--dry-run` to preview any write command first.
 3. Check routes: `vmware-nsx gateway routes-t1 app-t1`
 4. Check BGP: `vmware-nsx gateway bgp-neighbors tier0-gw`
 
-## MCP Tools (31)
+## MCP Tools (33 — 20 read, 13 write)
 
 | Category | Tools | Type |
 |----------|-------|------|
-| Segments | `list_segments`, `get_segment`, `create_segment`, `update_segment`, `delete_segment`, `list_segment_ports` | Read/Write |
-| Tier-0 GW | `list_tier0_gateways`, `get_tier0_gateway`, `get_tier0_bgp_neighbors`, `get_tier0_route_table` | Read |
-| Tier-1 GW | `list_tier1_gateways`, `get_tier1_gateway`, `create_tier1_gateway`, `update_tier1_gateway`, `delete_tier1_gateway`, `get_tier1_route_table` | Read/Write |
-| NAT | `list_nat_rules`, `get_nat_rule`, `create_nat_rule`, `update_nat_rule`, `delete_nat_rule` | Read/Write |
+| Segments | `list_segments`, `get_segment`, `create_segment`, `update_segment`, `delete_segment` | Read/Write |
+| Tier-0 GW | `list_tier0_gateways`, `get_tier0_gateway`, `get_bgp_neighbors`, `configure_tier0_bgp` | Read/Write |
+| Tier-1 GW | `list_tier1_gateways`, `get_tier1_gateway`, `create_tier1_gateway`, `update_tier1_gateway`, `delete_tier1_gateway` | Read/Write |
+| NAT | `list_nat_rules`, `create_nat_rule`, `delete_nat_rule` | Read/Write |
 | Static Routes | `list_static_routes`, `create_static_route`, `delete_static_route` | Read/Write |
-| IP Pools | `list_ip_pools`, `get_ip_pool_allocations`, `create_ip_pool`, `create_ip_pool_subnet` | Read/Write |
+| IP Pools | `list_ip_pools`, `get_ip_pool_usage`, `create_ip_pool`, `delete_ip_pool` | Read/Write |
+| Fabric | `list_transport_zones`, `list_transport_nodes`, `list_edge_clusters` | Read |
 | Health | `list_nsx_alarms` (per-severity, exact match), `get_transport_node_status`, `get_edge_cluster_status`, `get_nsx_manager_status` | Read |
 | Troubleshoot | `get_logical_port_status` (realized state of all ports on a segment), `get_segment_port_for_vm` (lookup by VM display name) | Read |
+
+Full per-tool endpoints and methods: `skills/vmware-nsx/references/capabilities.md`.
 
 ## CLI
 
@@ -219,7 +252,7 @@ More agent config templates (Claude Code, Cursor, Goose, Continue, etc.) in [exa
 
 | Feature | Description |
 |---------|-------------|
-| Read-heavy | 18/31 tools are read-only |
+| Read-heavy | 20/33 tools are read-only |
 | Double confirmation | CLI write commands require two prompts |
 | Dry-run mode | All write commands support `--dry-run` preview |
 | Dependency checks | Delete operations validate no connected resources |

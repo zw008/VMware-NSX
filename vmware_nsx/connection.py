@@ -29,6 +29,24 @@ _RETRY_DELAY_SEC = 2.0
 _MAX_ITEMS = 1000
 
 
+class CollectionTotal:
+    """Sink for a paginated collection's ``result_count``.
+
+    ``get_all`` stops as soon as its caller has enough rows, so the caller
+    never sees the raw pages and cannot read the count itself. Passing a sink
+    lets the count reach the result envelope, where a known total is what
+    distinguishes a complete page from a possibly-truncated one — without the
+    extra round trip ``get_count`` would cost.
+
+    ``value`` stays ``None`` when the API omits ``result_count``.
+    """
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        self.value: int | None = None
+
+
 class NsxApiError(Exception):
     """An NSX Manager API call returned an error or failed to connect.
 
@@ -288,6 +306,7 @@ class NsxClient:
         *,
         page_size: int | None = None,
         limit: int | None = None,
+        total_sink: CollectionTotal | None = None,
     ) -> list[dict]:
         """Paginated GET. Follows cursor until enough results are collected.
 
@@ -300,6 +319,10 @@ class NsxClient:
           collected. Hitting the requested ``limit`` is expected and silent.
         * ``max_items`` — a safety backstop (default 1000). Truncating here
           logs a warning, since it means the caller under-specified the query.
+        * ``total_sink`` — receives the ListResult ``result_count`` carried by
+          the pages already fetched, so a caller can state the collection size
+          in its result envelope without the extra round trip ``get_count``
+          would cost.
 
         When both ``page_size`` and ``limit`` are omitted, behaviour is
         unchanged: follow every cursor up to the ``max_items`` backstop.
@@ -310,6 +333,9 @@ class NsxClient:
             params["page_size"] = page_size
         while True:
             data = self.get(path, params=params)
+            count = data.get("result_count")
+            if total_sink is not None and isinstance(count, int):
+                total_sink.value = count
             all_results.extend(data.get("results", []))
             # Requested limit reached — expected, no warning.
             if limit is not None and len(all_results) >= limit:

@@ -10,13 +10,18 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> list[dict]:
+def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> dict:
     """[READ] Get active NSX alarms at one severity, with feature, description, and entity.
 
     Note: the NSX severity filter is an EXACT match — "MEDIUM" returns only
     MEDIUM alarms, not MEDIUM-and-above. Query each severity separately to
     build a full picture. Results follow pagination cursors (all alarms at
     that severity are returned).
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         severity: Exact severity to filter on: LOW, MEDIUM, HIGH, or
@@ -29,7 +34,7 @@ def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> l
         client = server._get_connection(target)
         return _list_alarms(client, severity=severity)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})

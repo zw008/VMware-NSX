@@ -25,7 +25,7 @@ def networking_list_nat_rules(
     from vmware_nsx.ops.networking import list_nat_rules
 
     client, _ = cli._get_connection(target, config)
-    rules = list_nat_rules(client, tier1_id)
+    rules = list_nat_rules(client, tier1_id)["items"]
     table = Table(title=f"NAT Rules on '{tier1_id}' ({len(rules)})")
     table.add_column("ID", style="cyan")
     table.add_column("Action")
@@ -100,7 +100,7 @@ def networking_list_static_routes(
     from vmware_nsx.ops.networking import list_static_routes
 
     client, _ = cli._get_connection(target, config)
-    routes = list_static_routes(client, tier1_id)
+    routes = list_static_routes(client, tier1_id)["items"]
     table = Table(title=f"Static Routes on '{tier1_id}' ({len(routes)})")
     table.add_column("ID", style="cyan")
     table.add_column("Network")
@@ -122,7 +122,7 @@ def networking_list_ip_pools(
     from vmware_nsx.ops.networking import list_ip_pools
 
     client, _ = cli._get_connection(target, config)
-    pools = list_ip_pools(client)
+    pools = list_ip_pools(client)["items"]
     table = Table(title=f"IP Pools ({len(pools)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")

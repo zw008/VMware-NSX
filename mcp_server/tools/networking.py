@@ -10,8 +10,13 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> list[dict]:
+def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> dict:
     """[READ] List NAT rules on a Tier-1 gateway.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         tier1_id: The Tier-1 gateway ID.
@@ -23,7 +28,7 @@ def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_nat(client, tier1_id)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -60,8 +65,13 @@ def list_static_routes(
     tier1_id: str,
     gateway_type: str = "tier1",
     target: Optional[str] = None,
-) -> list[dict]:
+) -> dict:
     """[READ] List static routes on a Tier-0 or Tier-1 gateway.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         tier1_id: The gateway ID (Tier-0 or Tier-1, per gateway_type).
@@ -74,13 +84,18 @@ def list_static_routes(
         client = server._get_connection(target)
         return _list_routes(client, tier1_id, gateway_type=gateway_type)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_ip_pools(target: Optional[str] = None) -> list[dict]:
+def list_ip_pools(target: Optional[str] = None) -> dict:
     """[READ] List all IP address pools with subnets and usage summary.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -91,7 +106,7 @@ def list_ip_pools(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_pools(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})

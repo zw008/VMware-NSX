@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from vmware_policy import sanitize
+from vmware_policy import paginated, sanitize
+
+from vmware_nsx.connection import CollectionTotal
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -24,7 +26,7 @@ _DEFAULT_LIST_LIMIT = 50
 
 def list_nat_rules(
     client: NsxClient, tier1_id: str, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
+) -> dict:
     """List all user-defined NAT rules on a Tier-1 gateway.
 
     Args:
@@ -32,14 +34,17 @@ def list_nat_rules(
         tier1_id: Tier-1 gateway identifier.
 
     Returns:
-        List of NAT rule dicts with id, action, networks, and status.
+        Result envelope with NAT rule dicts under ``items``, each with id,
+        action, networks, and status. ``total`` carries the gateway's
+        ``result_count`` from the Policy API's ListResult.
     """
     path = (
         f"/policy/api/v1/infra/tier-1s/{tier1_id}"
         "/nat/USER/nat-rules"
     )
-    items = client.get_all(path, page_size=limit, limit=limit)
-    return [
+    total = CollectionTotal()
+    items = client.get_all(path, page_size=limit, limit=limit, total_sink=total)
+    rows = [
         {
             "id": sanitize(r.get("id", "")),
             "display_name": sanitize(r.get("display_name", "")),
@@ -55,6 +60,7 @@ def list_nat_rules(
         }
         for r in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +183,7 @@ def list_static_routes(
     gateway_id: str,
     gateway_type: str = "tier1",
     limit: int = _DEFAULT_LIST_LIMIT,
-) -> list[dict]:
+) -> dict:
     """List static routes on a gateway (Tier-0 or Tier-1).
 
     Args:
@@ -186,12 +192,14 @@ def list_static_routes(
         gateway_type: Either "tier0" or "tier1" (default "tier1").
 
     Returns:
-        List of static route dicts.
+        Result envelope with static route dicts under ``items``. ``total``
+        carries the gateway's ``result_count`` from the ListResult.
     """
     gw_resource = "tier-0s" if gateway_type == "tier0" else "tier-1s"
     path = f"/policy/api/v1/infra/{gw_resource}/{gateway_id}/static-routes"
-    items = client.get_all(path, page_size=limit, limit=limit)
-    return [
+    total = CollectionTotal()
+    items = client.get_all(path, page_size=limit, limit=limit, total_sink=total)
+    rows = [
         {
             "id": sanitize(r.get("id", "")),
             "display_name": sanitize(r.get("display_name", "")),
@@ -208,6 +216,7 @@ def list_static_routes(
         }
         for r in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -217,16 +226,21 @@ def list_static_routes(
 
 def list_ip_pools(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
+) -> dict:
     """List IP pools (bounded to ``limit``, default 50).
 
     Returns:
-        List of IP pool dicts with id, display_name, and usage summary.
+        Result envelope with IP pool dicts under ``items``, each with id,
+        display_name, and usage summary. ``total`` carries ``result_count``.
     """
+    total = CollectionTotal()
     items = client.get_all(
-        "/policy/api/v1/infra/ip-pools", page_size=limit, limit=limit
+        "/policy/api/v1/infra/ip-pools",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
-    return [
+    rows = [
         {
             "id": sanitize(p.get("id", "")),
             "display_name": sanitize(p.get("display_name", "")),
@@ -234,6 +248,7 @@ def list_ip_pools(
         }
         for p in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 def get_ip_pool_usage(

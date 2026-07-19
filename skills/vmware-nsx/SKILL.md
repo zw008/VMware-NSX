@@ -11,11 +11,12 @@ installer:
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_<TARGET>_PASSWORD"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_<TARGET>_PASSWORD","VMWARE_READ_ONLY","VMWARE_NSX_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
   vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
   Credentials: Each NSX Manager target requires a per-target password env var in ~/.vmware-nsx/.env following the pattern VMWARE_<TARGET_NAME_UPPER>_PASSWORD. Also supports certificate-based auth. Passwords are never logged or echoed.
   Destructive operations: Segment/gateway/NAT delete require double confirmation + --dry-run. Segment delete checks for connected ports, gateway delete checks for connected segments.
+  Read-only mode: VMWARE_READ_ONLY=true (family-wide) or VMWARE_NSX_READ_ONLY=true (per-skill, takes precedence) removes all 13 write tools from the MCP registry at startup; fail-closed. VMWARE_AUDIT_APPROVED_BY names the approver policy requires for irreversible work on targets declared environment: production. None of the three carry credentials.
   No webhooks, no outbound network calls, no guest operations. Local only: stdio MCP + NSX Policy API (HTTPS 443).
   SSL bypass: verify_ssl is on by default; false option for self-signed certs in lab environments only.
   Transitive dependencies: Only vmware-policy (audit/policy). No post-install scripts or background services.
@@ -25,7 +26,7 @@ compatibility: >
 
 > **Disclaimer**: This is a community-maintained open-source project and is **not affiliated with, endorsed by, or sponsored by VMware, Inc. or Broadcom Inc.** "VMware" and "NSX" are trademarks of Broadcom. Source code is publicly auditable at [github.com/zw008/VMware-NSX](https://github.com/zw008/VMware-NSX) under the MIT license.
 
-VMware NSX networking management — 32 MCP tools for segments, gateways, NAT, routing, and IPAM.
+VMware NSX networking management — 33 MCP tools for segments, gateways, NAT, routing, and IPAM.
 
 > Domain-focused networking skill for NSX-T / NSX 4.x Policy API.
 > **Companion skills**: [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security) (DFW/firewall), [vmware-aiops](https://github.com/zw008/VMware-AIops) (VM lifecycle), [vmware-monitor](https://github.com/zw008/VMware-Monitor) (read-only monitoring), [vmware-storage](https://github.com/zw008/VMware-Storage) (iSCSI/vSAN), [vmware-vks](https://github.com/zw008/VMware-VKS) (Tanzu Kubernetes), [vmware-aria](https://github.com/zw008/VMware-Aria) (metrics/alerts/capacity), [vmware-avi](https://github.com/zw008/VMware-AVI) (AVI/ALB/AKO), [vmware-harden](https://github.com/zw008/VMware-Harden) (compliance baselines).
@@ -135,16 +136,7 @@ vmware-nsx doctor
 
 ### Multi-Target Operations
 
-All commands accept `--target <name>` to operate against a specific NSX Manager from your config:
-
-```bash
-# Default target (first in config.yaml)
-vmware-nsx inventory list-segments
-
-# Specific target
-vmware-nsx inventory list-segments --target nsx-prod
-vmware-nsx health alarms --target nsx-lab
-```
+All commands accept `--target <name>` to operate against a specific NSX Manager from your config (default: the first target in config.yaml), e.g. `vmware-nsx inventory list-segments --target nsx-prod`.
 
 ## Usage Mode
 
@@ -194,7 +186,11 @@ All MCP tools accept an optional `target` parameter to select which NSX Manager 
 | Troubleshoot | `get_logical_port_status` | Read | Realized state of all ports on a segment |
 | | `get_segment_port_for_vm` | Read | Find which segment a VM is connected to by display name |
 
-**Read/write split**: 20 tools are read-only, 12 modify state. Write tools require explicit parameters and are audit-logged. Dry-run preview (`--dry-run`) is a CLI feature; MCP write tools execute directly.
+Write tools require explicit parameters and are audit-logged. Dry-run preview (`--dry-run`) is a CLI feature; MCP write tools execute directly.
+
+### List results are envelopes — read `truncated` before you summarise
+
+Every list-returning tool above returns `{items, returned, limit, total, truncated, hint}`, not a bare array. Rows live under `items`: empty `items` with `truncated: false` means the query genuinely matched nothing — report that, not a tool failure. `truncated: true` means more rows exist — never describe the result as the complete set; re-query as `hint` instructs. Field semantics, `total` sourcing, and an example payload: `references/capabilities.md`.
 
 ## CLI Quick Reference
 
@@ -217,16 +213,16 @@ vmware-nsx networking list-static-routes <tier1-id>
 vmware-nsx networking list-ip-pools
 vmware-nsx networking ip-pool-usage <pool-id>
 
-# Segment management (write)
-vmware-nsx segment create <id> --name <name> --tz <tz-path> [--vlan '100' | '100-200'] [--subnet <gw-cidr>] [--dry-run]
-vmware-nsx segment update <id> [--name <name>] [--subnet <gw-cidr>] [--dry-run]
+# Segment management (write; full option lists in references/cli-reference.md)
+vmware-nsx segment create <id> --name <name> --tz <tz-path> [--vlan|--subnet] [--dry-run]
+vmware-nsx segment update <id> [--name|--subnet] [--dry-run]
 vmware-nsx segment delete <id> [--dry-run]
 
 # Gateway management (write)
-vmware-nsx gateway create-tier1 <id> --name <name> [--tier0 <t0-path>] [--edge-cluster <ec-path>] [--dry-run]
-vmware-nsx gateway update-tier1 <id> [--name <name>] [--tier0 <t0-path>] [--advertise <types>] [--dry-run]
+vmware-nsx gateway create-tier1 <id> --name <name> [--tier0|--edge-cluster] [--dry-run]
+vmware-nsx gateway update-tier1 <id> [--name|--tier0|--advertise] [--dry-run]
 vmware-nsx gateway delete-tier1 <id> [--dry-run]
-vmware-nsx gateway configure-tier0-bgp <tier0-id> --local-as <asn> [--ecmp/--no-ecmp] [--dry-run]
+vmware-nsx gateway configure-tier0-bgp <tier0-id> --local-as <asn> [--ecmp] [--dry-run]
 
 # NAT (write)
 vmware-nsx nat create-rule --tier1 <id> --rule-id <id> --action SNAT --source <cidr> --translated <ip> [--dry-run]
@@ -237,7 +233,7 @@ vmware-nsx route create-static --tier1 <id> --route-id <id> --network <cidr> --n
 vmware-nsx route delete-static --tier1 <id> --route-id <id> [--dry-run]
 
 # IP pools (write)
-vmware-nsx ip-pool create <pool-id> --name <name> --start <ip> --end <ip> --cidr <cidr> [--gateway <ip>] [--dry-run]
+vmware-nsx ip-pool create <pool-id> --name <name> --start <ip> --end <ip> --cidr <cidr> [--dry-run]
 
 # Health & Troubleshooting (read-only)
 vmware-nsx health alarms [--severity CRITICAL]
@@ -283,9 +279,13 @@ A transport node in degraded state has partial connectivity. Steps:
 
 The password environment variable is missing. Variable names follow the pattern `VMWARE_<TARGET_NAME_UPPER>_PASSWORD` where hyphens become underscores. Example: target `nsx-prod` needs `VMWARE_NSX_PROD_PASSWORD`. Check your `~/.vmware-nsx/.env` file.
 
+### "target does not declare which environment it is" on a write
+
+Policy scopes rules by each target's explicit `environment:` declaration, not its name. The write still ran — it warns today; the next release refuses it. Declaring now makes that a no-op: add `environment: production` (or `staging`, `lab`, any label) to the target in `~/.vmware-nsx/config.yaml`. Reads are never affected. A `production` target also requires a named approver (`VMWARE_AUDIT_APPROVED_BY`) for irreversible work. Run `vmware-audit policy` for the rules in force; details: `references/setup-guide.md`.
+
 ## Safety
 
-- **Read-heavy**: 20 of 32 tools are read-only (list, get, status, health, troubleshoot)
+- **Read-heavy**: 20 of 33 tools are read-only (list, get, status, health, troubleshoot)
 - **Audit logging**: All operations logged to `~/.vmware/audit.db` (SQLite WAL, via vmware-policy) with timestamp, user, target, operation, parameters, and result
 - **Double confirmation**: CLI write commands require two separate confirmation prompts before executing
 - **Dry-run mode**: All CLI write commands support `--dry-run` to preview API calls without executing (MCP write tools execute directly and are audit-logged)
@@ -299,14 +299,7 @@ The password environment variable is missing. Variable names follow the pattern 
 
 ```bash
 uv tool install vmware-nsx-mgmt
-mkdir -p ~/.vmware-nsx
-cp config.example.yaml ~/.vmware-nsx/config.yaml
-# Edit config.yaml with your NSX Manager targets
-
-# Add to ~/.vmware-nsx/.env (create if missing, chmod 600):
-# VMWARE_NSX_PROD_PASSWORD=<your-password>
-chmod 600 ~/.vmware-nsx/.env
-
+vmware-nsx init      # writes ~/.vmware-nsx/config.yaml + .env (chmod 600), then verifies
 vmware-nsx doctor
 ```
 
@@ -327,8 +320,6 @@ NSX Manager
   |
 Segments / Gateways / NAT / Routes / IP Pools / Transport Nodes
 ```
-
-The MCP server uses stdio transport (local only, no network listener). Connections to NSX Manager use HTTPS on port 443.
 
 ## Audit & Safety
 

@@ -34,7 +34,7 @@ def health_alarms(
     from vmware_nsx.ops.health import list_alarms
 
     client, _ = cli._get_connection(target, config)
-    alarms = list_alarms(client, severity=severity)
+    alarms = list_alarms(client, severity=severity)["items"]
     if not alarms:
         console.print(f"[green]No active {severity.upper()} alarms.[/]")
         return

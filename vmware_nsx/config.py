@@ -127,6 +127,15 @@ class TargetConfig:
     username: str
     port: int = 443
     verify_ssl: bool = True
+    environment: str = ""
+    """Which environment this target is, e.g. production / staging / lab.
+
+    Policy rules scope by environment, and the shipped baseline warns on
+    state-changing operations against a target that declares none — an
+    unlabelled target is treated as unknown, not as safe, and the next major
+    release refuses them. Read-only operations are never affected. See
+    :mod:`vmware_policy.environment`.
+    """
 
     def get_password(self, target_name: str) -> str:
         """Retrieve password from environment variable.
@@ -149,10 +158,27 @@ class AppConfig:
 
     targets: dict[str, TargetConfig] = ()  # type: ignore[assignment]
     default_target: str | None = None
+    read_only: bool = False
+    """Withhold every write tool from the MCP registry.
+
+    Env vars ``VMWARE_NSX_READ_ONLY`` / ``VMWARE_READ_ONLY`` override this.
+    See :mod:`vmware_policy.readonly`.
+    """
 
     def get_target(self, name: str) -> TargetConfig | None:
         """Look up a target by name. Returns None if not found."""
         return self.targets.get(name)  # type: ignore[union-attr]
+
+    def environment_for(self, name: str | None) -> str:
+        """Return the environment declared by ``name``, or by the default target.
+
+        An empty name means "the caller omitted --target", which resolves to
+        ``default_target`` — the same target the connection layer would use, so
+        policy and connection never disagree about which host is in play.
+        Returns "" when the target is unknown or declares nothing.
+        """
+        target = self.get_target(name or self.default_target or "")
+        return target.environment if target else ""
 
     def get_target_strict(self, name: str) -> TargetConfig:
         """Look up a target by name. Raises KeyError if not found."""
@@ -184,6 +210,7 @@ def load_config(config_path: Path | None = None) -> AppConfig:
             username=t.get("username", "admin"),
             port=t.get("port", 443),
             verify_ssl=t.get("verify_ssl", True),
+            environment=str(t.get("environment", "") or "").strip(),
         )
 
     default = raw.get("default_target")
@@ -191,4 +218,8 @@ def load_config(config_path: Path | None = None) -> AppConfig:
         _log.warning("default_target '%s' not found in targets, ignoring", default)
         default = None
 
-    return AppConfig(targets=targets, default_target=default)
+    return AppConfig(
+        targets=targets,
+        default_target=default,
+        read_only=bool(raw.get("read_only", False)),
+    )

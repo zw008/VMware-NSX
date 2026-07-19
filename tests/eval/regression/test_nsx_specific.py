@@ -492,7 +492,7 @@ def test_list_alarms_exact_severity_and_pagination() -> None:
         {"id": "a1", "severity": "HIGH", "status": "OPEN", "feature_name": "f"}
     ]
 
-    result = list_alarms(client, severity="HIGH")
+    result = list_alarms(client, severity="HIGH")["items"]
 
     assert client.get_all.called, "must use the paginated helper (cursor loop)"
     path = client.get_all.call_args.args[0]
@@ -514,7 +514,7 @@ def test_list_transport_zones_drops_nonexistent_host_switch_name() -> None:
         {"id": "tz-1", "display_name": "overlay-tz", "tz_type": "OVERLAY_STANDARD"}
     ]
 
-    result = list_transport_zones(client)
+    result = list_transport_zones(client)["items"]
 
     assert result[0]["transport_type"] == "OVERLAY_STANDARD"
     assert "host_switch_name" not in result[0]
@@ -535,7 +535,7 @@ def test_list_transport_nodes_node_type_from_deployment_info() -> None:
         }
     ]
 
-    result = list_transport_nodes(client)
+    result = list_transport_nodes(client)["items"]
 
     assert result[0]["node_type"] == "HostNode"
 

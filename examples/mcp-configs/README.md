@@ -35,7 +35,7 @@ vmware-nsx doctor
 
 ## Using with Local Models (Ollama / LM Studio)
 
-vmware-nsx has 31 tools — suitable for medium to large models with sufficient context windows. For smaller local models (7B-14B), consider using only the read-only tools or filtering by category.
+vmware-nsx has 33 tools — suitable for medium to large models with sufficient context windows. For smaller local models (7B-14B), consider using only the read-only tools or filtering by category.
 
 ```bash
 # Example: Continue + Ollama + vmware-nsx MCP server

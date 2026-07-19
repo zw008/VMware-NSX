@@ -7,7 +7,7 @@
 
 [English](README.md) | [中文](README-CN.md)
 
-VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 31 个 MCP 工具，领域专注。
+VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 33 个 MCP 工具，领域专注。
 
 > 基于 NSX Policy API，支持 NSX-T 3.0+ 和 NSX 4.x。
 
@@ -17,12 +17,14 @@ VMware NSX 网络管理：Segment、网关、NAT、路由、IPAM — 31 个 MCP 
 
 | Skill | 范围 | 工具数 | 安装 |
 |-------|------|:-----:|------|
-| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** ⭐ 入口 | VM 生命周期、部署、Guest Ops、集群 | 31 | `uv tool install vmware-aiops` |
-| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** | 只读监控、告警、事件、VM 信息 | 8 | `uv tool install vmware-monitor` |
+| **[vmware-aiops](https://github.com/zw008/VMware-AIops)** ⭐ 入口 | VM 生命周期、部署、Guest Ops、集群 | 49 | `uv tool install vmware-aiops` |
+| **[vmware-monitor](https://github.com/zw008/VMware-Monitor)** | 只读监控、告警、事件、VM 信息 | 27 | `uv tool install vmware-monitor` |
 | **[vmware-storage](https://github.com/zw008/VMware-Storage)** | 数据存储、iSCSI、vSAN | 11 | `uv tool install vmware-storage` |
 | **[vmware-vks](https://github.com/zw008/VMware-VKS)** | Tanzu 命名空间、TKC 集群生命周期 | 20 | `uv tool install vmware-vks` |
-| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW 微分段、安全组、Traceflow | 20 | `uv tool install vmware-nsx-security` |
-| **[vmware-aria](https://github.com/zw008/VMware-Aria)** | Aria Ops 指标、告警、容量规划 | 18 | `uv tool install vmware-aria` |
+| **[vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security)** | DFW 微分段、安全组、Traceflow | 21 | `uv tool install vmware-nsx-security` |
+| **[vmware-aria](https://github.com/zw008/VMware-Aria)** | Aria Ops 指标、告警、容量规划 | 28 | `uv tool install vmware-aria` |
+| **[vmware-avi](https://github.com/zw008/VMware-AVI)** | AVI/NSX ALB 负载均衡、AKO | 28 | `uv tool install vmware-avi` |
+| **[vmware-harden](https://github.com/zw008/VMware-Harden)** | 合规基线、Drift 检测 | 6 | `uv tool install vmware-harden` |
 
 ## 快速安装
 
@@ -63,30 +65,61 @@ targets:
     password_env: VMWARE_NSX_LAB_PASSWORD
 ```
 
+## 只读模式
+
+提示词约束只是建议——模型可以无视它。只读模式是结构性的：设置 `VMWARE_READ_ONLY=true`，全部 13 个写工具（Segment/Tier-1/NAT 的创建-更新-删除、静态路由、IP 池）会在启动时从 MCP 注册表中移除——`list_tools()` 根本不会列出它们，模型看不见的工具就无法调用。20 个只读工具保持可用。默认关闭；且为 fail-closed 设计：请求了只读模式但无法保证时，服务器直接拒绝启动。
+
+三种启用方式：
+
+```json
+{
+  "mcpServers": {
+    "vmware-nsx": {
+      "command": "vmware-nsx",
+      "args": ["mcp"],
+      "env": { "VMWARE_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+- 按 skill 覆盖：`VMWARE_NSX_READ_ONLY=true`（优先于家族级 `VMWARE_READ_ONLY`）
+- 配置文件方式：在 `~/.vmware-nsx/config.yaml` 中设置 `read_only: true`
+
+优先级：按 skill 环境变量 → 家族环境变量 → 配置文件 → 默认关闭。启动日志会列出被移除工具的完整清单。
+
 ## 功能概览
 
-| 类别 | 工具 | 数量 |
-|------|------|:----:|
-| **Segment** | 列表、详情、创建、更新、删除、端口列表 | 6 |
-| **Tier-0 网关** | 列表、详情、BGP 邻居、路由表 | 4 |
-| **Tier-1 网关** | 列表、详情、创建、更新、删除、路由表 | 6 |
-| **NAT** | 列表、详情、创建、更新、删除 | 5 |
-| **静态路由** | 列表、创建、删除 | 3 |
-| **IP 池** | 列表、分配详情、创建池、添加子网 | 4 |
-| **健康与排障** | 告警、传输节点状态、Edge 集群状态、Manager 状态、逻辑端口状态、VM 所在 Segment | 6 |
+| 类别 | 工具 | 数量 | 读 / 写 |
+|------|------|:----:|:------:|
+| **Segment** | 列表、详情、创建、更新、删除 | 5 | 2 读 / 3 写 |
+| **Tier-0 网关** | 列表、详情、BGP 邻居、配置 BGP | 4 | 3 读 / 1 写 |
+| **Tier-1 网关** | 列表、详情、创建、更新、删除 | 5 | 2 读 / 3 写 |
+| **NAT** | 列表、创建、删除 | 3 | 1 读 / 2 写 |
+| **静态路由** | 列表、创建、删除 | 3 | 1 读 / 2 写 |
+| **IP 池** | 列表、使用情况、创建池、删除池 | 4 | 2 读 / 2 写 |
+| **Fabric 清单** | 传输区域、传输节点、Edge 集群 | 3 | 3 读 / 0 写 |
+| **健康与排障** | 告警、传输节点状态、Edge 集群状态、Manager 状态、逻辑端口状态、VM 所在 Segment | 6 | 6 读 / 0 写 |
 
-## MCP 工具（31 个）
+**合计**：33 个工具（20 只读 + 13 写）
+
+- **只读模式** —— 一个环境变量即可从 MCP 注册表移除全部写工具，适合审计、PoC 与本地小模型场景，详见[只读模式](#只读模式)
+
+## MCP 工具（33 个 —— 20 读 / 13 写）
 
 | 类别 | 工具 | 类型 |
 |------|------|------|
-| Segment | `list_segments`、`get_segment`、`create_segment`、`update_segment`、`delete_segment`、`list_segment_ports` | 读/写 |
-| Tier-0 网关 | `list_tier0_gateways`、`get_tier0_gateway`、`get_tier0_bgp_neighbors`、`get_tier0_route_table` | 只读 |
-| Tier-1 网关 | `list_tier1_gateways`、`get_tier1_gateway`、`create_tier1_gateway`、`update_tier1_gateway`、`delete_tier1_gateway`、`get_tier1_route_table` | 读/写 |
-| NAT | `list_nat_rules`、`get_nat_rule`、`create_nat_rule`、`update_nat_rule`、`delete_nat_rule` | 读/写 |
+| Segment | `list_segments`、`get_segment`、`create_segment`、`update_segment`、`delete_segment` | 读/写 |
+| Tier-0 网关 | `list_tier0_gateways`、`get_tier0_gateway`、`get_bgp_neighbors`、`configure_tier0_bgp` | 读/写 |
+| Tier-1 网关 | `list_tier1_gateways`、`get_tier1_gateway`、`create_tier1_gateway`、`update_tier1_gateway`、`delete_tier1_gateway` | 读/写 |
+| NAT | `list_nat_rules`、`create_nat_rule`、`delete_nat_rule` | 读/写 |
 | 静态路由 | `list_static_routes`、`create_static_route`、`delete_static_route` | 读/写 |
-| IP 池 | `list_ip_pools`、`get_ip_pool_allocations`、`create_ip_pool`、`create_ip_pool_subnet` | 读/写 |
+| IP 池 | `list_ip_pools`、`get_ip_pool_usage`、`create_ip_pool`、`delete_ip_pool` | 读/写 |
+| Fabric 清单 | `list_transport_zones`、`list_transport_nodes`、`list_edge_clusters` | 只读 |
 | 健康 | `list_nsx_alarms`（按单一 severity 精确过滤）、`get_transport_node_status`、`get_edge_cluster_status`、`get_nsx_manager_status` | 只读 |
 | 排障 | `get_logical_port_status`（按 Segment 查看全部端口实现状态）、`get_segment_port_for_vm`（按 VM 显示名查找） | 只读 |
+
+每个工具的完整 API 端点与方法见 `skills/vmware-nsx/references/capabilities.md`。
 
 ### 工具说明
 
@@ -96,39 +129,40 @@ targets:
 - `create_segment` — 创建 Overlay 或 VLAN Segment
 - `update_segment` — 更新 Segment 属性（描述、标签、DHCP）
 - `delete_segment` — 删除 Segment（检查已连接端口）
-- `list_segment_ports` — 列出 Segment 上的逻辑端口及状态
 
 **Tier-0 网关**
-- `list_tier0_gateways` — 列出所有 Tier-0 网关，含 HA 模式和 Edge 集群
-- `get_tier0_gateway` — 获取 Tier-0 详情：接口、路由配置、BGP
-- `get_tier0_bgp_neighbors` — 列出 BGP 邻居会话及状态
-- `get_tier0_route_table` — 获取 Tier-0 路由表
+- `list_tier0_gateways` — 列出所有 Tier-0 网关，含 HA 模式和 transit 子网
+- `get_tier0_gateway` — 获取 Tier-0 详情：HA 模式、故障切换、transit 子网
+- `get_bgp_neighbors` — 获取 Tier-0 的 BGP 配置与邻居会话状态
+- `configure_tier0_bgp` — 在 Tier-0 的 locale-service 上配置 BGP（local AS、ECMP、inter-SR iBGP）
 
 **Tier-1 网关**
-- `list_tier1_gateways` — 列出所有 Tier-1 网关，含关联的 Tier-0
-- `get_tier1_gateway` — 获取 Tier-1 详情：接口、路由通告
+- `list_tier1_gateways` — 列出所有 Tier-1 网关，含关联的 Tier-0 与路由通告
+- `get_tier1_gateway` — 获取 Tier-1 详情：Tier-0 链路、路由通告
 - `create_tier1_gateway` — 创建 Tier-1 网关并关联 Edge 集群和 Tier-0
-- `update_tier1_gateway` — 更新 Tier-1 属性（路由通告、标签）
-- `delete_tier1_gateway` — 删除 Tier-1 网关（检查已连接 Segment）
-- `get_tier1_route_table` — 获取 Tier-1 路由表
+- `update_tier1_gateway` — 更新 Tier-1 属性（路由通告、Tier-0 链路）
+- `delete_tier1_gateway` — 删除 Tier-1 网关（先移除 default locale-service）
 
-**NAT**
-- `list_nat_rules` — 列出网关上的 NAT 规则
-- `get_nat_rule` — 获取 NAT 规则详情
-- `create_nat_rule` — 创建 SNAT/DNAT/反射 NAT 规则
-- `update_nat_rule` — 更新 NAT 规则属性
+**NAT**（仅 Tier-1）
+- `list_nat_rules` — 列出 Tier-1 网关上的 NAT 规则
+- `create_nat_rule` — 创建 SNAT/DNAT/反射 NAT 规则（同 `rule_id` 重发即为更新）
 - `delete_nat_rule` — 删除 NAT 规则
 
-**静态路由**
+**静态路由**（Tier-0 / Tier-1）
 - `list_static_routes` — 列出网关上的静态路由
 - `create_static_route` — 添加静态路由
 - `delete_static_route` — 删除静态路由
 
 **IP 池**
 - `list_ip_pools` — 列出 IP 地址池及使用统计
-- `get_ip_pool_allocations` — 查看已分配的 IP 地址
-- `create_ip_pool` — 创建新的 IP 地址池
-- `create_ip_pool_subnet` — 向 IP 池添加子网范围
+- `get_ip_pool_usage` — 查看单个池的已分配 IP
+- `create_ip_pool` — 创建 IP 地址池（含一个静态子网与分配范围）
+- `delete_ip_pool` — 永久删除 IP 地址池
+
+**Fabric 清单**
+- `list_transport_zones` — 列出传输区域（OVERLAY / VLAN）
+- `list_transport_nodes` — 列出传输节点及类型、状态
+- `list_edge_clusters` — 列出 Edge 集群及成员数、部署类型
 
 **健康与排障**
 - `list_nsx_alarms` — 列出指定 severity 的活跃 NSX 告警（精确匹配，非"及以上"；需逐档查询）
@@ -274,7 +308,7 @@ vmware-nsx-mcp
 
 | 功能 | 说明 |
 |------|------|
-| 只读为主 | 31 个工具中 18 个只读 |
+| 只读为主 | 33 个工具中 20 个只读 |
 | 双重确认 | CLI 写操作需两次确认 |
 | --dry-run | 所有写操作支持预览模式 |
 | 依赖检查 | 删除操作验证无关联资源 |

@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from vmware_policy import sanitize
+from vmware_policy import paginated, sanitize
+
+from vmware_nsx.connection import CollectionTotal
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -25,12 +27,20 @@ _SEGMENT_PORT_SAMPLE = 50
 # ---------------------------------------------------------------------------
 
 
-def list_segments(client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT) -> list[dict]:
-    """List network segments (bounded to ``limit``, default 50)."""
+def list_segments(client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT) -> dict:
+    """List network segments (bounded to ``limit``, default 50).
+
+    Returns the family result envelope; ``total`` carries the collection's
+    ``result_count`` from the Policy API's ListResult.
+    """
+    total = CollectionTotal()
     items = client.get_all(
-        "/policy/api/v1/infra/segments", page_size=limit, limit=limit
+        "/policy/api/v1/infra/segments",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
-    return [
+    rows = [
         {
             "id": sanitize(s.get("id", "")),
             "display_name": sanitize(s.get("display_name", "")),
@@ -49,6 +59,7 @@ def list_segments(client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT) -> list[d
         }
         for s in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 def get_segment(client: NsxClient, segment_id: str) -> dict:
@@ -92,12 +103,19 @@ def get_segment(client: NsxClient, segment_id: str) -> dict:
 
 def list_tier0_gateways(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
-    """List Tier-0 gateways (bounded to ``limit``, default 50)."""
+) -> dict:
+    """List Tier-0 gateways (bounded to ``limit``, default 50).
+
+    Returns the family result envelope; ``total`` carries ``result_count``.
+    """
+    total = CollectionTotal()
     items = client.get_all(
-        "/policy/api/v1/infra/tier-0s", page_size=limit, limit=limit
+        "/policy/api/v1/infra/tier-0s",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
-    return [
+    rows = [
         {
             "id": sanitize(t.get("id", "")),
             "display_name": sanitize(t.get("display_name", "")),
@@ -108,6 +126,7 @@ def list_tier0_gateways(
         }
         for t in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 def get_tier0_gateway(client: NsxClient, tier0_id: str) -> dict:
@@ -131,12 +150,19 @@ def get_tier0_gateway(client: NsxClient, tier0_id: str) -> dict:
 
 def list_tier1_gateways(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
-    """List Tier-1 gateways (bounded to ``limit``, default 50)."""
+) -> dict:
+    """List Tier-1 gateways (bounded to ``limit``, default 50).
+
+    Returns the family result envelope; ``total`` carries ``result_count``.
+    """
+    total = CollectionTotal()
     items = client.get_all(
-        "/policy/api/v1/infra/tier-1s", page_size=limit, limit=limit
+        "/policy/api/v1/infra/tier-1s",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
-    return [
+    rows = [
         {
             "id": sanitize(t.get("id", "")),
             "display_name": sanitize(t.get("display_name", "")),
@@ -147,6 +173,7 @@ def list_tier1_gateways(
         }
         for t in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 def get_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
@@ -169,14 +196,18 @@ def get_tier1_gateway(client: NsxClient, tier1_id: str) -> dict:
 
 def list_transport_zones(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
-    """List transport zones (bounded to ``limit``, default 50)."""
+) -> dict:
+    """List transport zones (bounded to ``limit``, default 50).
+
+    Returns the family result envelope; ``total`` carries ``result_count``.
+    """
     path = (
         "/policy/api/v1/infra/sites/default"
         "/enforcement-points/default/transport-zones"
     )
-    items = client.get_all(path, page_size=limit, limit=limit)
-    return [
+    total = CollectionTotal()
+    items = client.get_all(path, page_size=limit, limit=limit, total_sink=total)
+    rows = [
         {
             "id": sanitize(tz.get("id", "")),
             "display_name": sanitize(tz.get("display_name", "")),
@@ -185,6 +216,7 @@ def list_transport_zones(
         }
         for tz in items
     ]
+    return paginated(rows, limit=limit, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -194,10 +226,17 @@ def list_transport_zones(
 
 def list_transport_nodes(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
-    """List transport nodes (ESXi hosts, Edge nodes; bounded to ``limit``)."""
+) -> dict:
+    """List transport nodes (ESXi hosts, Edge nodes; bounded to ``limit``).
+
+    Returns the family result envelope; ``total`` carries ``result_count``.
+    """
+    total = CollectionTotal()
     items = client.get_all(
-        "/api/v1/transport-nodes", page_size=limit, limit=limit
+        "/api/v1/transport-nodes",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
     result: list[dict] = []
     for n in items:
@@ -222,7 +261,7 @@ def list_transport_nodes(
                 "maintenance_mode": n.get("maintenance_mode", "DISABLED"),
             }
         )
-    return result
+    return paginated(result, limit=limit, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -232,12 +271,19 @@ def list_transport_nodes(
 
 def list_edge_clusters(
     client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
-) -> list[dict]:
-    """List edge clusters (bounded to ``limit``, default 50)."""
+) -> dict:
+    """List edge clusters (bounded to ``limit``, default 50).
+
+    Returns the family result envelope; ``total`` carries ``result_count``.
+    """
+    total = CollectionTotal()
     items = client.get_all(
-        "/api/v1/edge-clusters", page_size=limit, limit=limit
+        "/api/v1/edge-clusters",
+        page_size=limit,
+        limit=limit,
+        total_sink=total,
     )
-    return [
+    rows = [
         {
             "id": sanitize(ec.get("id", "")),
             "display_name": sanitize(ec.get("display_name", "")),
@@ -254,3 +300,4 @@ def list_edge_clusters(
         }
         for ec in items
     ]
+    return paginated(rows, limit=limit, total=total.value)

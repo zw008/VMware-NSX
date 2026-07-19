@@ -10,8 +10,13 @@ from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_segments(target: Optional[str] = None) -> list[dict]:
+def list_segments(target: Optional[str] = None) -> dict:
     """[READ] List all NSX network segments with type, subnet, admin state, and port count.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -22,7 +27,7 @@ def list_segments(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_segments(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -53,8 +58,13 @@ def get_segment(segment_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_tier0_gateways(target: Optional[str] = None) -> list[dict]:
+def list_tier0_gateways(target: Optional[str] = None) -> dict:
     """[READ] List all Tier-0 gateways with HA mode and transit subnets.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -65,7 +75,7 @@ def list_tier0_gateways(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_tier0s(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -95,8 +105,13 @@ def get_tier0_gateway(tier0_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_tier1_gateways(target: Optional[str] = None) -> list[dict]:
+def list_tier1_gateways(target: Optional[str] = None) -> dict:
     """[READ] List all Tier-1 gateways with linked Tier-0 path and route advertisement.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -107,7 +122,7 @@ def list_tier1_gateways(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_tier1s(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
@@ -130,7 +145,7 @@ def get_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> dict:
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_transport_zones(target: Optional[str] = None) -> list[dict]:
+def list_transport_zones(target: Optional[str] = None) -> dict:
     """[READ] List all NSX transport zones — the overlay/VLAN boundaries that segments attach to.
 
     No side effects. Primary use: discover the transport zone required by
@@ -139,7 +154,12 @@ def list_transport_zones(target: Optional[str] = None) -> list[dict]:
     using the id returned here. Returns one dict per zone: id, display_name,
     transport_type (e.g. OVERLAY_STANDARD or VLAN_BACKED).
     All zones are returned (typically under 20; no pagination). On failure
-    returns a single-element list containing {"error", "hint"}.
+    returns {"error", "hint"} instead of the envelope.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: NSX Manager name from config.yaml. Uses the default target if omitted.
@@ -150,13 +170,18 @@ def list_transport_zones(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_tzs(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_transport_nodes(target: Optional[str] = None) -> list[dict]:
+def list_transport_nodes(target: Optional[str] = None) -> dict:
     """[READ] List all transport nodes with type and status.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -167,13 +192,18 @@ def list_transport_nodes(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_tns(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_edge_clusters(target: Optional[str] = None) -> list[dict]:
+def list_edge_clusters(target: Optional[str] = None) -> dict:
     """[READ] List all edge clusters with member count and deployment type.
+
+    Returns a result envelope: the rows under `items`, plus `returned`,
+    `limit`, `total` (the collection's result_count, null when the API
+    omits it), `truncated` and `hint`. Check `truncated` before describing
+    this as the complete set — when it is true, more rows exist.
 
     Args:
         target: Optional NSX Manager target name from config. Uses default if omitted.
@@ -184,4 +214,4 @@ def list_edge_clusters(target: Optional[str] = None) -> list[dict]:
         client = server._get_connection(target)
         return _list_ecs(client)
     except Exception as e:
-        return [{"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}]
+        return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}

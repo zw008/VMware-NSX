@@ -24,7 +24,7 @@ def inventory_list_segments(
     from vmware_nsx.ops.inventory import list_segments
 
     client, _ = cli._get_connection(target, config)
-    segments = list_segments(client)
+    segments = list_segments(client)["items"]
     table = Table(title=f"Segments ({len(segments)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -71,7 +71,7 @@ def inventory_list_tier0s(
     from vmware_nsx.ops.inventory import list_tier0_gateways
 
     client, _ = cli._get_connection(target, config)
-    gateways = list_tier0_gateways(client)
+    gateways = list_tier0_gateways(client)["items"]
     table = Table(title=f"Tier-0 Gateways ({len(gateways)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -108,7 +108,7 @@ def inventory_list_tier1s(
     from vmware_nsx.ops.inventory import list_tier1_gateways
 
     client, _ = cli._get_connection(target, config)
-    gateways = list_tier1_gateways(client)
+    gateways = list_tier1_gateways(client)["items"]
     table = Table(title=f"Tier-1 Gateways ({len(gateways)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -145,7 +145,7 @@ def inventory_list_transport_zones(
     from vmware_nsx.ops.inventory import list_transport_zones
 
     client, _ = cli._get_connection(target, config)
-    zones = list_transport_zones(client)
+    zones = list_transport_zones(client)["items"]
     table = Table(title=f"Transport Zones ({len(zones)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -165,7 +165,7 @@ def inventory_list_transport_nodes(
     from vmware_nsx.ops.inventory import list_transport_nodes
 
     client, _ = cli._get_connection(target, config)
-    nodes = list_transport_nodes(client)
+    nodes = list_transport_nodes(client)["items"]
     table = Table(title=f"Transport Nodes ({len(nodes)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -188,7 +188,7 @@ def inventory_list_edge_clusters(
     from vmware_nsx.ops.inventory import list_edge_clusters
 
     client, _ = cli._get_connection(target, config)
-    clusters = list_edge_clusters(client)
+    clusters = list_edge_clusters(client)["items"]
     table = Table(title=f"Edge Clusters ({len(clusters)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")

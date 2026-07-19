@@ -54,18 +54,32 @@ targets:
     username: admin              # NSX Manager username
     port: 443
     verify_ssl: false            # Set true if using valid certs
+    environment: production      # Which environment this is — see below
 
   - name: nsx-lab
     host: 10.0.0.100
     username: admin
     port: 443
     verify_ssl: false
+    environment: lab
 
 notify:
   webhook_url: ""                # Optional: webhook for notifications
 ```
 
 The first target in the list is the default (used when `--target` is not specified).
+
+**`environment` (declare it now)**: policy rules scope by environment, and this declaration is the only thing that tells them which of your NSX Managers is production — the target's *name* is not used for it. Any label you like works (`production`, `staging`, `lab`, `dc2-prod`); `production` is the one the shipped rules attach a second-person approval requirement to for irreversible work.
+
+A target that declares nothing counts as unknown. Today a state-changing operation against it still runs and logs a warning of this shape:
+
+```
+delete_segment ran against a target that declares no environment. A future
+release will REFUSE this. Add 'environment: <name>' to that target in the
+skill's config.yaml.
+```
+
+The next major release refuses it. Declaring `environment:` on each target now makes that upgrade a no-op. Read-only operations are never affected either way. Run `vmware-audit policy` to see the rules currently in force.
 
 **NSX Manager cluster**: Use the cluster VIP as the `host` value. The VIP automatically routes to the active manager node.
 

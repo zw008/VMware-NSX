@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from vmware_policy import sanitize
+from vmware_policy import paginated, sanitize
+
+from vmware_nsx.connection import CollectionTotal
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -21,7 +23,7 @@ _log = logging.getLogger("vmware-nsx.health")
 def list_alarms(
     client: NsxClient,
     severity: str = "MEDIUM",
-) -> list[dict]:
+) -> dict:
     """List alarms filtered by severity (exact match).
 
     Severity levels: LOW, MEDIUM, HIGH, CRITICAL.
@@ -33,7 +35,12 @@ def list_alarms(
         severity: Severity filter, exact match (default "MEDIUM").
 
     Returns:
-        List of alarm dicts with sanitized messages.
+        Result envelope with alarm dicts under ``items``, messages sanitized.
+        Every alarm at the severity is fetched (no limit), so ``total`` — the
+        ListResult ``result_count`` — normally equals ``returned`` and the
+        result reads as complete; it exceeds ``returned`` only when the
+        client's safety backstop cut the walk short, which is exactly when the
+        agent must not treat this as the full alarm picture.
     """
     valid_severities = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
     if severity.upper() not in valid_severities:
@@ -43,12 +50,14 @@ def list_alarms(
         )
 
     # Management API endpoint for alarms (paginated)
+    total = CollectionTotal()
     items = client.get_all(
         "/api/v1/alarms",
         params={"severity": severity.upper()},
+        total_sink=total,
     )
 
-    return [
+    rows = [
         {
             "id": sanitize(a.get("id", "")),
             "severity": a.get("severity", ""),
@@ -67,6 +76,7 @@ def list_alarms(
         }
         for a in items
     ]
+    return paginated(rows, total=total.value)
 
 
 # ---------------------------------------------------------------------------
