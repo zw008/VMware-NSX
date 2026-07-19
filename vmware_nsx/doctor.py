@@ -18,7 +18,7 @@ console = Console()
 def _config_read_only() -> bool | None:
     """Read ``read_only`` from the config file the MCP server's gate would use.
 
-    Deliberately mirrors ``mcp_server.server._config_read_only`` instead of
+    Deliberately mirrors ``vmware_nsx.mcp_server.server._config_read_only`` instead of
     importing it: importing that module applies the gate as a side effect. The
     path comes from ``VMWARE_NSX_CONFIG`` rather than this command's
     ``--config`` argument, because the question doctor answers is what the
@@ -176,9 +176,9 @@ def run_doctor(
 
     # ── 8. MCP server import check ───────────────────────────────────────────
     try:
-        import mcp_server.server  # noqa: F401
+        import vmware_nsx.mcp_server.server  # noqa: F401
 
-        checks.append(("MCP server import", True, "mcp_server.server importable"))
+        checks.append(("MCP server import", True, "vmware_nsx.mcp_server.server importable"))
     except ImportError as e:
         checks.append(("MCP server import", False, f"Import failed: {e}"))
     except Exception as e:

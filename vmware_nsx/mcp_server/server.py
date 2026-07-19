@@ -2,8 +2,8 @@
 
 This module is the thin entry point for the Model Context Protocol (MCP)
 server (stdio transport). The tool implementations live under
-``mcp_server.tools`` (one module per NSX domain) and register themselves onto
-the shared ``mcp`` instance defined in ``mcp_server._shared``. Each tool
+``vmware_nsx.mcp_server.tools`` (one module per NSX domain) and register themselves onto
+the shared ``mcp`` instance defined in ``vmware_nsx.mcp_server._shared``. Each tool
 delegates to the corresponding function in the ``vmware_nsx`` package
 (ops.inventory, ops.networking, ops.health, ops.troubleshoot,
 ops.segment_mgmt, ops.nat_route_mgmt).
@@ -50,8 +50,8 @@ from vmware_policy import apply_read_only_gate, mtime_cached_loader, set_environ
 from vmware_nsx.config import CONFIG_FILE, load_config
 from vmware_nsx.connection import ConnectionManager
 
-# Re-exported so callers and tests can keep using ``mcp_server.server.<name>``.
-from mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
+# Re-exported so callers and tests can keep using ``vmware_nsx.mcp_server.server.<name>``.
+from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 __all__ = ["mcp", "main", "_get_connection", "_safe_error", "_DOCTOR_HINT"]
 
@@ -66,7 +66,7 @@ def _get_connection(target: Optional[str] = None) -> Any:
     """Return an NsxClient, lazily initialising the connection manager.
 
     Tool modules call ``server._get_connection(...)`` (not a local import) so
-    that tests can ``patch("mcp_server.server._get_connection")`` and have
+    that tests can ``patch("vmware_nsx.mcp_server.server._get_connection")`` and have
     every tool pick up the patched callable.
     """
     global _conn_mgr  # noqa: PLW0603
@@ -88,10 +88,10 @@ def _get_connection(target: Optional[str] = None) -> Any:
 # resolve ``server._get_connection`` at *call* time, so a partially-initialised
 # module is fine as long as the helper already exists.
 
-from mcp_server import tools  # noqa: E402
+from vmware_nsx.mcp_server import tools  # noqa: E402
 
 # Re-export every tool callable into this module's namespace so existing
-# imports (``from mcp_server.server import create_tier1_gateway``) and tests
+# imports (``from vmware_nsx.mcp_server.server import create_tier1_gateway``) and tests
 # (``getattr(srv, "delete_segment")``) keep working after the split.
 for _mod in (
     tools.inventory,

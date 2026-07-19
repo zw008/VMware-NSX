@@ -288,7 +288,7 @@ def test_get_all_stops_at_max_items_cap() -> None:
 
 
 def test_safe_error_passes_nsx_api_error_through_and_redacts_generic() -> None:
-    from mcp_server.server import _safe_error
+    from vmware_nsx.mcp_server.server import _safe_error
 
     teaching = NsxApiError(
         "NSX Manager GET /x returned HTTP 404. Resource not found.",
@@ -317,7 +317,7 @@ def test_safe_error_passes_nsx_api_error_through_and_redacts_generic() -> None:
 def test_delete_tools_route_errors_through_safe_error(tool_name, kwargs) -> None:
     """v1.5.32 audit: four delete tools returned f"Error: {e}" directly,
     bypassing _safe_error and leaking raw exception text to the agent."""
-    import mcp_server.server as srv
+    import vmware_nsx.mcp_server.server as srv
 
     leaky = RuntimeError("https://secret-host:443/internal leaked body")
     with patch.object(srv, "_get_connection", side_effect=leaky):
@@ -337,7 +337,7 @@ def test_delete_tools_route_errors_through_safe_error(tool_name, kwargs) -> None
 
 def _actual_tools() -> dict[str, bool]:
     """Map tool name → readOnlyHint from the live FastMCP registry."""
-    from mcp_server.server import mcp
+    from vmware_nsx.mcp_server.server import mcp
 
     tools = asyncio.run(mcp.list_tools())
     return {t.name: bool(t.annotations and t.annotations.readOnlyHint) for t in tools}
@@ -388,12 +388,28 @@ def _cli_source_files() -> list[Path]:
     return [REPO_ROOT / "vmware_nsx" / "cli.py"]
 
 
+def _mcp_server_sources() -> list[Path]:
+    """Every .py under the MCP server package.
+
+    Asserted non-empty on purpose. The v1.9.0 migration briefly left this as
+    ``REPO_ROOT / "vmware_nsx.mcp_server"`` — one path segment containing a
+    dot, which does not exist. ``rglob`` on a missing directory yields nothing
+    rather than raising, so the scan below silently covered zero files and the
+    test kept reporting green. A guard that quietly stops guarding is worse
+    than one that fails.
+    """
+    root = REPO_ROOT / "vmware_nsx" / "mcp_server"
+    sources = list(root.rglob("*.py"))
+    assert sources, f"no sources found under {root} — the scan below would be vacuous"
+    return sources
+
+
 def test_no_raw_raise_for_status_outside_connection_layer() -> None:
     offenders = []
     for py in [
         *(REPO_ROOT / "vmware_nsx" / "ops").glob("*.py"),
         *_cli_source_files(),
-        *(p for p in (REPO_ROOT / "mcp_server").rglob("*.py") if "__pycache__" not in p.parts),
+        *(p for p in _mcp_server_sources() if "__pycache__" not in p.parts),
     ]:
         if "raise_for_status" in py.read_text():
             offenders.append(str(py.relative_to(REPO_ROOT)))

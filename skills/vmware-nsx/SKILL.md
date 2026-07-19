@@ -199,7 +199,7 @@ read-only mode: `VMWARE_READ_ONLY=true` (or `VMWARE_NSX_READ_ONLY`, or `read_onl
 config.yaml) withholds all 13 write tools at start-up, leaving the 20 read tools. That is a
 deliberate lockdown, not a fault — do not retry, and do not look for another tool that
 achieves the same change. Name the blocked operation and say an operator must clear the
-switch and restart the server. Read tools are unaffected.
+switch and restart the server. Read tools are unaffected. Running with local or small models? See [`references/agent-guardrails.md`](references/agent-guardrails.md).
 
 ## CLI Quick Reference
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vmware-nsx-mgmt"
-version = "1.8.1"
+version = "1.8.2"
 description = "VMware NSX networking management: segments, gateways, NAT, routing, IPAM"
 readme = "README.md"
 license = "MIT"
@@ -29,10 +29,10 @@ dependencies = [
 
 [project.scripts]
 vmware-nsx = "vmware_nsx.cli:app"
-vmware-nsx-mcp = "mcp_server.server:main"
+vmware-nsx-mcp = "vmware_nsx.mcp_server.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["vmware_nsx", "mcp_server"]
+packages = ["vmware_nsx"]
 
 [dependency-groups]
 dev = [

@@ -88,7 +88,7 @@ def test_cli_ip_pool_delete_dry_run_does_not_delete() -> None:
 
 
 def test_mcp_delete_ip_pool_calls_ops() -> None:
-    import mcp_server.server as srv
+    import vmware_nsx.mcp_server.server as srv
 
     client = MagicMock(name="NsxClient")
     with (
@@ -136,7 +136,7 @@ def test_ops_static_route_tier0_hits_tier0_path() -> None:
     ],
 )
 def test_mcp_static_route_wrappers_thread_tier0(tool_name, kwargs, expected_path_fragment) -> None:
-    import mcp_server.server as srv
+    import vmware_nsx.mcp_server.server as srv
 
     client = MagicMock(name="NsxClient")
     client.put.return_value = {"id": "r1"}
@@ -156,7 +156,7 @@ def test_mcp_static_route_wrappers_thread_tier0(tool_name, kwargs, expected_path
 
 
 def test_mcp_static_route_wrappers_default_tier1() -> None:
-    import mcp_server.server as srv
+    import vmware_nsx.mcp_server.server as srv
 
     client = MagicMock(name="NsxClient")
     client.put.return_value = {"id": "r1"}

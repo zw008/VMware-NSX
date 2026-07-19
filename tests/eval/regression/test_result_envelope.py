@@ -247,8 +247,8 @@ def test_mcp_list_tools_declare_object_results_not_arrays() -> None:
 
     # Import the server first: the tool packages resolve back through it, so
     # importing them directly trips a partially-initialised module.
-    import mcp_server.server  # noqa: F401
-    from mcp_server.tools import health, inventory, networking
+    import vmware_nsx.mcp_server.server  # noqa: F401
+    from vmware_nsx.mcp_server.tools import health, inventory, networking
 
     checked = []
     for module in (health, inventory, networking):

@@ -36,8 +36,8 @@ def _mock_client() -> MagicMock:
 
 def test_mcp_create_tier1_gateway_kwargs_match_ops() -> None:
     client = _mock_client()
-    with patch("mcp_server.server._get_connection", return_value=client):
-        from mcp_server.server import create_tier1_gateway
+    with patch("vmware_nsx.mcp_server.server._get_connection", return_value=client):
+        from vmware_nsx.mcp_server.server import create_tier1_gateway
 
         result = create_tier1_gateway(
             tier1_id="t1-regress",
@@ -58,8 +58,8 @@ def test_mcp_create_tier1_gateway_kwargs_match_ops() -> None:
 
 def test_mcp_update_tier1_gateway_filters_none_and_maps_ra() -> None:
     client = _mock_client()
-    with patch("mcp_server.server._get_connection", return_value=client):
-        from mcp_server.server import update_tier1_gateway
+    with patch("vmware_nsx.mcp_server.server._get_connection", return_value=client):
+        from vmware_nsx.mcp_server.server import update_tier1_gateway
 
         result = update_tier1_gateway(
             tier1_id="t1-regress",
@@ -73,8 +73,8 @@ def test_mcp_update_tier1_gateway_filters_none_and_maps_ra() -> None:
 
 def test_mcp_create_static_route_builds_next_hops() -> None:
     client = _mock_client()
-    with patch("mcp_server.server._get_connection", return_value=client):
-        from mcp_server.server import create_static_route
+    with patch("vmware_nsx.mcp_server.server._get_connection", return_value=client):
+        from vmware_nsx.mcp_server.server import create_static_route
 
         result = create_static_route(
             tier1_id="t1-regress",
@@ -89,8 +89,8 @@ def test_mcp_create_static_route_builds_next_hops() -> None:
 
 def test_mcp_create_ip_pool_builds_subnets() -> None:
     client = _mock_client()
-    with patch("mcp_server.server._get_connection", return_value=client):
-        from mcp_server.server import create_ip_pool
+    with patch("vmware_nsx.mcp_server.server._get_connection", return_value=client):
+        from vmware_nsx.mcp_server.server import create_ip_pool
 
         result = create_ip_pool(
             pool_id="pool-regress",

@@ -1,9 +1,9 @@
 """Shared MCP primitives: the FastMCP instance and the error sanitizer.
 
-Tool modules under ``mcp_server.tools`` import ``mcp`` (to register tools),
+Tool modules under ``vmware_nsx.mcp_server.tools`` import ``mcp`` (to register tools),
 ``_safe_error`` (agent-safe error formatting), and ``_DOCTOR_HINT`` from here.
-The connection helper lives in ``mcp_server.server`` instead, so that tests can
-``patch("mcp_server.server._get_connection")`` and have every tool pick it up;
+The connection helper lives in ``vmware_nsx.mcp_server.server`` instead, so that tests can
+``patch("vmware_nsx.mcp_server.server._get_connection")`` and have every tool pick it up;
 tool modules therefore call ``server._get_connection(...)`` at runtime.
 """
 
