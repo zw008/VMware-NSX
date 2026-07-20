@@ -246,7 +246,7 @@ def create_tier1_gateway(
                 raise ValueError(
                     f"Invalid route advertisement type: '{rt}'. Pass one or more of "
                     "these to create_tier1_gateway / update_tier1_gateway "
-                    f"(--route-advertisement): {', '.join(sorted(valid_types))}."
+                    f"(--advertise on the CLI): {', '.join(sorted(valid_types))}."
                 )
         body["route_advertisement_types"] = route_advertisement_types
 

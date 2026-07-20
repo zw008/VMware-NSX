@@ -119,6 +119,16 @@ def _check_env_permissions() -> None:
 _check_env_permissions()
 
 
+class ConfigError(OSError):
+    """A configuration problem the operator can fix, safe to show an agent.
+
+    Subclasses ``OSError`` so the CLI paths that already catch ``OSError`` keep
+    working. The point of the narrow type is the MCP path: ``_safe_error``
+    passes this through verbatim, and passing through bare ``OSError`` also
+    passed through TLS, DNS and socket errors carrying hostnames and URLs.
+    """
+
+
 @dataclass(frozen=True)
 class TargetConfig:
     """An NSX Manager connection target."""
@@ -146,7 +156,7 @@ class TargetConfig:
         env_key = f"VMWARE_NSX_{target_name.upper().replace('-', '_')}_PASSWORD"
         pw = os.environ.get(env_key, "")
         if not pw:
-            raise OSError(
+            raise ConfigError(
                 f"NSX password not found for target '{target_name}'. Set {env_key} "
                 "in ~/.vmware-nsx/.env (chmod 600) or export it, then retry. "
                 "'vmware-nsx init' writes that file for you."

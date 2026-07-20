@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from vmware_policy import vmware_tool
+from vmware_policy import report_tool_failure, vmware_tool
 
 from vmware_nsx.mcp_server import server
 from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
@@ -95,8 +95,13 @@ def delete_static_route(
         _delete(client, tier1_id, route_id, gateway_type=gateway_type)
         return f"Static route '{route_id}' deleted from '{tier1_id}'."
     except Exception as e:
+        msg = _safe_error(e, "nsx")
+        # This tool returns a string, so @vmware_tool sees an ordinary return
+        # and would audit the failed delete as status=ok while telling the
+        # circuit breaker the call succeeded. Declare the failure explicitly.
+        report_tool_failure(msg)
         return (
-            f"Error: the route was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Error: the route was NOT deleted. {msg} "
             f"Run list_static_routes on '{tier1_id}' to confirm the route_id and that "
             f"gateway_type='{gateway_type}' is right, or 'vmware-nsx doctor' to check "
             f"connectivity."

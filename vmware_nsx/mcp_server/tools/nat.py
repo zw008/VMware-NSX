@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from vmware_policy import vmware_tool
+from vmware_policy import report_tool_failure, vmware_tool
 
 from vmware_nsx.mcp_server import server
 from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
@@ -93,8 +93,13 @@ def delete_nat_rule(
         _delete(client, tier1_id, rule_id)
         return f"NAT rule '{rule_id}' deleted from '{tier1_id}'."
     except Exception as e:
+        msg = _safe_error(e, "nsx")
+        # This tool returns a string, so @vmware_tool sees an ordinary return
+        # and would audit the failed delete as status=ok while telling the
+        # circuit breaker the call succeeded. Declare the failure explicitly.
+        report_tool_failure(msg)
         return (
-            f"Error: the rule was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Error: the rule was NOT deleted. {msg} "
             f"Run list_nat_rules on '{tier1_id}' to confirm the rule_id, or "
             f"'vmware-nsx doctor' to check connectivity."
         )

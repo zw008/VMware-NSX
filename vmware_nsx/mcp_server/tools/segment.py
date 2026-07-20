@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from vmware_policy import vmware_tool
+from vmware_policy import report_tool_failure, vmware_tool
 
 from vmware_nsx.mcp_server import server
 from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
@@ -123,8 +123,13 @@ def delete_segment(segment_id: str, target: Optional[str] = None) -> str:
         _delete(client, segment_id)
         return f"Segment '{segment_id}' deleted."
     except Exception as e:
+        msg = _safe_error(e, "nsx")
+        # This tool returns a string, so @vmware_tool sees an ordinary return
+        # and would audit the failed delete as status=ok while telling the
+        # circuit breaker the call succeeded. Declare the failure explicitly.
+        report_tool_failure(msg)
         return (
-            f"Error: the segment was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Error: the segment was NOT deleted. {msg} "
             f"Run list_segments to confirm '{segment_id}' exists on this target, or "
             f"get_logical_port_status to see whether ports are still attached "
             f"(a segment with attached ports cannot be deleted)."

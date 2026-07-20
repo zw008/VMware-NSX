@@ -121,10 +121,22 @@ def _hint_for_status(status_code: int) -> str:
 class NsxClient:
     """REST client for a single NSX Manager."""
 
+    _target_name: str = ""
+    """Config key this client was built from, e.g. ``prod-nsx``.
+
+    Connection failures name this instead of the host they resolved to: the
+    operator edits config by key, and the raw failure text (host:port,
+    certificate subject) is not something ``_safe_error`` would redact. Declared
+    at class level so instances built with ``__new__`` — the test doubles that
+    skip ``__init__`` to avoid dialling out — still render a message.
+    """
+
     def __init__(
-        self, target: TargetConfig, password: str, username: str | None = None
+        self, target: TargetConfig, password: str, username: str | None = None,
+        *, target_name: str = "",
     ) -> None:
         self._target = target
+        self._target_name = target_name
         self._password = password
         # Resolved by the caller (ConnectionManager) alongside the password so
         # both halves of the credential come from the same read; falls back to
@@ -190,13 +202,17 @@ class NsxClient:
                 if _is_tls_error(exc)
                 else ""
             )
-            # Remedy before the raw exception text: ``_safe_error`` truncates at
-            # 300 characters, so anything placed after ``exc`` can be cut off
-            # before the agent ever reads it.
+            # The raw ``exc`` is deliberately not interpolated. ``_safe_error``
+            # passes ``NsxApiError`` through verbatim and ``sanitize`` redacts
+            # nothing, so a TLS failure would hand the agent the certificate
+            # subject and a DNS failure the resolved host:port. The full chain
+            # still reaches the operator: ``_safe_error`` logs it with
+            # ``exc_info``, and ``from exc`` keeps the cause attached.
+            # Authored text first, config key last — the cap truncates the tail.
             raise NsxApiError(
-                f"Could not connect to NSX Manager {self._target.host}:{self._target.port}. "
-                f"Check host, port and verify_ssl for this target in ~/.vmware-nsx/config.yaml, "
-                f"then run 'vmware-nsx doctor'.{tls_note} Underlying error: {exc}",
+                "Could not connect to NSX Manager. Check host, port and verify_ssl "
+                "for this target in ~/.vmware-nsx/config.yaml, then run "
+                f"'vmware-nsx doctor'.{tls_note} Target: '{self._target_name}'",
                 method="POST",
                 path="/api/session/create",
             ) from exc
@@ -275,10 +291,16 @@ class NsxClient:
                     attempt += 1
                     time.sleep(_RETRY_DELAY_SEC)
                     continue
+                # No raw ``exc``: see _create_session — it carries the resolved
+                # host:port (and the certificate subject on a TLS failure), and
+                # nothing downstream redacts it. Authored text first, the
+                # unbounded path last so the 300-char cap eats context, not the
+                # remedy.
                 raise NsxApiError(
-                    f"NSX Manager {method} {path} could not connect — check host, port "
-                    "and network reachability for this target in ~/.vmware-nsx/config.yaml, "
-                    f"then run 'vmware-nsx doctor'. Underlying error: {exc}",
+                    "NSX Manager could not connect — check host, port and network "
+                    "reachability for this target in ~/.vmware-nsx/config.yaml, then "
+                    f"run 'vmware-nsx doctor'. Target: '{self._target_name}' "
+                    f"({method} {path})",
                     method=method,
                     path=path,
                 ) from exc
@@ -299,11 +321,20 @@ class NsxClient:
 
             if resp.status_code >= 400:
                 raise NsxApiError(
-                    # Kept short enough that ``_safe_error``'s 300-character cap
-                    # cannot eat the trailing remedy on a long policy path.
-                    f"NSX Manager {method} {path} returned HTTP {resp.status_code}. "
+                    # Remedy first, unbounded path last. The previous order led
+                    # with "{method} {path}" and a comment claiming the message
+                    # was short enough that ``_safe_error``'s 300-character cap
+                    # could not eat the trailing remedy. That was false for real
+                    # ids: a 404 on
+                    # /policy/api/v1/infra/tier-1s/tier1-prod-edge/nat/USER/nat-rules/dnat-web-443
+                    # measures 316 characters and loses the doctor line — the
+                    # toy ids it was checked against (t1-x, r-x) fit at 296. The
+                    # status code and the hint are bounded, so they lead; the
+                    # path is the only expendable part and now truncates first.
+                    f"NSX Manager returned HTTP {resp.status_code}. "
                     f"{_hint_for_status(resp.status_code)} "
-                    "Run 'vmware-nsx doctor' to check this target.",
+                    "Run 'vmware-nsx doctor' to check this target. "
+                    f"({method} {path})",
                     status_code=resp.status_code,
                     method=method,
                     path=path,
@@ -483,7 +514,7 @@ class ConnectionManager:
         # behind by a rotation would pair with the new password and fail.
         password = target_cfg.get_password(name)
         username = target_cfg.get_username(name)
-        client = NsxClient(target_cfg, password, username)
+        client = NsxClient(target_cfg, password, username, target_name=name)
         self._clients[name] = client
         return client
 

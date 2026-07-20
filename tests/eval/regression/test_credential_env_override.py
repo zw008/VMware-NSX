@@ -79,9 +79,10 @@ def test_connection_manager_authenticates_with_env_username(monkeypatch):
     """The override is worthless unless the connection layer actually uses it."""
     captured: dict = {}
 
-    def _fake_client(target, password, username=None):
+    def _fake_client(target, password, username=None, *, target_name=""):
         captured["username"] = username
         captured["password"] = password
+        captured["target_name"] = target_name
         return MagicMock()
 
     monkeypatch.setattr("vmware_nsx.connection.NsxClient", _fake_client)
@@ -91,7 +92,13 @@ def test_connection_manager_authenticates_with_env_username(monkeypatch):
     cfg = AppConfig(targets={"nsx-prod": _target()}, default_target="nsx-prod")
     ConnectionManager(cfg).connect("nsx-prod")
 
-    assert captured == {"username": "vault-admin", "password": "vault-pw"}
+    # target_name is what connection errors name instead of the resolved
+    # host:port, so it has to actually reach the client.
+    assert captured == {
+        "username": "vault-admin",
+        "password": "vault-pw",
+        "target_name": "nsx-prod",
+    }
 
 
 def test_connection_manager_falls_back_to_config_username(monkeypatch):
@@ -99,7 +106,7 @@ def test_connection_manager_falls_back_to_config_username(monkeypatch):
     configured username — the override is additive, not a new requirement."""
     captured: dict = {}
 
-    def _fake_client(target, password, username=None):
+    def _fake_client(target, password, username=None, *, target_name=""):
         captured["username"] = username
         return MagicMock()
 
