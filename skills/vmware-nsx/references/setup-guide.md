@@ -88,19 +88,19 @@ The next major release refuses it. Declaring `environment:` on each target now m
 Passwords are **never stored in config.yaml**. They must be set as environment variables via the `.env` file.
 
 ```bash
-echo "VMWARE_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
-echo "VMWARE_NSX_LAB_PASSWORD=lab_password" >> ~/.vmware-nsx/.env
+echo "VMWARE_NSX_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
+echo "VMWARE_NSX_NSX_LAB_PASSWORD=lab_password" >> ~/.vmware-nsx/.env
 chmod 600 ~/.vmware-nsx/.env
 ```
 
-**Naming convention**: `VMWARE_<TARGET_NAME_UPPER>_PASSWORD` where `<TARGET_NAME_UPPER>` is the target `name` from config.yaml, uppercased, with hyphens replaced by underscores.
+**Naming convention**: `VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD` where `<TARGET_NAME_UPPER>` is the target `name` from config.yaml, uppercased, with hyphens replaced by underscores.
 
 Examples:
 | Target name | Environment variable |
 |-------------|---------------------|
-| `nsx-prod` | `VMWARE_NSX_PROD_PASSWORD` |
-| `nsx-lab` | `VMWARE_NSX_LAB_PASSWORD` |
-| `nsx01` | `VMWARE_NSX01_PASSWORD` |
+| `nsx-prod` | `VMWARE_NSX_NSX_PROD_PASSWORD` |
+| `nsx-lab` | `VMWARE_NSX_NSX_LAB_PASSWORD` |
+| `nsx01` | `VMWARE_NSX_NSX01_PASSWORD` |
 
 ### 4. Verify setup
 
@@ -301,7 +301,7 @@ MCP server's start-up log additionally names every tool that was withheld.
 
 Authentication is username/password against the NSX session-create API. Credentials are
 form-body encoded, so passwords containing special characters are handled correctly.
-Per-target passwords come from `~/.vmware-nsx/.env` (`VMWARE_<TARGET_NAME_UPPER>_PASSWORD`).
+Per-target passwords come from `~/.vmware-nsx/.env` (`VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD`).
 
 > Principal Identity / client-certificate authentication is not currently implemented.
 

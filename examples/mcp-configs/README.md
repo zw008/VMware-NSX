@@ -14,7 +14,7 @@ mkdir -p ~/.vmware-nsx
 cp config.example.yaml ~/.vmware-nsx/config.yaml
 # Edit config.yaml with your NSX Manager host and username
 
-echo "VMWARE_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
+echo "VMWARE_NSX_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
 chmod 600 ~/.vmware-nsx/.env
 
 # Verify setup

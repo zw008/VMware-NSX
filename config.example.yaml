@@ -41,3 +41,12 @@ default_target: nsx-prod
 # VMWARE_NSX_NSX_PROD_PASSWORD=xxx
 # VMWARE_NSX_NSX_LAB_PASSWORD=xxx
 # Or from ~/.vmware-nsx/.env file
+
+# The 'username:' above can be overridden per target the same way, so a
+# deployment that injects credentials from a secret store can externalise both
+# halves of the pair instead of just the password:
+# VMWARE_NSX_NSX_PROD_USERNAME=svc-nsx
+# VMWARE_NSX_NSX_LAB_USERNAME=svc-nsx
+# Unset (or empty) falls back to the 'username:' in this file. Both halves are
+# re-read on every connect, so rotating an account takes effect together — a
+# username left behind by a rotation would pair with the new password and fail.

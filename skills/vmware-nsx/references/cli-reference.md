@@ -483,4 +483,4 @@ vmware-nsx mcp-config install --agent claude-code --yes
 | Variable | Description |
 |----------|-------------|
 | `VMWARE_NSX_CONFIG` | Override config file path (used by MCP server) |
-| `VMWARE_<TARGET>_PASSWORD` | Password for a target (e.g., `VMWARE_NSX_PROD_PASSWORD`) |
+| `VMWARE_NSX_<TARGET>_PASSWORD` | Password for a target (e.g., `VMWARE_NSX_NSX_PROD_PASSWORD`) |

@@ -43,7 +43,7 @@ mkdir -p ~/.vmware-nsx
 cp config.example.yaml ~/.vmware-nsx/config.yaml
 # 编辑 config.yaml，填入 NSX Manager 地址和用户名
 
-echo "VMWARE_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
+echo "VMWARE_NSX_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
 chmod 600 ~/.vmware-nsx/.env
 
 # 验证环境
@@ -57,13 +57,17 @@ default_target: nsx-prod
 targets:
   nsx-prod:
     host: nsx-mgr.example.com    # NSX Manager IP 或集群 VIP
-    user: admin
-    password_env: VMWARE_NSX_PROD_PASSWORD
+    username: admin
   nsx-lab:
     host: 10.0.0.100
-    user: admin
-    password_env: VMWARE_NSX_LAB_PASSWORD
+    username: admin
 ```
+
+密码不写在 config.yaml 里，按目标名从环境变量读取（`nsx-prod` →
+`VMWARE_NSX_NSX_PROD_PASSWORD`，`nsx-lab` → `VMWARE_NSX_NSX_LAB_PASSWORD`），
+或放进 `~/.vmware-nsx/.env`。上面的 `username` 同样可以被
+`VMWARE_NSX_NSX_PROD_USERNAME` / `VMWARE_NSX_NSX_LAB_USERNAME` 覆盖，
+两者在每次连接时一起读取，便于从密钥管理系统整对轮换。
 
 ## 只读模式
 
@@ -327,7 +331,7 @@ vmware-nsx-mcp
 | NAT 创建报 "gateway not found" | NAT 需要 Tier-1（或 Tier-0）网关。用 `gateway list-t1` 确认，网关必须有 Edge 集群。 |
 | BGP 邻居停在 Connect/Active | 对端不可达、ASN 不匹配、TCP 179 被阻止、或 MD5 密码不匹配。 |
 | 传输节点 "degraded" | TEP 不可达（检查 MTU >= 1600）、NTP 同步问题、或主机交换机配置不匹配。 |
-| "Password not found" 错误 | 变量名规则：`VMWARE_<目标名大写>_PASSWORD`（连字符→下划线）。检查 `~/.vmware-nsx/.env`。 |
+| "Password not found" 错误 | 变量名规则：`VMWARE_NSX_<目标名大写>_PASSWORD`（连字符→下划线）。检查 `~/.vmware-nsx/.env`。 |
 | 连接 NSX Manager 超时 | 使用 `vmware-nsx doctor --skip-auth` 跳过高延迟网络的认证检查。 |
 
 ## 许可证

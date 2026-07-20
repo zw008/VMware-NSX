@@ -42,6 +42,7 @@ def _make_client(handler, *, token: str | None = "xsrf-tok") -> NsxClient:
     client = NsxClient.__new__(NsxClient)
     client._target = SimpleNamespace(host="nsx.example", port=443, username="admin", verify_ssl=True)
     client._password = "pw"
+    client._username = "admin"
     client._base_url = "https://nsx.example:443"
     client._token = token
     client._client = httpx.Client(

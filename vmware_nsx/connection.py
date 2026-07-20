@@ -118,9 +118,15 @@ def _hint_for_status(status_code: int, path: str) -> str:
 class NsxClient:
     """REST client for a single NSX Manager."""
 
-    def __init__(self, target: TargetConfig, password: str) -> None:
+    def __init__(
+        self, target: TargetConfig, password: str, username: str | None = None
+    ) -> None:
         self._target = target
         self._password = password
+        # Resolved by the caller (ConnectionManager) alongside the password so
+        # both halves of the credential come from the same read; falls back to
+        # the configured username for direct construction.
+        self._username = username or target.username
         self._base_url = f"https://{target.host}:{target.port}"
         self._token: str | None = None
 
@@ -161,7 +167,7 @@ class NsxClient:
         _SAFE = "!)*-._~"
         body = (
             "j_username="
-            + quote(self._target.username, safe=_SAFE)
+            + quote(self._username, safe=_SAFE)
             + "&j_password="
             + quote(self._password, safe=_SAFE)
         )
@@ -448,8 +454,11 @@ class ConnectionManager:
             available = ", ".join(self._config.targets.keys())
             raise ValueError(f"Target '{name}' not found. Available: {available}")
 
+        # Resolve both halves of the credential together — a username left
+        # behind by a rotation would pair with the new password and fail.
         password = target_cfg.get_password(name)
-        client = NsxClient(target_cfg, password)
+        username = target_cfg.get_username(name)
+        client = NsxClient(target_cfg, password, username)
         self._clients[name] = client
         return client
 

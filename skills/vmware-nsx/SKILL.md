@@ -11,10 +11,10 @@ installer:
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_<TARGET>_PASSWORD","VMWARE_READ_ONLY","VMWARE_NSX_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_<TARGET>_PASSWORD","VMWARE_NSX_<TARGET>_USERNAME","VMWARE_READ_ONLY","VMWARE_NSX_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
   vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
-  Credentials: Each NSX Manager target requires a per-target password env var in ~/.vmware-nsx/.env following the pattern VMWARE_<TARGET_NAME_UPPER>_PASSWORD. Also supports certificate-based auth. Passwords are never logged or echoed.
+  Credentials: Each NSX Manager target requires a per-target password env var in ~/.vmware-nsx/.env following the pattern VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD. Also supports certificate-based auth. Passwords are never logged or echoed.
   Destructive operations: Segment/gateway/NAT delete require double confirmation + --dry-run. Segment delete checks for connected ports, gateway delete checks for connected segments.
   Read-only mode: VMWARE_READ_ONLY=true (family-wide) or VMWARE_NSX_READ_ONLY=true (per-skill, takes precedence) removes all 13 write tools from the MCP registry at startup; fail-closed. VMWARE_AUDIT_APPROVED_BY names the approver policy requires for irreversible work on targets declared environment: production. None of the three carry credentials.
   No webhooks, no outbound network calls, no guest operations. Local only: stdio MCP + NSX Policy API (HTTPS 443).
@@ -286,7 +286,7 @@ A transport node in degraded state has partial connectivity. Steps:
 
 ### "Password not found" error
 
-The password environment variable is missing. Variable names follow the pattern `VMWARE_<TARGET_NAME_UPPER>_PASSWORD` where hyphens become underscores. Example: target `nsx-prod` needs `VMWARE_NSX_PROD_PASSWORD`. Check your `~/.vmware-nsx/.env` file.
+The password environment variable is missing. Variable names follow the pattern `VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD` where hyphens become underscores. Example: target `nsx-prod` needs `VMWARE_NSX_NSX_PROD_PASSWORD`. Check your `~/.vmware-nsx/.env` file.
 
 ### "target does not declare which environment it is" on a write
 

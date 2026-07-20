@@ -43,7 +43,7 @@ mkdir -p ~/.vmware-nsx
 cp config.example.yaml ~/.vmware-nsx/config.yaml
 # Edit with your NSX Manager credentials
 
-echo "VMWARE_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
+echo "VMWARE_NSX_NSX_PROD_PASSWORD=your_password" > ~/.vmware-nsx/.env
 chmod 600 ~/.vmware-nsx/.env
 
 # Verify
@@ -270,7 +270,7 @@ More agent config templates (Claude Code, Cursor, Goose, Continue, etc.) in [exa
 | NAT creation fails "gateway not found" | NAT requires a Tier-1 (or Tier-0) gateway. Verify with `gateway list-t1`. Gateway must have an edge cluster. |
 | BGP neighbor stuck in Connect/Active | Peer unreachable, ASN mismatch, TCP 179 blocked, or MD5 password mismatch. |
 | Transport node "degraded" | TEP unreachable (check MTU >= 1600), NTP sync issues, or host switch config mismatch. |
-| "Password not found" | Variable naming: `VMWARE_<TARGET_UPPER>_PASSWORD` (hyphens to underscores). Check `~/.vmware-nsx/.env`. |
+| "Password not found" | Variable naming: `VMWARE_NSX_<TARGET_UPPER>_PASSWORD` (hyphens to underscores). Check `~/.vmware-nsx/.env`. |
 | Connection timeout | Use `vmware-nsx doctor --skip-auth` to bypass auth checks on high-latency networks. |
 
 ## License

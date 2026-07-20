@@ -151,6 +151,26 @@ class TargetConfig:
             )
         return _decode_secret(pw)
 
+    def get_username(self, target_name: str) -> str:
+        """Retrieve username from environment variable, falling back to config.
+
+        Convention: VMWARE_NSX_<TARGET>_USERNAME
+        where <TARGET> is upper-cased with hyphens replaced by underscores.
+
+        Mirrors :meth:`get_password` so a deployment injecting credentials from
+        a secret store can externalise *both* halves of the pair. Like the
+        password this is resolved on every call, never cached at load time: a
+        rotated username has to take effect at the same moment as the rotated
+        password, or the halves drift apart and authenticate as nobody.
+
+        Unlike the password an unset variable is not an error — config.yaml
+        always supplies a username — so it falls back to ``self.username``.
+        The value is not ``b64:``-decoded; only ``*_PASSWORD`` keys are
+        obfuscated at rest, and a username is not a secret.
+        """
+        env_key = f"VMWARE_NSX_{target_name.upper().replace('-', '_')}_USERNAME"
+        return os.environ.get(env_key, "") or self.username
+
 
 @dataclass(frozen=True)
 class AppConfig:
