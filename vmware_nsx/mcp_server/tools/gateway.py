@@ -28,27 +28,26 @@ def create_tier1_gateway(
 ) -> dict:
     """[WRITE] Create a Tier-1 gateway for routing segments, with optional Tier-0 uplink.
 
-    For north-south reachability, link it to a Tier-0 (get the path from
-    list_tier0_gateways). Side effect to note: if route_advertisement is
-    omitted, nothing is advertised to the Tier-0, so connected subnets stay
-    unreachable from outside until advertisement types are set (here or via
-    update_tier1_gateway). Re-running with the same tier1_id overwrites it
-    (PUT semantics). Returns the created gateway dict; on failure returns
-    {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
+    Use this before create_segment when the segment needs routing; get
+    tier0_path from list_tier0_gateways and edge_cluster_path from
+    list_edge_clusters first. Without route_advertisement nothing reaches the
+    Tier-0, so connected subnets stay unreachable from outside until it is set
+    here or via update_tier1_gateway. The same tier1_id overwrites (PUT).
+    Returns the created gateway dict, else {"error", "hint"}. Then verify with
+    get_tier1_gateway; delete_tier1_gateway is the inverse.
 
     Args:
-        tier1_id: Unique gateway identifier (alphanumerics, hyphens,
-            underscores only); becomes policy path /infra/tier-1s/<tier1_id>.
-        display_name: Human-readable name shown in the NSX UI.
-        tier0_path: Parent Tier-0 policy path, e.g. "/infra/tier-0s/<t0-id>".
-            Omit to create a standalone (unlinked) gateway.
-        edge_cluster_path: Edge cluster policy path for stateful services
-            such as NAT, e.g. "/infra/sites/default/enforcement-points/default/
-            edge-clusters/<uuid>". Optional.
-        route_advertisement: Comma-separated advertisement types. Valid values:
-            TIER1_CONNECTED, TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP,
-            TIER1_LB_SNAT, TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        tier1_id: Unique id (alphanumerics, hyphens, underscores only); becomes
+            /infra/tier-1s/<tier1_id>.
+        display_name: Name shown in the NSX UI.
+        tier0_path: Parent Tier-0 path, e.g. "/infra/tier-0s/<t0-id>". Omit for
+            a standalone gateway.
+        edge_cluster_path: Edge cluster path, required for NAT and other
+            stateful services.
+        route_advertisement: Comma-separated types: TIER1_CONNECTED,
+            TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP, TIER1_LB_SNAT,
+            TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import create_tier1_gateway as _create
@@ -81,21 +80,20 @@ def update_tier1_gateway(
 ) -> dict:
     """[WRITE] Partially update an existing Tier-1 gateway via PATCH.
 
-    Only the fields you pass change; omitted fields keep their current values.
-    Use get_tier1_gateway first to inspect current config. Typical uses:
-    relink the gateway to a different Tier-0, or enable route advertisement on
-    a gateway created without it. Re-applying identical values is harmless.
-    Returns the updated gateway dict; on failure returns {"error", "hint"}.
-    Recorded in the audit log (~/.vmware/audit.db).
+    Only the fields you pass change. Use get_tier1_gateway first —
+    route_advertisement is sent as a whole list, so include every type you want
+    kept. Prefer this over create_tier1_gateway for an existing gateway: create
+    is a PUT and overwrites everything. Re-applying identical values is
+    harmless. Returns the updated gateway dict, else {"error", "hint"}.
 
     Args:
-        tier1_id: Tier-1 gateway ID to update, as returned by list_tier1_gateways.
+        tier1_id: Gateway ID to update, as returned by list_tier1_gateways.
         display_name: New display name. Optional.
-        tier0_path: New parent Tier-0 policy path, e.g. "/infra/tier-0s/<t0-id>". Optional.
-        route_advertisement: Comma-separated advertisement types. Valid values:
-            TIER1_CONNECTED, TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP,
-            TIER1_LB_SNAT, TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        tier0_path: New parent Tier-0 path, e.g. "/infra/tier-0s/<t0-id>".
+        route_advertisement: Comma-separated types: TIER1_CONNECTED,
+            TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP, TIER1_LB_SNAT,
+            TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import update_tier1_gateway as _update
@@ -118,15 +116,18 @@ def update_tier1_gateway(
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> str:
-    """[WRITE] Delete a Tier-1 gateway. WARNING: This removes all attached segments and NAT rules.
+    """[WRITE] Delete a Tier-1 gateway. WARNING: removes attached segments and NAT rules.
 
-    Also removes the gateway's "default" locale-service first (the Policy
-    API refuses to delete a Tier-1 that still has children); a missing
-    locale-service is ignored.
+    Irreversible. Run get_tier1_gateway and list_nat_rules on the same tier1_id
+    first to see what goes with it, and confirm with the user before deleting.
+    Also removes the gateway's "default" locale-service first (the Policy API
+    refuses to delete a Tier-1 that still has children); a missing
+    locale-service is ignored. Returns a confirmation string, or an "Error: ..."
+    string — not a dict.
 
     Args:
-        tier1_id: The Tier-1 gateway ID to delete.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Gateway ID to delete, as returned by list_tier1_gateways.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway as _delete
@@ -155,17 +156,20 @@ def configure_tier0_bgp(
 ) -> dict:
     """[WRITE] Configure BGP settings on a Tier-0 gateway's locale-service.
 
-    Note: This configures BGP *settings* (local AS, ECMP, graceful restart).
-    BGP neighbor creation is a separate Policy API object and not exposed here.
+    Use get_tier0_gateway first to confirm the tier0_id. Sets BGP *settings*
+    only (local AS, ECMP, inter-SR iBGP); neighbor creation is a separate Policy
+    API object not exposed here, so peering will not come up from this call
+    alone. Returns the updated BGP config dict, else {"error", "hint"}. Then
+    check get_bgp_neighbors for session state.
 
     Args:
-        tier0_id: The Tier-0 gateway ID.
-        local_as_num: Local AS number as a string (e.g. "65001").
+        tier0_id: Tier-0 gateway ID, as returned by list_tier0_gateways.
+        local_as_num: Local AS number as a string, e.g. "65001".
         enabled: Enable or disable BGP on the locale-service (default True).
         ecmp: Enable ECMP for BGP routes (default True).
         inter_sr_ibgp: Enable inter-SR iBGP (default True).
         locale_service_id: Locale-service identifier (default "default").
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import configure_tier0_bgp as _configure

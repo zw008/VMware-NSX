@@ -13,17 +13,20 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 def get_logical_port_status(segment_id: str, target: Optional[str] = None) -> dict:
     """[READ] Check realized state of all ports on a segment (first 50 ports).
 
-    For each port returns admin_state, attachment (type/id), and the
-    realized state from the Policy API: attached (attachment present),
-    realized_bindings_count, and transport_node_ids (nodes realizing the
-    port). NSX does not expose a single UP/DOWN flag per segment port —
-    an attached port with realized bindings on at least one transport
-    node is healthy.
+    Use this after get_segment_port_for_vm has told you which segment a VM sits
+    on, or before delete_segment to see whether ports are still attached.
+    Returns per-port admin_state, attachment (type/id) and realized state:
+    attached, realized_bindings_count, transport_node_ids. NSX does not expose a
+    single UP/DOWN flag per segment port — an attached port with realized
+    bindings on at least one transport node is healthy. Only the first 50 ports
+    are returned.
+
+    If bindings are missing everywhere, check get_transport_node_status.
 
     Args:
-        segment_id: The segment ID whose ports to inspect, as returned by
+        segment_id: Segment ID whose ports to inspect, as returned by
             list_segments.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.troubleshoot import get_logical_port_status as _get_port
@@ -39,14 +42,20 @@ def get_logical_port_status(segment_id: str, target: Optional[str] = None) -> di
 def get_segment_port_for_vm(vm_display_name: str, target: Optional[str] = None) -> dict:
     """[READ] Find which segment(s) a VM is attached to via its VIF attachments.
 
-    Looks up the VM in the NSX fabric inventory by display name, fetches its
-    VIFs (/api/v1/fabric/vifs), and matches segment ports whose attachment id
-    equals a VIF's lport_attachment_id. Returns VM info (external_id, host,
-    power state) and matched_ports (segment id/name, port id/name).
+    Start here for "why can this VM not reach the network?" — it is the only
+    tool mapping a VM name onto NSX topology. Looks the VM up in the fabric
+    inventory, fetches its VIFs, and matches segment ports by
+    lport_attachment_id. Returns one dict (not the list envelope): VM info
+    (external_id, host, power state) and matched_ports (segment id/name, port
+    id/name). Matching is on exact display name, and empty matched_ports means
+    no VIF is attached, not that the VM is missing.
+
+    Then get_logical_port_status on the segment it names. VM power and placement
+    are not managed here — use vmware-aiops.
 
     Args:
-        vm_display_name: The VM display name as shown in vCenter/NSX inventory.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        vm_display_name: VM display name as shown in vCenter/NSX inventory.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.troubleshoot import get_segment_port_for_vm as _get_vm_seg

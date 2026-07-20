@@ -26,26 +26,24 @@ def create_segment(
     subnet: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a new NSX network segment (overlay or VLAN-backed) via the Policy API.
+    """[WRITE] Create an NSX network segment (overlay or VLAN-backed) via the Policy API.
 
-    Prerequisite: get the transport zone from list_transport_zones first. Pass
-    subnet for overlay routed segments, or vlan_ids for VLAN-backed transport
-    zones. Re-running with the same segment_id overwrites that segment (PUT
-    semantics). Returns the created segment dict (id, display_name, subnets,
-    transport_zone_path); on failure returns {"error", "hint"}. The operation
-    is recorded in the audit log (~/.vmware/audit.db).
+    Run list_transport_zones first for transport_zone_path; it decides whether
+    subnet or vlan_ids applies — the wrong one is rejected. The same segment_id
+    overwrites (PUT). Returns the created segment dict, else {"error", "hint"}.
+    A segment with no gateway is isolated: link it with create_tier1_gateway,
+    then verify with get_segment.
 
     Args:
-        segment_id: Unique segment identifier (alphanumerics, hyphens,
-            underscores only); becomes policy path /infra/segments/<segment_id>.
-        display_name: Human-readable name shown in the NSX UI.
-        transport_zone_path: Full transport zone policy path, e.g.
+        segment_id: Unique id (alphanumerics, hyphens, underscores only);
+            becomes /infra/segments/<segment_id>.
+        display_name: UI display name.
+        transport_zone_path: Full path, e.g.
             "/infra/sites/default/enforcement-points/default/transport-zones/<tz-id>".
-        vlan_ids: VLAN ID(s) for VLAN-backed segments, comma- or
-            hyphen-separated individual IDs (e.g. "100" or "100,200"). Omit for overlay.
-        subnet: Gateway IP in CIDR notation, e.g. "192.168.1.1/24" (the
-            gateway address, not the network address). Omit for VLAN-backed segments.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        vlan_ids: VLAN ID(s) for a VLAN-backed zone, e.g. "100,200".
+        subnet: Gateway IP in CIDR for an overlay zone, e.g. "192.168.1.1/24" —
+            the gateway address, not the network address.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import create_segment as _create
@@ -78,11 +76,17 @@ def update_segment(
 ) -> dict:
     """[WRITE] Update an existing network segment (partial update via PATCH).
 
+    Only the fields you pass change. Use get_segment first, and prefer this over
+    create_segment for an existing segment: create is a PUT and overwrites
+    everything. Changing subnet re-addresses the gateway and can drop traffic
+    for attached VMs, so check port_count first. Returns the updated segment
+    dict, else {"error", "hint"}.
+
     Args:
-        segment_id: The segment ID to update.
-        display_name: New display name (optional).
-        subnet: New gateway CIDR (optional).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        segment_id: Segment ID to update, as returned by list_segments.
+        display_name: New display name. Optional.
+        subnet: New gateway CIDR, e.g. "192.168.1.1/24". Optional.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import update_segment as _update
@@ -101,11 +105,16 @@ def update_segment(
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True})
 @vmware_tool(risk_level="high")
 def delete_segment(segment_id: str, target: Optional[str] = None) -> str:
-    """[WRITE] Delete a network segment. WARNING: This will disconnect all attached VMs.
+    """[WRITE] Delete a network segment. WARNING: this disconnects all attached VMs.
+
+    Irreversible. Run get_segment on the same segment_id first and check
+    port_count — NSX refuses to delete a segment that still has attached ports —
+    and confirm with the user before deleting. Returns a confirmation string, or
+    an "Error: ..." string — not a dict.
 
     Args:
-        segment_id: The segment ID to delete.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        segment_id: Segment ID to delete, as returned by list_segments.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.segment_mgmt import delete_segment as _delete

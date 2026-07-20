@@ -3,16 +3,7 @@
   "scores": {
     "entity_reachability_full": {
       "detail": {
-        "broken_chains": [
-          {
-            "companion_skill_named": [],
-            "entity": "vm",
-            "param": "vm_display_name",
-            "producer_on_surface": [],
-            "routed_in_description": [],
-            "tool": "get_segment_port_for_vm"
-          }
-        ],
+        "broken_chains": [],
         "entry_points": [
           "create_tier1_gateway",
           "list_nsx_alarms",
@@ -27,28 +18,19 @@
           "list_ip_pools"
         ],
         "reachable_on_surface": 23,
-        "reachable_only_via_description": 0,
+        "reachable_only_via_description": 1,
         "required_entity_params": 24,
         "required_params_classified": "24/38",
         "tool_count": 33
       },
       "maximum": 24,
-      "pct": 95.8,
+      "pct": 100.0,
       "unit": "required entity params",
-      "value": 23
+      "value": 24
     },
     "entity_reachability_read_only": {
       "detail": {
-        "broken_chains": [
-          {
-            "companion_skill_named": [],
-            "entity": "vm",
-            "param": "vm_display_name",
-            "producer_on_surface": [],
-            "routed_in_description": [],
-            "tool": "get_segment_port_for_vm"
-          }
-        ],
+        "broken_chains": [],
         "entry_points": [
           "list_nsx_alarms",
           "get_nsx_manager_status",
@@ -61,15 +43,15 @@
           "list_ip_pools"
         ],
         "reachable_on_surface": 10,
-        "reachable_only_via_description": 0,
+        "reachable_only_via_description": 1,
         "required_entity_params": 11,
         "required_params_classified": "11/11",
         "tool_count": 20
       },
       "maximum": 11,
-      "pct": 90.9,
+      "pct": 100.0,
       "unit": "required entity params",
-      "value": 10
+      "value": 11
     },
     "entry_point_availability": {
       "detail": {
@@ -103,21 +85,21 @@
     "manifest_context_headroom": {
       "detail": {
         "heaviest_tools": {
-          "create_ip_pool": 384,
-          "create_segment": 400,
-          "create_static_route": 338,
-          "create_tier1_gateway": 422,
-          "update_tier1_gateway": 332
+          "create_ip_pool": 356,
+          "create_nat_rule": 350,
+          "create_segment": 370,
+          "create_static_route": 330,
+          "create_tier1_gateway": 365
         },
-        "manifest_tokens": 6640,
-        "mean_tokens_per_tool": 201.2,
+        "manifest_tokens": 6726,
+        "mean_tokens_per_tool": 203.8,
         "reference_context": 16384,
         "tool_count": 33
       },
       "maximum": 16384,
-      "pct": 59.5,
+      "pct": 58.9,
       "unit": "tokens",
-      "value": 9744
+      "value": 9658
     },
     "parameter_documentation_coverage": {
       "detail": {
@@ -132,9 +114,9 @@
       "detail": {
         "ceiling": 350,
         "over_ceiling": {
-          "create_ip_pool": 384,
-          "create_segment": 400,
-          "create_tier1_gateway": 422
+          "create_ip_pool": 356,
+          "create_segment": 370,
+          "create_tier1_gateway": 365
         }
       },
       "maximum": 33,
@@ -144,9 +126,9 @@
     },
     "read_only_manifest_saving": {
       "detail": {
-        "full_manifest_tokens": 6640,
+        "full_manifest_tokens": 6726,
         "full_tool_count": 33,
-        "gated_manifest_tokens": 3071,
+        "gated_manifest_tokens": 3152,
         "gated_tool_count": 20,
         "withheld_tools": [
           "configure_tier0_bgp",
@@ -164,10 +146,10 @@
           "update_tier1_gateway"
         ]
       },
-      "maximum": 6640,
-      "pct": 53.8,
+      "maximum": 6726,
+      "pct": 53.1,
       "unit": "tokens",
-      "value": 3569
+      "value": 3574
     },
     "read_write_marker_coverage": {
       "detail": {
@@ -211,84 +193,47 @@
       "detail": {
         "per_dimension_pct": {
           "args": 100.0,
-          "gotcha": 69.7,
+          "gotcha": 100.0,
           "marker": 100.0,
-          "next_hop": 45.5,
-          "what": 75.8,
-          "when": 72.7
+          "next_hop": 100.0,
+          "what": 100.0,
+          "when": 100.0
         },
         "tools_graded": 33,
         "weakest_tools": {
-          "configure_tier0_bgp": [
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "create_nat_rule": [
-            "gotcha",
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "delete_segment": [
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "get_edge_cluster_status": [
-            "gotcha",
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "get_nsx_manager_status": [
-            "gotcha",
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "get_segment_port_for_vm": [
-            "gotcha",
-            "next_hop",
-            "when"
-          ],
-          "get_tier1_gateway": [
-            "gotcha",
-            "next_hop",
-            "what",
-            "when"
-          ],
-          "update_segment": [
-            "gotcha",
-            "next_hop",
-            "what",
-            "when"
-          ]
+          "configure_tier0_bgp": [],
+          "create_ip_pool": [],
+          "create_nat_rule": [],
+          "create_segment": [],
+          "create_static_route": [],
+          "create_tier1_gateway": [],
+          "delete_ip_pool": [],
+          "delete_nat_rule": []
         }
       },
       "maximum": 198,
-      "pct": 77.3,
+      "pct": 100.0,
       "unit": "points",
-      "value": 153
+      "value": 198
     },
     "tool_failure_payload_quality": {
       "detail": {
         "bare_string_error_lines": [
-          138,
-          95,
-          90,
-          97,
-          117
+          139,
+          92,
+          96,
+          98,
+          127
         ],
-        "carries_hint": 27,
-        "dict_shaped": 27,
-        "error_return_sites": 32,
-        "hint_names_artifact": 32
+        "carries_hint": 28,
+        "dict_shaped": 28,
+        "error_return_sites": 33,
+        "hint_names_artifact": 33
       },
-      "maximum": 96,
-      "pct": 89.6,
+      "maximum": 99,
+      "pct": 89.9,
       "unit": "checks",
-      "value": 86
+      "value": 89
     }
   }
 }

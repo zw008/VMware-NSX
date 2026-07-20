@@ -31,17 +31,24 @@ def create_nat_rule(
     translated_network: str = "",
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a NAT rule on a Tier-1 gateway.
+    """[WRITE] Create a NAT rule on a Tier-1 gateway's USER NAT section.
+
+    Run list_tier1_gateways for tier1_id and list_nat_rules to avoid an id clash
+    — the same rule_id overwrites. The gateway must have an edge cluster (see
+    create_tier1_gateway) or NAT cannot be realized, and TIER1_NAT advertisement
+    must be set via update_tier1_gateway for the translated address to be
+    reachable from outside. Returns the created rule dict, else
+    {"error", "hint"}. Then confirm with list_nat_rules; delete_nat_rule is the
+    inverse.
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
+        tier1_id: Gateway ID, as returned by list_tier1_gateways.
         rule_id: Unique ID for the NAT rule.
-        action: NAT action: "SNAT", "DNAT", or "REFLEXIVE" (default "DNAT").
-        source_network: Source network CIDR (required for SNAT).
-        destination_network: Destination network CIDR (required for DNAT).
-        translated_network: Translated network/IP address (required for
-            SNAT, DNAT, and REFLEXIVE).
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        action: "SNAT", "DNAT" or "REFLEXIVE" (default "DNAT").
+        source_network: Source CIDR (required for SNAT).
+        destination_network: Destination CIDR (required for DNAT).
+        translated_network: Translated network/IP (required for all three).
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import create_nat_rule as _create
@@ -70,15 +77,14 @@ def delete_nat_rule(
     Irreversible: traffic matched by the rule stops being translated
     immediately, which can break inbound (DNAT) or outbound (SNAT)
     connectivity. Run list_nat_rules on the same tier1_id first to confirm the
-    rule_id and review its action and networks, and confirm with the user
-    before deleting. Returns a confirmation string on success, or an
-    "Error: ..." string (rule or gateway not found, connectivity failure).
-    Recorded in the audit log (~/.vmware/audit.db).
+    rule_id and review its action and networks, and confirm with the user before
+    deleting. Returns a confirmation string, or an "Error: ..." string — not a
+    dict.
 
     Args:
-        tier1_id: Tier-1 gateway that owns the rule, as returned by list_tier1_gateways.
+        tier1_id: Gateway that owns the rule, as returned by list_tier1_gateways.
         rule_id: NAT rule ID to delete, as returned by list_nat_rules.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import delete_nat_rule as _delete

@@ -11,16 +11,16 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> dict:
-    """[READ] List NAT rules on a Tier-1 gateway.
+    """[READ] List NAT rules on a Tier-1 gateway (USER section).
 
-    Returns a result envelope: the rows under `items`, plus `returned`,
-    `limit`, `total` (the collection's result_count, null when the API
-    omits it), `truncated` and `hint`. Check `truncated` before describing
-    this as the complete set — when it is true, more rows exist.
+    Returns the result envelope; check `truncated` before calling it complete.
+    Get tier1_id from list_tier1_gateways first. Use this before create_nat_rule
+    to avoid an id clash, and before delete_nat_rule to confirm what a rule
+    does. Only the USER section is listed — NSX-internal NAT is not shown.
 
     Args:
-        tier1_id: The Tier-1 gateway ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        tier1_id: Gateway ID, as returned by list_tier1_gateways.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.networking import list_nat_rules as _list_nat
@@ -36,19 +36,19 @@ def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> dict:
 def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get BGP configuration and neighbor status for a Tier-0 gateway.
 
-    No side effects. Use to verify dynamic routing after configure_tier0_bgp or
-    when troubleshooting north-south connectivity. Reads the gateway's first
-    locale-service, its BGP config and configured neighbors (Policy API), plus
-    realized neighbor session state (Management API) where available. Returns
-    tier0_id, locale-service info, BGP config (local AS, enabled, ECMP),
-    neighbors (peer IP, remote ASN, hold_down_time, keep_alive_time), and
-    session status (connection_state, in/out prefix counts); includes a hint
-    when the gateway has no locale-services. On failure returns
-    {"error", "hint"}.
+    Use this to verify dynamic routing after configure_tier0_bgp, or when
+    troubleshooting north-south connectivity. Returns one dict (not the list
+    envelope): tier0_id, locale-service info, BGP config (local AS, enabled,
+    ECMP), neighbors (peer IP, remote ASN, timers) and realized session status
+    (connection_state, in/out prefix counts). Only the gateway's FIRST
+    locale-service is read; a gateway with none returns a hint, not an error.
+
+    If sessions are down, check get_edge_cluster_status — BGP runs on the edge
+    members. Static routes are listed separately by list_static_routes.
 
     Args:
         tier0_id: Tier-0 gateway ID, as returned by list_tier0_gateways.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.networking import get_bgp_neighbors as _get_bgp
@@ -68,15 +68,18 @@ def list_static_routes(
 ) -> dict:
     """[READ] List static routes on a Tier-0 or Tier-1 gateway.
 
-    Returns a result envelope: the rows under `items`, plus `returned`,
-    `limit`, `total` (the collection's result_count, null when the API
-    omits it), `truncated` and `hint`. Check `truncated` before describing
-    this as the complete set — when it is true, more rows exist.
+    Returns the result envelope; check `truncated` before calling it complete.
+    Use this before create_static_route to avoid an id clash, and before
+    delete_static_route to confirm the destination and next hops. gateway_type
+    must match where the route actually lives — querying the wrong tier returns
+    an empty list, not an error. BGP-learned routes are not here; use
+    get_bgp_neighbors.
 
     Args:
-        tier1_id: The gateway ID (Tier-0 or Tier-1, per gateway_type).
+        tier1_id: Gateway ID (Tier-0 or Tier-1, per gateway_type), as returned
+            by list_tier0_gateways / list_tier1_gateways.
         gateway_type: Either "tier0" or "tier1" (default "tier1").
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.networking import list_static_routes as _list_routes
@@ -92,13 +95,13 @@ def list_static_routes(
 def list_ip_pools(target: Optional[str] = None) -> dict:
     """[READ] List all IP address pools with subnets and usage summary.
 
-    Returns a result envelope: the rows under `items`, plus `returned`,
-    `limit`, `total` (the collection's result_count, null when the API
-    omits it), `truncated` and `hint`. Check `truncated` before describing
-    this as the complete set — when it is true, more rows exist.
+    Returns the result envelope; check `truncated` before calling it complete.
+    Use this first to resolve a pool_id, then get_ip_pool_usage for the actual
+    allocations — the summary here does not tell you which addresses are taken.
+    Run it before create_ip_pool to avoid overlapping ranges.
 
     Args:
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.networking import list_ip_pools as _list_pools
@@ -114,16 +117,16 @@ def list_ip_pools(target: Optional[str] = None) -> dict:
 def get_ip_pool_usage(pool_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get current IP allocations for one IP address pool.
 
-    No side effects. Use after list_ip_pools to see how much of a pool is
-    consumed — e.g. when diagnosing TEP address exhaustion or before retiring
-    a pool. Returns: pool_id, allocation_count, and allocations — one entry per
-    allocated IP with id, display_name, allocation_ip (all allocations
-    returned, no pagination). An empty allocations list means the pool is
-    unused. On failure returns {"error", "hint"} instead of raising.
+    Use this after list_ip_pools to see how much of a pool is consumed — e.g.
+    diagnosing TEP address exhaustion, or before delete_ip_pool, which cannot
+    proceed while allocations remain. Returns a single dict (not the list
+    envelope): pool_id, allocation_count and allocations (id, display_name,
+    allocation_ip). An empty allocations list means the pool is unused, not that
+    the query failed. On failure returns {"error", "hint"}.
 
     Args:
         pool_id: IP pool ID, as returned by list_ip_pools.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.networking import get_ip_pool_usage as _get_usage

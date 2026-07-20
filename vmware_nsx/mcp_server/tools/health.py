@@ -13,20 +13,18 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> dict:
     """[READ] Get active NSX alarms at one severity, with feature, description, and entity.
 
+    Returns the result envelope; check `truncated` before calling it complete.
     Note: the NSX severity filter is an EXACT match — "MEDIUM" returns only
-    MEDIUM alarms, not MEDIUM-and-above. Query each severity separately to
-    build a full picture. Results follow pagination cursors (all alarms at
-    that severity are returned).
+    MEDIUM alarms, not MEDIUM-and-above, so call it once per severity to build a
+    full picture.
 
-    Returns a result envelope: the rows under `items`, plus `returned`,
-    `limit`, `total` (the collection's result_count, null when the API
-    omits it), `truncated` and `hint`. Check `truncated` before describing
-    this as the complete set — when it is true, more rows exist.
+    Start a health check at get_nsx_manager_status, then come here, then drill
+    into the entity the alarm names with get_transport_node_status or
+    get_edge_cluster_status.
 
     Args:
-        severity: Exact severity to filter on: LOW, MEDIUM, HIGH, or
-            CRITICAL (default "MEDIUM").
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        severity: Exact severity: LOW, MEDIUM, HIGH or CRITICAL (default MEDIUM).
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.health import list_alarms as _list_alarms
@@ -42,18 +40,19 @@ def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> d
 def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dict:
     """[READ] Get realized runtime status of one transport node (ESXi host or Edge node).
 
-    No side effects. Use after list_transport_nodes (which supplies node IDs)
-    when a node looks degraded or overlay tunnels are suspect; for cluster-wide
-    edge health use get_edge_cluster_status instead. Returns: node_id, status
-    (e.g. UP, DEGRADED, DOWN, UNKNOWN), control_connection_status and
-    mgmt_connection_status (controller/manager connectivity), tunnel_status
-    (status plus up/down/degraded tunnel counts and BFD counters), and
-    pnic_status (up/down/degraded pNIC counts). On failure returns
-    {"error", "hint"} instead of raising.
+    Use after list_transport_nodes when a node looks degraded or overlay tunnels
+    are suspect; for cluster-wide edge health use get_edge_cluster_status
+    instead. Returns one dict (not the list envelope): node_id, status (UP,
+    DEGRADED, DOWN, UNKNOWN), control_connection_status,
+    mgmt_connection_status, tunnel_status (up/down/degraded counts, BFD
+    counters) and pnic_status. Point-in-time only — no history.
+
+    If tunnels are down on one segment only, follow up with
+    get_logical_port_status rather than blaming the node.
 
     Args:
         node_id: Transport node UUID, as returned by list_transport_nodes.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.health import get_transport_node_status as _get_tn_status
@@ -69,9 +68,15 @@ def get_transport_node_status(node_id: str, target: Optional[str] = None) -> dic
 def get_edge_cluster_status(cluster_id: str, target: Optional[str] = None) -> dict:
     """[READ] Check status of an edge cluster (member health, overall status).
 
+    Use this after list_edge_clusters when north-south traffic, NAT or BGP looks
+    broken — Tier-0/Tier-1 stateful services run on these members. Returns one
+    dict (not the list envelope): cluster_id, edge_cluster_status, member_count
+    and members (transport_node_id, transport_node_name, status). Member status
+    only — why a member is degraded comes from get_transport_node_status.
+
     Args:
-        cluster_id: The edge cluster ID.
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        cluster_id: Edge cluster UUID, as returned by list_edge_clusters.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.health import get_edge_cluster_status as _get_ec_status
@@ -85,10 +90,17 @@ def get_edge_cluster_status(cluster_id: str, target: Optional[str] = None) -> di
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
 def get_nsx_manager_status(target: Optional[str] = None) -> dict:
-    """[READ] Get NSX Manager cluster status (node health, cluster status, version).
+    """[READ] Get NSX Manager cluster status (node health, control/management plane).
+
+    Start any NSX health check here: if the manager cluster is degraded, every
+    other reading is suspect. Returns one dict (not the list envelope):
+    cluster_id, overall_status, control_cluster_status, mgmt_cluster_status,
+    online_node_count and nodes. Only online nodes are listed, so a node missing
+    from `nodes` is down rather than absent. Then list_nsx_alarms for what is
+    actually firing.
 
     Args:
-        target: Optional NSX Manager target name from config. Uses default if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.health import get_manager_status as _get_mgr_status

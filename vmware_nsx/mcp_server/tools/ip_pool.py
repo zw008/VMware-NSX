@@ -29,22 +29,21 @@ def create_ip_pool(
 ) -> dict:
     """[WRITE] Create an IP address pool with one static subnet and allocation range.
 
-    IP pools supply addresses to NSX consumers such as tunnel endpoints
-    (TEPs). Check list_ip_pools first to avoid overlapping ranges; start_ip
-    and end_ip must both fall inside cidr. Re-running with the same pool_id
-    overwrites it (PUT semantics). Returns the created pool dict; verify
-    consumption later with get_ip_pool_usage. On failure returns
-    {"error", "hint"}. Recorded in the audit log (~/.vmware/audit.db).
+    IP pools supply addresses to NSX consumers such as tunnel endpoints (TEPs).
+    Run list_ip_pools first to avoid overlapping ranges; start_ip and end_ip
+    must both fall inside cidr. The same pool_id overwrites (PUT). Returns the
+    created pool dict, else {"error", "hint"}. Then verify with
+    get_ip_pool_usage; delete_ip_pool is the inverse.
 
     Args:
-        pool_id: Unique pool identifier (alphanumerics, hyphens, underscores
-            only); becomes policy path /infra/ip-pools/<pool_id>.
-        display_name: Human-readable name shown in the NSX UI.
+        pool_id: Unique id (alphanumerics, hyphens, underscores only); becomes
+            /infra/ip-pools/<pool_id>.
+        display_name: Name shown in the NSX UI.
         start_ip: First allocatable IPv4 address, e.g. "192.168.1.10".
         end_ip: Last allocatable IPv4 address, e.g. "192.168.1.100".
-        cidr: Subnet containing the range, in CIDR notation, e.g. "192.168.1.0/24".
-        gateway_ip: Default gateway IP for the subnet, e.g. "192.168.1.1". Optional.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        cidr: Subnet containing the range, e.g. "192.168.1.0/24".
+        gateway_ip: Default gateway for the subnet, e.g. "192.168.1.1".
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import create_ip_pool as _create
@@ -73,17 +72,15 @@ def delete_ip_pool(
 ) -> str:
     """[WRITE] Permanently delete an IP address pool.
 
-    Irreversible: consumers (e.g. transport endpoints) that draw addresses
-    from this pool can no longer allocate, and NSX rejects the delete if the
-    pool still has active allocations. Run list_ip_pools and get_ip_pool_usage
-    on the same pool_id first to confirm the pool is unused, and confirm with
-    the user before deleting. Returns a confirmation string on success, or an
-    "Error: ..." string (pool not found, still in use, connectivity failure).
-    Recorded in the audit log (~/.vmware/audit.db).
+    Irreversible: consumers such as transport endpoints can no longer allocate,
+    and NSX rejects the delete if the pool still has active allocations. Run
+    get_ip_pool_usage on the same pool_id first to confirm it is unused, and
+    confirm with the user before deleting. Returns a confirmation string, or an
+    "Error: ..." string — not a dict.
 
     Args:
         pool_id: IP pool ID to delete, as returned by list_ip_pools.
-        target: NSX Manager name from config.yaml. Uses the default target if omitted.
+        target: NSX Manager target from config (default if omitted).
     """
     try:
         from vmware_nsx.ops.nat_route_mgmt import delete_ip_pool as _delete
