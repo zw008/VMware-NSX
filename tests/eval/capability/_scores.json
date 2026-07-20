@@ -85,21 +85,21 @@
     "manifest_context_headroom": {
       "detail": {
         "heaviest_tools": {
-          "create_ip_pool": 356,
+          "create_ip_pool": 350,
           "create_nat_rule": 350,
-          "create_segment": 370,
+          "create_segment": 348,
           "create_static_route": 330,
-          "create_tier1_gateway": 365
+          "create_tier1_gateway": 350
         },
-        "manifest_tokens": 6726,
-        "mean_tokens_per_tool": 203.8,
+        "manifest_tokens": 6633,
+        "mean_tokens_per_tool": 201.0,
         "reference_context": 16384,
         "tool_count": 33
       },
       "maximum": 16384,
-      "pct": 58.9,
+      "pct": 59.5,
       "unit": "tokens",
-      "value": 9658
+      "value": 9751
     },
     "parameter_documentation_coverage": {
       "detail": {
@@ -113,22 +113,18 @@
     "per_tool_token_discipline": {
       "detail": {
         "ceiling": 350,
-        "over_ceiling": {
-          "create_ip_pool": 356,
-          "create_segment": 370,
-          "create_tier1_gateway": 365
-        }
+        "over_ceiling": {}
       },
       "maximum": 33,
-      "pct": 90.9,
+      "pct": 100.0,
       "unit": "tools",
-      "value": 30
+      "value": 33
     },
     "read_only_manifest_saving": {
       "detail": {
-        "full_manifest_tokens": 6726,
+        "full_manifest_tokens": 6633,
         "full_tool_count": 33,
-        "gated_manifest_tokens": 3152,
+        "gated_manifest_tokens": 3108,
         "gated_tool_count": 20,
         "withheld_tools": [
           "configure_tier0_bgp",
@@ -146,10 +142,10 @@
           "update_tier1_gateway"
         ]
       },
-      "maximum": 6726,
+      "maximum": 6633,
       "pct": 53.1,
       "unit": "tokens",
-      "value": 3574
+      "value": 3525
     },
     "read_write_marker_coverage": {
       "detail": {
@@ -219,11 +215,11 @@
     "tool_failure_payload_quality": {
       "detail": {
         "bare_string_error_lines": [
-          139,
+          138,
           92,
           96,
           98,
-          127
+          126
         ],
         "carries_hint": 28,
         "dict_shaped": 28,
