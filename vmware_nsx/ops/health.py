@@ -45,8 +45,10 @@ def list_alarms(
     valid_severities = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
     if severity.upper() not in valid_severities:
         raise ValueError(
-            f"Invalid severity '{severity}'. "
-            f"Must be one of: {', '.join(sorted(valid_severities))}"
+            f"Invalid severity '{severity}'. Must be one of: "
+            f"{', '.join(sorted(valid_severities))}. Pass one of those to "
+            "list_nsx_alarms (CLI: vmware-nsx health alarms --severity HIGH). "
+            "The filter is an exact match, not a floor."
         )
 
     # Management API endpoint for alarms (paginated)

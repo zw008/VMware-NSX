@@ -147,7 +147,9 @@ class TargetConfig:
         pw = os.environ.get(env_key, "")
         if not pw:
             raise OSError(
-                f"Password not found. Set environment variable: {env_key}"
+                f"NSX password not found for target '{target_name}'. Set {env_key} "
+                "in ~/.vmware-nsx/.env (chmod 600) or export it, then retry. "
+                "'vmware-nsx init' writes that file for you."
             )
         return _decode_secret(pw)
 
@@ -205,7 +207,11 @@ class AppConfig:
         cfg = self.get_target(name)
         if cfg is None:
             available = ", ".join(self.targets.keys())  # type: ignore[union-attr]
-            raise KeyError(f"Target '{name}' not found. Available: {available}")
+            raise KeyError(
+                f"Target '{name}' not found. Available: {available}. Copy an exact "
+                "name from that list, or add the target to ~/.vmware-nsx/config.yaml "
+                "with 'vmware-nsx init'."
+            )
         return cfg
 
 
@@ -216,8 +222,9 @@ def load_config(config_path: Path | None = None) -> AppConfig:
 
     if not path.exists():
         raise FileNotFoundError(
-            f"Config file not found: {path}\n"
-            f"Copy config.example.yaml to {CONFIG_FILE} and edit it."
+            f"Config file not found: {path}. Run 'vmware-nsx init' to create it "
+            f"interactively, or copy config.example.yaml to {CONFIG_FILE} and edit "
+            "the host and username."
         )
 
     with open(path) as f:

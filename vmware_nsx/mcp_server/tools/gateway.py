@@ -135,7 +135,11 @@ def delete_tier1_gateway(tier1_id: str, target: Optional[str] = None) -> str:
         _delete(client, tier1_id)
         return f"Tier-1 gateway '{tier1_id}' deleted."
     except Exception as e:
-        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
+        return (
+            f"Error: the gateway was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Run list_tier1_gateways to confirm '{tier1_id}' exists on this target, "
+            f"or 'vmware-nsx doctor' to check connectivity."
+        )
 
 
 @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True})

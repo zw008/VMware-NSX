@@ -18,8 +18,10 @@ def _validate_id(resource_id: str) -> str:
     """Validate resource ID contains only safe characters."""
     if not resource_id or not re.match(r"^[a-zA-Z0-9_-]+$", resource_id):
         raise ValueError(
-            f"Invalid resource ID: '{resource_id}'. "
-            "Only alphanumeric, hyphens, and underscores are allowed."
+            f"Invalid resource ID: '{resource_id}'. Only alphanumerics, hyphens and "
+            "underscores are allowed — no spaces, slashes or dots, so a policy path "
+            "like '/infra/tier-1s/t1' is not an ID. Copy an exact ID from "
+            "list_tier1_gateways, list_nat_rules, list_static_routes or list_ip_pools."
         )
     return resource_id
 
@@ -67,8 +69,10 @@ def create_nat_rule(
     }
     if action not in valid_actions:
         raise ValueError(
-            f"Invalid NAT action: '{action}'. "
-            f"Must be one of: {', '.join(sorted(valid_actions))}"
+            f"Invalid NAT action: '{action}'. Must be one of: "
+            f"{', '.join(sorted(valid_actions))}. Pass one of those as "
+            "create_nat_rule's action argument (CLI: vmware-nsx nat create-rule "
+            "--action SNAT)."
         )
 
     body: dict[str, Any] = {
@@ -86,7 +90,10 @@ def create_nat_rule(
     # Validate required fields based on action
     if action in ("SNAT", "DNAT", "REFLEXIVE") and not translated_network:
         raise ValueError(
-            f"translated_network is required for {action} rules."
+            f"translated_network is required for {action} rules. Pass the translated "
+            "address as create_nat_rule's translated_network argument — a host IP for "
+            "DNAT (e.g. '10.0.1.20'), an IP or CIDR for SNAT (e.g. '203.0.113.5'). "
+            "Only NO_SNAT, NO_DNAT and NAT64 may omit it."
         )
 
     path = (
@@ -162,7 +169,12 @@ def create_static_route(
     _validate_id(route_id)
 
     if not next_hops:
-        raise ValueError("At least one next_hop is required.")
+        raise ValueError(
+            f"create_static_route needs at least one next hop, got {next_hops!r}. Pass "
+            "next_hops as [{'ip_address': '10.0.0.1'}], optionally with "
+            "'admin_distance'. Run list_static_routes on this gateway to see the next "
+            "hops its existing routes use."
+        )
 
     gw_resource = "tier-0s" if gateway_type == "tier0" else "tier-1s"
 
@@ -268,14 +280,21 @@ def create_ip_pool(
     _validate_id(pool_id)
 
     if not subnets:
-        raise ValueError("At least one subnet is required.")
+        raise ValueError(
+            f"create_ip_pool needs at least one subnet, got {subnets!r}. Pass subnets "
+            "as [{'cidr': '192.168.1.0/24', 'allocation_ranges': [{'start': "
+            "'192.168.1.10', 'end': '192.168.1.50'}]}]. Run list_ip_pools to see how "
+            "existing pools are shaped."
+        )
 
     # Validate subnet structure
     for sub in subnets:
         if "allocation_ranges" not in sub or "cidr" not in sub:
             raise ValueError(
-                "Each subnet must have 'allocation_ranges' and 'cidr'. "
-                "allocation_ranges: [{start: ip, end: ip}], cidr: x.x.x.x/y"
+                f"Subnet entry {sub!r} is missing 'cidr' or 'allocation_ranges'. Each "
+                "subnet must be a dict like {'cidr': '192.168.1.0/24', "
+                "'allocation_ranges': [{'start': '192.168.1.10', 'end': "
+                "'192.168.1.50'}]}. Run list_ip_pools to see existing pool subnets."
             )
 
     body: dict[str, Any] = {

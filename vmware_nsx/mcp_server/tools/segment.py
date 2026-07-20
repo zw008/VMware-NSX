@@ -114,4 +114,9 @@ def delete_segment(segment_id: str, target: Optional[str] = None) -> str:
         _delete(client, segment_id)
         return f"Segment '{segment_id}' deleted."
     except Exception as e:
-        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
+        return (
+            f"Error: the segment was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Run list_segments to confirm '{segment_id}' exists on this target, or "
+            f"get_logical_port_status to see whether ports are still attached "
+            f"(a segment with attached ports cannot be deleted)."
+        )

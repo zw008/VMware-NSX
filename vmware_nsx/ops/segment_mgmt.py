@@ -18,8 +18,10 @@ def _validate_id(resource_id: str) -> str:
     """Validate resource ID contains only safe characters."""
     if not resource_id or not re.match(r"^[a-zA-Z0-9_-]+$", resource_id):
         raise ValueError(
-            f"Invalid resource ID: '{resource_id}'. "
-            "Only alphanumeric, hyphens, and underscores are allowed."
+            f"Invalid resource ID: '{resource_id}'. Only alphanumerics, hyphens and "
+            "underscores are allowed — no spaces, slashes or dots, so a policy path "
+            "like '/infra/segments/web' is not an ID. Copy an exact ID from "
+            "list_segments, list_tier0_gateways or list_tier1_gateways."
         )
     return resource_id
 
@@ -128,13 +130,18 @@ def update_segment(client: NsxClient, segment_id: str, **kwargs: Any) -> dict:
     for key, value in kwargs.items():
         if key not in allowed_fields:
             raise ValueError(
-                f"Field '{key}' is not updatable. "
-                f"Allowed: {', '.join(sorted(allowed_fields))}"
+                f"Field '{key}' is not updatable on a segment. Allowed: "
+                f"{', '.join(sorted(allowed_fields))}. Pass only those to "
+                "update_segment; run get_segment to see the segment's current values."
             )
         body[key] = value
 
     if not body:
-        raise ValueError("No update fields provided.")
+        raise ValueError(
+            "update_segment was called with nothing to change. Pass at least one of: "
+            f"{', '.join(sorted(allowed_fields))}. Run get_segment first to see the "
+            "segment's current values."
+        )
 
     path = f"/policy/api/v1/infra/segments/{segment_id}"
     result = client.patch(path, body)
@@ -237,8 +244,9 @@ def create_tier1_gateway(
         for rt in route_advertisement_types:
             if rt not in valid_types:
                 raise ValueError(
-                    f"Invalid route advertisement type: '{rt}'. "
-                    f"Valid types: {', '.join(sorted(valid_types))}"
+                    f"Invalid route advertisement type: '{rt}'. Pass one or more of "
+                    "these to create_tier1_gateway / update_tier1_gateway "
+                    f"(--route-advertisement): {', '.join(sorted(valid_types))}."
                 )
         body["route_advertisement_types"] = route_advertisement_types
 
@@ -283,13 +291,18 @@ def update_tier1_gateway(
     for key, value in kwargs.items():
         if key not in allowed_fields:
             raise ValueError(
-                f"Field '{key}' is not updatable. "
-                f"Allowed: {', '.join(sorted(allowed_fields))}"
+                f"Field '{key}' is not updatable on a Tier-1 gateway. Allowed: "
+                f"{', '.join(sorted(allowed_fields))}. Pass only those to "
+                "update_tier1_gateway; run get_tier1_gateway to see current values."
             )
         body[key] = value
 
     if not body:
-        raise ValueError("No update fields provided.")
+        raise ValueError(
+            "update_tier1_gateway was called with nothing to change. Pass at least "
+            f"one of: {', '.join(sorted(allowed_fields))}. Run get_tier1_gateway "
+            "first to see the gateway's current values."
+        )
 
     path = f"/policy/api/v1/infra/tier-1s/{tier1_id}"
     result = client.patch(path, body)
@@ -367,13 +380,19 @@ def configure_tier0_bgp(
     for key, value in bgp_config.items():
         if key not in allowed_keys:
             raise ValueError(
-                f"BGP config key '{key}' is not allowed. "
-                f"Allowed: {', '.join(sorted(allowed_keys))}"
+                f"BGP config key '{key}' is not allowed. Must be one of: "
+                f"{', '.join(sorted(allowed_keys))}. Pass only those to "
+                "configure_tier0_bgp; BGP neighbours are a separate object this "
+                "skill does not create."
             )
         body[key] = value
 
     if not body:
-        raise ValueError("No BGP configuration fields provided.")
+        raise ValueError(
+            "configure_tier0_bgp was called with an empty bgp_config. Pass at least "
+            f"one of: {', '.join(sorted(allowed_keys))}. Run get_bgp_neighbors to see "
+            "the Tier-0's current BGP state first."
+        )
 
     path = (
         f"/policy/api/v1/infra/tier-0s/{tier0_id}"

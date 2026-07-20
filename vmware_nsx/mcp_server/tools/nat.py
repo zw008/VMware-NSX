@@ -87,4 +87,8 @@ def delete_nat_rule(
         _delete(client, tier1_id, rule_id)
         return f"NAT rule '{rule_id}' deleted from '{tier1_id}'."
     except Exception as e:
-        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
+        return (
+            f"Error: the rule was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Run list_nat_rules on '{tier1_id}' to confirm the rule_id, or "
+            f"'vmware-nsx doctor' to check connectivity."
+        )

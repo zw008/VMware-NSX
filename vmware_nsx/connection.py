@@ -91,28 +91,31 @@ def _is_tls_error(exc: Exception) -> bool:
     return False
 
 
-def _hint_for_status(status_code: int, path: str) -> str:
+def _hint_for_status(status_code: int) -> str:
     """Return a short, actionable remediation hint for an HTTP error status."""
     if status_code == 404:
         return (
-            f"Resource not found at {path} — run the corresponding list "
-            "command (e.g. list_segments / list_tier1_gateways) to get the "
-            "exact ID."
+            "No such resource — run the matching list tool (list_segments, "
+            "list_tier1_gateways, list_nat_rules, list_static_routes, list_ip_pools) "
+            "and copy an exact ID."
         )
     if status_code == 403:
-        return "Permission denied — your NSX role lacks privilege for this path."
+        return (
+            "Permission denied — this target's account lacks the NSX role for this "
+            "path. Check the username in ~/.vmware-nsx/config.yaml."
+        )
     if status_code == 401:
         return (
-            "Authentication failed even after re-creating the session — "
-            "check the username and password for this target."
+            "Authentication rejected after re-creating the session — check the "
+            "password in ~/.vmware-nsx/.env and the username in config.yaml."
         )
     if status_code == 400:
-        return "Bad request — check the parameters and payload for this call."
+        return "Bad request — check this call's arguments against the values its Args section allows."
     if status_code in _TRANSIENT_STATUS:
-        return "NSX manager not ready / gateway error — retry shortly."
+        return "NSX manager not ready — retry shortly, or run get_nsx_manager_status to check it."
     if status_code >= 500:
-        return "Server-side error — retry shortly; check NSX Manager health."
-    return "Check the request and try again."
+        return "Server-side error — retry shortly, or run get_nsx_manager_status to check cluster health."
+    return "Check the request arguments and retry."
 
 
 class NsxClient:
@@ -178,31 +181,34 @@ class NsxClient:
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
-            hint = "Check the host/port and network, then retry."
             # A TLS/certificate failure (self-signed NSX Managers ship with
             # one) surfaces as a TransportError wrapping an SSL error. Teach
             # the verify_ssl fix rather than leaving a raw stack trace.
-            if _is_tls_error(exc):
-                hint = (
-                    "This looks like a TLS certificate failure. NSX Managers "
-                    "almost always ship with a self-signed certificate — set "
-                    "verify_ssl: false for this target in ~/.vmware-nsx/config.yaml "
-                    "(or re-run 'vmware-nsx init' and answer No to TLS verification)."
-                )
+            tls_note = (
+                " This looks like a self-signed certificate: set verify_ssl: false "
+                "for this target."
+                if _is_tls_error(exc)
+                else ""
+            )
+            # Remedy before the raw exception text: ``_safe_error`` truncates at
+            # 300 characters, so anything placed after ``exc`` can be cut off
+            # before the agent ever reads it.
             raise NsxApiError(
-                f"Could not connect to NSX Manager {self._target.host}:{self._target.port}: {exc}. {hint}",
+                f"Could not connect to NSX Manager {self._target.host}:{self._target.port}. "
+                f"Check host, port and verify_ssl for this target in ~/.vmware-nsx/config.yaml, "
+                f"then run 'vmware-nsx doctor'.{tls_note} Underlying error: {exc}",
                 method="POST",
                 path="/api/session/create",
             ) from exc
         if resp.status_code in (401, 403):
             raise NsxApiError(
-                f"NSX session creation failed with HTTP {resp.status_code} "
-                "(authentication rejected). Fix the credentials for this "
-                "target: the password lives in ~/.vmware-nsx/.env under "
-                "VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD, and the username in "
-                "~/.vmware-nsx/config.yaml. Special characters in the password "
-                "are sent safely via form-body auth, so a literal '!' or ')' is "
-                "fine — re-run 'vmware-nsx init' to reset the credentials.",
+                # Kept under 300 characters: ``_safe_error`` truncates there, and
+                # an earlier 396-character version lost its closing remedy.
+                f"NSX authentication rejected (HTTP {resp.status_code}). Re-run "
+                "'vmware-nsx init' to reset this target's credentials, or edit them "
+                "directly: password in ~/.vmware-nsx/.env under "
+                "VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD, username in "
+                "~/.vmware-nsx/config.yaml. Special characters are safe (form-body auth).",
                 status_code=resp.status_code,
                 method="POST",
                 path="/api/session/create",
@@ -219,7 +225,12 @@ class NsxClient:
             )
         self._token = resp.headers.get("x-xsrf-token")
         if not self._token:
-            raise ConnectionError("NSX session creation succeeded but no X-XSRF-TOKEN returned")
+            raise ConnectionError(
+                f"NSX session creation on {self._target.host}:{self._target.port} succeeded "
+                "but returned no X-XSRF-TOKEN header. Check that host and port in "
+                "~/.vmware-nsx/config.yaml point at the NSX Manager itself — a proxy in "
+                "front of it can strip the header. Then run 'vmware-nsx doctor'."
+            )
         _log.info("NSX session created for %s", self._target.host)
 
     def _headers(self) -> dict[str, str]:
@@ -265,8 +276,9 @@ class NsxClient:
                     time.sleep(_RETRY_DELAY_SEC)
                     continue
                 raise NsxApiError(
-                    f"NSX Manager {method} {path} could not connect: {exc}. "
-                    "Check the host/port and network, then retry.",
+                    f"NSX Manager {method} {path} could not connect — check host, port "
+                    "and network reachability for this target in ~/.vmware-nsx/config.yaml, "
+                    f"then run 'vmware-nsx doctor'. Underlying error: {exc}",
                     method=method,
                     path=path,
                 ) from exc
@@ -287,8 +299,11 @@ class NsxClient:
 
             if resp.status_code >= 400:
                 raise NsxApiError(
-                    f"NSX Manager {method} {path} returned HTTP "
-                    f"{resp.status_code}. {_hint_for_status(resp.status_code, path)}",
+                    # Kept short enough that ``_safe_error``'s 300-character cap
+                    # cannot eat the trailing remedy on a long policy path.
+                    f"NSX Manager {method} {path} returned HTTP {resp.status_code}. "
+                    f"{_hint_for_status(resp.status_code)} "
+                    "Run 'vmware-nsx doctor' to check this target.",
                     status_code=resp.status_code,
                     method=method,
                     path=path,
@@ -444,7 +459,13 @@ class ConnectionManager:
         """Get or create an NsxClient for the specified target."""
         name = target_name or self._config.default_target
         if not name:
-            raise ValueError("No target specified and no default target configured")
+            configured = ", ".join(self._config.targets) or "none"
+            raise ValueError(
+                "No target specified and no default_target set in "
+                f"~/.vmware-nsx/config.yaml. Pass an explicit target (configured: "
+                f"{configured}) or set default_target in config.yaml — "
+                "'vmware-nsx init' does both."
+            )
 
         if name in self._clients and self._clients[name].is_alive():
             return self._clients[name]
@@ -452,7 +473,11 @@ class ConnectionManager:
         target_cfg = self._config.get_target(name)
         if target_cfg is None:
             available = ", ".join(self._config.targets.keys())
-            raise ValueError(f"Target '{name}' not found. Available: {available}")
+            raise ValueError(
+                f"Target '{name}' not found. Available: {available}. Copy an exact "
+                "name from that list, or add the target to ~/.vmware-nsx/config.yaml "
+                "with 'vmware-nsx init'."
+            )
 
         # Resolve both halves of the credential together — a username left
         # behind by a rotation would pair with the new password and fail.

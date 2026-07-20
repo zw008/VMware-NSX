@@ -94,4 +94,9 @@ def delete_static_route(
         _delete(client, tier1_id, route_id, gateway_type=gateway_type)
         return f"Static route '{route_id}' deleted from '{tier1_id}'."
     except Exception as e:
-        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
+        return (
+            f"Error: the route was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Run list_static_routes on '{tier1_id}' to confirm the route_id and that "
+            f"gateway_type='{gateway_type}' is right, or 'vmware-nsx doctor' to check "
+            f"connectivity."
+        )

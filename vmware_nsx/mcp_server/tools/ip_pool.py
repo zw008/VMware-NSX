@@ -92,4 +92,8 @@ def delete_ip_pool(
         _delete(client, pool_id)
         return f"IP pool '{pool_id}' deleted."
     except Exception as e:
-        return f"Error: {_safe_error(e, 'nsx')} {_DOCTOR_HINT}"
+        return (
+            f"Error: the pool was NOT deleted. {_safe_error(e, 'nsx')} "
+            f"Run list_ip_pools to confirm '{pool_id}' exists on this target, or "
+            f"'vmware-nsx doctor' to check connectivity."
+        )

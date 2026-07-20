@@ -83,148 +83,22 @@
     },
     "error_actionability": {
       "detail": {
-        "dead_end_count": 17,
-        "dead_end_errors": [
-          {
-            "message": "NSX session creation succeeded but no X-XSRF-TOKEN returned",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "connection.py:222"
-          },
-          {
-            "message": "No target specified and no default target configured",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "connection.py:447"
-          },
-          {
-            "message": "Could not connect to NSX Manager {}:{}: {}. {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "connection.py:192"
-          },
-          {
-            "message": "NSX Manager {} {} returned HTTP {}. {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "connection.py:289"
-          },
-          {
-            "message": "Invalid resource ID: '{}'. Only alphanumeric, hyphens, and underscores are allowed.",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "nat_route_mgmt.py:20"
-          },
-          {
-            "message": "translated_network is required for {} rules.",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "nat_route_mgmt.py:88"
-          },
-          {
-            "message": "At least one next_hop is required.",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "nat_route_mgmt.py:165"
-          },
-          {
-            "message": "At least one subnet is required.",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "nat_route_mgmt.py:271"
-          },
-          {
-            "message": "Each subnet must have 'allocation_ranges' and 'cidr'. allocation_ranges: [{start: ip, end: ip}], cid",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "nat_route_mgmt.py:276"
-          },
-          {
-            "message": "Invalid resource ID: '{}'. Only alphanumeric, hyphens, and underscores are allowed.",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:20"
-          },
-          {
-            "message": "No update fields provided.",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:137"
-          },
-          {
-            "message": "No update fields provided.",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:292"
-          },
-          {
-            "message": "No BGP configuration fields provided.",
-            "missing": [
-              "names_artifact",
-              "names_input",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:376"
-          },
-          {
-            "message": "Field '{}' is not updatable. Allowed: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:130"
-          },
-          {
-            "message": "Field '{}' is not updatable. Allowed: {}",
-            "missing": [
-              "names_artifact",
-              "states_remedy"
-            ],
-            "where": "segment_mgmt.py:285"
-          }
+        "composed_hint_sites": [
+          "connection.py:301"
         ],
+        "dead_end_count": 0,
+        "dead_end_errors": [],
         "per_dimension_pct": {
-          "names_artifact": 15.4,
-          "names_input": 69.2,
-          "states_remedy": 34.6
+          "names_artifact": 100.0,
+          "names_input": 100.0,
+          "states_remedy": 100.0
         },
         "raise_sites": 26
       },
       "maximum": 78,
-      "pct": 39.7,
+      "pct": 100.0,
       "unit": "points",
-      "value": 31
+      "value": 78
     },
     "manifest_context_headroom": {
       "detail": {
@@ -304,12 +178,34 @@
       "unit": "points",
       "value": 33
     },
+    "remedy_survives_truncation": {
+      "detail": {
+        "budget_chars": 300,
+        "over_budget": [],
+        "remedy_after_interpolation": [
+          "config.py:224",
+          "config.py:149",
+          "config.py:210",
+          "connection.py:204",
+          "connection.py:217",
+          "connection.py:228",
+          "connection.py:463",
+          "connection.py:476",
+          "connection.py:301",
+          "health.py:47"
+        ]
+      },
+      "maximum": 26,
+      "pct": 100.0,
+      "unit": "messages",
+      "value": 26
+    },
     "teaching_error_rate": {
       "detail": {},
       "maximum": 26,
-      "pct": 15.4,
+      "pct": 100.0,
       "unit": "messages",
-      "value": 4
+      "value": 26
     },
     "tool_description_quality": {
       "detail": {
