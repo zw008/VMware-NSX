@@ -26,25 +26,24 @@ def create_tier1_gateway(
     route_advertisement: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create a Tier-1 gateway for routing segments, with optional Tier-0 uplink.
+    """[WRITE] Create a Tier-1 gateway to route segments, optionally uplinked to a Tier-0.
 
     Use this before create_segment when the segment needs routing; get
     tier0_path from list_tier0_gateways and edge_cluster_path from
-    list_edge_clusters first. Without route_advertisement nothing reaches the
-    Tier-0, so connected subnets stay unreachable from outside until it is set
-    here or via update_tier1_gateway. The same tier1_id overwrites (PUT).
-    Returns the created gateway dict, else {"error", "hint"}. Then verify with
-    get_tier1_gateway; delete_tier1_gateway is the inverse.
+    list_edge_clusters first. Without route_advertisement, connected subnets
+    stay unreachable from outside until it is set here or via
+    update_tier1_gateway. The same tier1_id overwrites (PUT).
+    Returns the created gateway dict, else {"error", "hint"}; verify with
+    get_tier1_gateway.
 
     Args:
-        tier1_id: Unique id (alphanumerics, hyphens, underscores only); becomes
+        tier1_id: Unique id (alphanumerics, hyphens, underscores); becomes
             /infra/tier-1s/<tier1_id>.
-        display_name: Name shown in the NSX UI.
-        tier0_path: Parent Tier-0 path, e.g. "/infra/tier-0s/<t0-id>". Omit for
+        display_name: UI display name.
+        tier0_path: Parent Tier-0 path, e.g. "/infra/tier-0s/<t0-id>"; omit for
             a standalone gateway.
-        edge_cluster_path: Edge cluster path, required for NAT and other
-            stateful services.
-        route_advertisement: Comma-separated types: TIER1_CONNECTED,
+        edge_cluster_path: Required for NAT and other stateful services.
+        route_advertisement: Comma-separated: TIER1_CONNECTED,
             TIER1_STATIC_ROUTES, TIER1_NAT, TIER1_LB_VIP, TIER1_LB_SNAT,
             TIER1_DNS_FORWARDER_IP, TIER1_IPSEC_LOCAL_ENDPOINT.
         target: NSX Manager target from config (default if omitted).

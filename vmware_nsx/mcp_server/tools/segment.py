@@ -26,7 +26,7 @@ def create_segment(
     subnet: Optional[str] = None,
     target: Optional[str] = None,
 ) -> dict:
-    """[WRITE] Create an NSX network segment (overlay or VLAN-backed) via the Policy API.
+    """[WRITE] Create an overlay or VLAN-backed NSX network segment.
 
     Run list_transport_zones first for transport_zone_path; it decides whether
     subnet or vlan_ids applies — the wrong one is rejected. The same segment_id

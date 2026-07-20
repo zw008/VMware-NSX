@@ -29,7 +29,7 @@ def create_ip_pool(
 ) -> dict:
     """[WRITE] Create an IP address pool with one static subnet and allocation range.
 
-    IP pools supply addresses to NSX consumers such as tunnel endpoints (TEPs).
+    IP pools supply addresses to NSX consumers such as tunnel endpoints.
     Run list_ip_pools first to avoid overlapping ranges; start_ip and end_ip
     must both fall inside cidr. The same pool_id overwrites (PUT). Returns the
     created pool dict, else {"error", "hint"}. Then verify with
@@ -38,11 +38,11 @@ def create_ip_pool(
     Args:
         pool_id: Unique id (alphanumerics, hyphens, underscores only); becomes
             /infra/ip-pools/<pool_id>.
-        display_name: Name shown in the NSX UI.
+        display_name: UI display name.
         start_ip: First allocatable IPv4 address, e.g. "192.168.1.10".
         end_ip: Last allocatable IPv4 address, e.g. "192.168.1.100".
         cidr: Subnet containing the range, e.g. "192.168.1.0/24".
-        gateway_ip: Default gateway for the subnet, e.g. "192.168.1.1".
+        gateway_ip: Subnet default gateway, e.g. "192.168.1.1".
         target: NSX Manager target from config (default if omitted).
     """
     try:
