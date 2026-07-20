@@ -1,0 +1,398 @@
+{
+  "_comment": "Capability eval scores. Regenerate with: pytest -m capability. These are tracked trends, not pass/fail gates \u2014 see _scoring.py.",
+  "scores": {
+    "entity_reachability_full": {
+      "detail": {
+        "broken_chains": [
+          {
+            "companion_skill_named": [],
+            "entity": "vm",
+            "param": "vm_display_name",
+            "producer_on_surface": [],
+            "routed_in_description": [],
+            "tool": "get_segment_port_for_vm"
+          }
+        ],
+        "entry_points": [
+          "create_tier1_gateway",
+          "list_nsx_alarms",
+          "get_nsx_manager_status",
+          "list_segments",
+          "list_tier0_gateways",
+          "list_tier1_gateways",
+          "list_transport_zones",
+          "list_transport_nodes",
+          "list_edge_clusters",
+          "create_ip_pool",
+          "list_ip_pools"
+        ],
+        "reachable_on_surface": 23,
+        "reachable_only_via_description": 0,
+        "required_entity_params": 24,
+        "required_params_classified": "24/38",
+        "tool_count": 33
+      },
+      "maximum": 24,
+      "pct": 95.8,
+      "unit": "required entity params",
+      "value": 23
+    },
+    "entity_reachability_read_only": {
+      "detail": {
+        "broken_chains": [
+          {
+            "companion_skill_named": [],
+            "entity": "vm",
+            "param": "vm_display_name",
+            "producer_on_surface": [],
+            "routed_in_description": [],
+            "tool": "get_segment_port_for_vm"
+          }
+        ],
+        "entry_points": [
+          "list_nsx_alarms",
+          "get_nsx_manager_status",
+          "list_segments",
+          "list_tier0_gateways",
+          "list_tier1_gateways",
+          "list_transport_zones",
+          "list_transport_nodes",
+          "list_edge_clusters",
+          "list_ip_pools"
+        ],
+        "reachable_on_surface": 10,
+        "reachable_only_via_description": 0,
+        "required_entity_params": 11,
+        "required_params_classified": "11/11",
+        "tool_count": 20
+      },
+      "maximum": 11,
+      "pct": 90.9,
+      "unit": "required entity params",
+      "value": 10
+    },
+    "entry_point_availability": {
+      "detail": {
+        "full_entry_points": 11,
+        "read_only_entry_points": 9
+      },
+      "maximum": 20,
+      "pct": 45.0,
+      "unit": "entry points",
+      "value": 9
+    },
+    "error_actionability": {
+      "detail": {
+        "dead_end_count": 17,
+        "dead_end_errors": [
+          {
+            "message": "NSX session creation succeeded but no X-XSRF-TOKEN returned",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "connection.py:222"
+          },
+          {
+            "message": "No target specified and no default target configured",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "connection.py:447"
+          },
+          {
+            "message": "Could not connect to NSX Manager {}:{}: {}. {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "connection.py:192"
+          },
+          {
+            "message": "NSX Manager {} {} returned HTTP {}. {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "connection.py:289"
+          },
+          {
+            "message": "Invalid resource ID: '{}'. Only alphanumeric, hyphens, and underscores are allowed.",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "nat_route_mgmt.py:20"
+          },
+          {
+            "message": "translated_network is required for {} rules.",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "nat_route_mgmt.py:88"
+          },
+          {
+            "message": "At least one next_hop is required.",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "nat_route_mgmt.py:165"
+          },
+          {
+            "message": "At least one subnet is required.",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "nat_route_mgmt.py:271"
+          },
+          {
+            "message": "Each subnet must have 'allocation_ranges' and 'cidr'. allocation_ranges: [{start: ip, end: ip}], cid",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "nat_route_mgmt.py:276"
+          },
+          {
+            "message": "Invalid resource ID: '{}'. Only alphanumeric, hyphens, and underscores are allowed.",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:20"
+          },
+          {
+            "message": "No update fields provided.",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:137"
+          },
+          {
+            "message": "No update fields provided.",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:292"
+          },
+          {
+            "message": "No BGP configuration fields provided.",
+            "missing": [
+              "names_artifact",
+              "names_input",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:376"
+          },
+          {
+            "message": "Field '{}' is not updatable. Allowed: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:130"
+          },
+          {
+            "message": "Field '{}' is not updatable. Allowed: {}",
+            "missing": [
+              "names_artifact",
+              "states_remedy"
+            ],
+            "where": "segment_mgmt.py:285"
+          }
+        ],
+        "per_dimension_pct": {
+          "names_artifact": 15.4,
+          "names_input": 69.2,
+          "states_remedy": 34.6
+        },
+        "raise_sites": 26
+      },
+      "maximum": 78,
+      "pct": 39.7,
+      "unit": "points",
+      "value": 31
+    },
+    "manifest_context_headroom": {
+      "detail": {
+        "heaviest_tools": {
+          "create_ip_pool": 384,
+          "create_segment": 400,
+          "create_static_route": 338,
+          "create_tier1_gateway": 422,
+          "update_tier1_gateway": 332
+        },
+        "manifest_tokens": 6640,
+        "mean_tokens_per_tool": 201.2,
+        "reference_context": 16384,
+        "tool_count": 33
+      },
+      "maximum": 16384,
+      "pct": 59.5,
+      "unit": "tokens",
+      "value": 9744
+    },
+    "parameter_documentation_coverage": {
+      "detail": {
+        "undocumented_by_tool": {}
+      },
+      "maximum": 94,
+      "pct": 100.0,
+      "unit": "parameters",
+      "value": 94
+    },
+    "per_tool_token_discipline": {
+      "detail": {
+        "ceiling": 350,
+        "over_ceiling": {
+          "create_ip_pool": 384,
+          "create_segment": 400,
+          "create_tier1_gateway": 422
+        }
+      },
+      "maximum": 33,
+      "pct": 90.9,
+      "unit": "tools",
+      "value": 30
+    },
+    "read_only_manifest_saving": {
+      "detail": {
+        "full_manifest_tokens": 6640,
+        "full_tool_count": 33,
+        "gated_manifest_tokens": 3071,
+        "gated_tool_count": 20,
+        "withheld_tools": [
+          "configure_tier0_bgp",
+          "create_ip_pool",
+          "create_nat_rule",
+          "create_segment",
+          "create_static_route",
+          "create_tier1_gateway",
+          "delete_ip_pool",
+          "delete_nat_rule",
+          "delete_segment",
+          "delete_static_route",
+          "delete_tier1_gateway",
+          "update_segment",
+          "update_tier1_gateway"
+        ]
+      },
+      "maximum": 6640,
+      "pct": 53.8,
+      "unit": "tokens",
+      "value": 3569
+    },
+    "read_write_marker_coverage": {
+      "detail": {
+        "unmarked": []
+      },
+      "maximum": 33,
+      "pct": 100.0,
+      "unit": "points",
+      "value": 33
+    },
+    "teaching_error_rate": {
+      "detail": {},
+      "maximum": 26,
+      "pct": 15.4,
+      "unit": "messages",
+      "value": 4
+    },
+    "tool_description_quality": {
+      "detail": {
+        "per_dimension_pct": {
+          "args": 100.0,
+          "gotcha": 69.7,
+          "marker": 100.0,
+          "next_hop": 45.5,
+          "what": 75.8,
+          "when": 72.7
+        },
+        "tools_graded": 33,
+        "weakest_tools": {
+          "configure_tier0_bgp": [
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "create_nat_rule": [
+            "gotcha",
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "delete_segment": [
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "get_edge_cluster_status": [
+            "gotcha",
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "get_nsx_manager_status": [
+            "gotcha",
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "get_segment_port_for_vm": [
+            "gotcha",
+            "next_hop",
+            "when"
+          ],
+          "get_tier1_gateway": [
+            "gotcha",
+            "next_hop",
+            "what",
+            "when"
+          ],
+          "update_segment": [
+            "gotcha",
+            "next_hop",
+            "what",
+            "when"
+          ]
+        }
+      },
+      "maximum": 198,
+      "pct": 77.3,
+      "unit": "points",
+      "value": 153
+    },
+    "tool_failure_payload_quality": {
+      "detail": {
+        "bare_string_error_lines": [
+          138,
+          95,
+          90,
+          97,
+          117
+        ],
+        "carries_hint": 27,
+        "dict_shaped": 27,
+        "error_return_sites": 32,
+        "hint_names_artifact": 32
+      },
+      "maximum": 96,
+      "pct": 89.6,
+      "unit": "checks",
+      "value": 86
+    }
+  }
+}
