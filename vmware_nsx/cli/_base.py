@@ -15,6 +15,7 @@ from typing import Annotated, Any, Callable, TypeVar
 
 import typer
 from rich.console import Console
+from vmware_policy import PolicyDenied
 
 from vmware_nsx.notify.audit import AuditLogger
 
@@ -58,6 +59,8 @@ def _cli_errors(fn: _F) -> _F:
     Without this, an NsxApiError (teaching error from the connection layer),
     a missing config file, or a bad config key surfaces as a raw Python
     traceback in the terminal. typer.Exit/typer.Abort pass through untouched.
+    A PolicyDenied from @guarded becomes a teaching line naming the rule that
+    fired (HLD I-1) instead of a traceback.
     """
 
     @functools.wraps(fn)
@@ -66,6 +69,15 @@ def _cli_errors(fn: _F) -> _F:
 
         try:
             return fn(*args, **kwargs)
+        except (typer.Exit, typer.Abort):
+            raise
+        except PolicyDenied as exc:
+            # A deny rule or maintenance window refused this write — @guarded ran
+            # guard() before the body and already wrote the status="denied" audit
+            # row. Teach the operator which rule fired instead of a traceback.
+            rule = f" [dim](rule: {exc.result.rule})[/]" if exc.result.rule else ""
+            console.print(f"[red]Denied by policy: {exc.result.reason}[/]{rule}")
+            raise typer.Exit(1) from exc
         except (NsxApiError, FileNotFoundError, KeyError, OSError) as exc:
             console.print(f"[red]Error: {exc}[/]")
             raise typer.Exit(1) from exc

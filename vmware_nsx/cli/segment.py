@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 import typer
+from vmware_policy import guarded
 
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
@@ -20,6 +21,7 @@ from vmware_nsx.cli._base import (
 
 @segment_app.command("create")
 @_cli_errors
+@guarded(risk_level='medium')
 def segment_create(
     segment_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -62,6 +64,7 @@ def segment_create(
 
 @segment_app.command("update")
 @_cli_errors
+@guarded(risk_level='medium')
 def segment_update(
     segment_id: str,
     display_name: Annotated[str | None, typer.Option("--name", help="New display name")] = None,
@@ -101,6 +104,7 @@ def segment_update(
 
 @segment_app.command("delete")
 @_cli_errors
+@guarded(risk_level='high')
 def segment_delete(
     segment_id: str,
     target: TargetOption = None,

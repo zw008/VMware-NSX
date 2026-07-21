@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import typer
+from vmware_policy import guarded
 
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
@@ -20,6 +21,7 @@ from vmware_nsx.cli._base import (
 
 @ip_pool_app.command("create")
 @_cli_errors
+@guarded(risk_level='medium')
 def ip_pool_create(
     pool_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -57,6 +59,7 @@ def ip_pool_create(
 
 @ip_pool_app.command("delete")
 @_cli_errors
+@guarded(risk_level='high')
 def ip_pool_delete(
     pool_id: str,
     target: TargetOption = None,

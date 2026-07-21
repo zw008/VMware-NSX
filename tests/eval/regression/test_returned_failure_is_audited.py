@@ -54,7 +54,7 @@ def audited(monkeypatch):
         def log(self, **kw):
             rows.append(kw)
 
-    monkeypatch.setattr("vmware_policy.decorators.get_engine", lambda: _Recorder())
+    monkeypatch.setattr("vmware_policy.guard.get_engine", lambda: _Recorder())
     return rows
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import typer
+from vmware_policy import guarded
 
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
@@ -20,6 +21,7 @@ from vmware_nsx.cli._base import (
 
 @gateway_app.command("create-tier1")
 @_cli_errors
+@guarded(risk_level='medium')
 def gateway_create_tier1(
     tier1_id: str,
     display_name: Annotated[str, typer.Option("--name", help="Display name")],
@@ -54,6 +56,7 @@ def gateway_create_tier1(
 
 @gateway_app.command("update-tier1")
 @_cli_errors
+@guarded(risk_level='medium')
 def gateway_update_tier1(
     tier1_id: str,
     display_name: Annotated[str | None, typer.Option("--name", help="New display name")] = None,
@@ -64,8 +67,8 @@ def gateway_update_tier1(
     dry_run: DryRunOption = False,
 ) -> None:
     """Update an existing Tier-1 gateway."""
-    from vmware_nsx.ops.segment_mgmt import update_tier1_gateway
     from vmware_nsx.ops.inventory import get_tier1_gateway
+    from vmware_nsx.ops.segment_mgmt import update_tier1_gateway
 
     client, _ = cli._get_connection(target, config)
     before = get_tier1_gateway(client, tier1_id)
@@ -96,6 +99,7 @@ def gateway_update_tier1(
 
 @gateway_app.command("delete-tier1")
 @_cli_errors
+@guarded(risk_level='high')
 def gateway_delete_tier1(
     tier1_id: str,
     target: TargetOption = None,
@@ -103,8 +107,8 @@ def gateway_delete_tier1(
     dry_run: DryRunOption = False,
 ) -> None:
     """Delete a Tier-1 gateway (destructive!)."""
-    from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway
     from vmware_nsx.ops.inventory import get_tier1_gateway
+    from vmware_nsx.ops.segment_mgmt import delete_tier1_gateway
 
     client, _ = cli._get_connection(target, config)
     before = get_tier1_gateway(client, tier1_id)
@@ -126,6 +130,7 @@ def gateway_delete_tier1(
 
 @gateway_app.command("configure-tier0-bgp")
 @_cli_errors
+@guarded(risk_level='medium')
 def gateway_configure_tier0_bgp(
     tier0_id: str,
     local_as: Annotated[int, typer.Option("--local-as", help="Local AS number")],
