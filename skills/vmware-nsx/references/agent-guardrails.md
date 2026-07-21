@@ -33,52 +33,11 @@ These are structural, so it cannot.
 
 | Guardrail you would otherwise prompt for | Now enforced by |
 |---|---|
-| "Work exclusively in read-only mode and never modify anything" | **Read-only mode.** Set `VMWARE_READ_ONLY=true` and all 13 write tools are removed from the registry at startup, leaving the 20 reads. `list_tools()` never offers them, so the model cannot call what it cannot see. |
-| "Never create, change or delete a segment, gateway, NAT rule, route or IP pool" | Same gate. There is no `create_segment`, no `delete_tier1_gateway`, no `configure_tier0_bgp` to reach. |
 | "Warn me if a segment still has workloads on it before deleting" | **`delete_segment` checks port count** and warns on connected ports. The check runs server-side, not in the prompt. |
 | "Use explicit limits for queries that may return large amounts of data" | **The list envelope.** Every list-returning tool returns `{items, returned, limit, total, truncated, hint}`, so the model reads truncation instead of guessing at it. `truncated: true` means more rows exist — the `hint` says how to re-query. |
 | "If a listing came back empty, say so rather than claiming the call failed" | Same envelope. Empty `items` with `truncated: false` means the query genuinely matched nothing — a stated result, not a silence the model has to interpret. |
 | "Log every state change you make" | **The `@vmware_tool` decorator.** Every write is recorded to `~/.vmware/audit.db` before the model sees the result, and policy rules are evaluated ahead of execution. |
-| "Ask a human before doing something irreversible in production" | **Policy.** A target declared `environment: production` requires a named approver (`VMWARE_AUDIT_APPROVED_BY`) for irreversible work. |
-
-### Turning read-only mode on
-
-One variable covers every skill in the family:
-
-```json
-{
-  "mcpServers": {
-    "vmware-nsx": {
-      "command": "vmware-nsx",
-      "args": ["mcp"],
-      "env": { "VMWARE_READ_ONLY": "true" }
-    }
-  }
-}
-```
-
-Per-skill override — useful when this skill alone should stay writable:
-
-```bash
-VMWARE_READ_ONLY=true        # whole family read-only
-VMWARE_NSX_READ_ONLY=false   # …except NSX networking
-```
-
-Or permanently, in `~/.vmware-nsx/config.yaml`:
-
-```yaml
-read_only: true
-```
-
-Precedence is per-skill env → family env → config file → off. The startup log
-lists exactly which tools were withheld, and `vmware-nsx doctor` reports the
-resolved state and its source. An unparseable value (`VMWARE_READ_ONLY=ture`)
-enables read-only mode rather than silently ignoring the typo.
-
-A blocked tool is a lockdown, not a fault. When a write tool is missing from
-`list_tools()`, the model should name the operation it cannot perform and say
-an operator must clear the switch — not retry, and not go looking for a
-different tool that achieves the same change.
+| "Block state-changing writes against a production target" | **Policy.** An opt-in environment-scoped `deny` rule in `~/.vmware/rules.yaml` matches a target's `environment:` label and refuses matching writes before execution. |
 
 ---
 
@@ -144,8 +103,6 @@ your agent's instruction block.
   the other.
 - NAT rules and static routes live on a gateway. Confirm the gateway with
   list_tier1_gateways before creating a rule on it.
-- A write tool missing from the tool list means read-only mode is on. Name the
-  blocked operation and stop. Do not retry and do not substitute another tool.
 - Before proposing delete_segment, call get_segment and report the connected
   port count. Deleting a segment with ports on it disconnects workloads.
 - configure_tier0_bgp changes routing for everything behind that Tier-0. Treat

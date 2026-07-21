@@ -11,12 +11,12 @@ installer:
   package: vmware-nsx-mgmt
 allowed-tools:
   - Bash
-metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_<TARGET>_PASSWORD","VMWARE_NSX_<TARGET>_USERNAME","VMWARE_READ_ONLY","VMWARE_NSX_READ_ONLY","VMWARE_AUDIT_APPROVED_BY"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
+metadata: {"openclaw":{"requires":{"env":["VMWARE_NSX_CONFIG"],"bins":["vmware-nsx"],"config":["~/.vmware-nsx/config.yaml","~/.vmware-nsx/.env"]},"optional":{"env":["VMWARE_NSX_<TARGET>_PASSWORD","VMWARE_NSX_<TARGET>_USERNAME","VMWARE_AUDIT_APPROVED_BY"],"bins":["vmware-policy"]},"primaryEnv":"VMWARE_NSX_CONFIG","homepage":"https://github.com/zw008/VMware-NSX","emoji":"🌐","os":["macos","linux"]}}
 compatibility: >
   vmware-policy auto-installed as Python dependency (provides @vmware_tool decorator and audit logging). All write operations audited to ~/.vmware/audit.db.
   Credentials: Each NSX Manager target requires a per-target password env var in ~/.vmware-nsx/.env following the pattern VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD. Also supports certificate-based auth. Passwords are never logged or echoed.
   Destructive operations: Segment/gateway/NAT delete require double confirmation + --dry-run. Segment delete checks for connected ports, gateway delete checks for connected segments.
-  Read-only mode: VMWARE_READ_ONLY=true (family-wide) or VMWARE_NSX_READ_ONLY=true (per-skill, takes precedence) removes all 13 write tools from the MCP registry at startup; fail-closed. VMWARE_AUDIT_APPROVED_BY names the approver policy requires for irreversible work on targets declared environment: production. None of the three carry credentials.
+  VMWARE_AUDIT_APPROVED_BY is an optional attestation recorded in the audit row; it is not a gate and does not carry credentials.
   No webhooks, no outbound network calls, no guest operations. Local only: stdio MCP + NSX Policy API (HTTPS 443).
   SSL bypass: verify_ssl is on by default; false option for self-signed certs in lab environments only.
   Transitive dependencies: Only vmware-policy (audit/policy). No post-install scripts or background services.
@@ -192,14 +192,9 @@ Write tools require explicit parameters and are audit-logged. Dry-run preview (`
 
 Every list-returning tool above returns `{items, returned, limit, total, truncated, hint}`, not a bare array. Rows live under `items`: empty `items` with `truncated: false` means the query genuinely matched nothing — report that, not a tool failure. `truncated: true` means more rows exist — never describe the result as the complete set; re-query as `hint` instructs. Field semantics, `total` sourcing, and an example payload: `references/capabilities.md`.
 
-## Read-Only Mode
+## Local & Small Models
 
-If a write tool described above is absent from `list_tools()`, this deployment is in
-read-only mode: `VMWARE_READ_ONLY=true` (or `VMWARE_NSX_READ_ONLY`, or `read_only: true` in
-config.yaml) withholds all 13 write tools at start-up, leaving the 20 read tools. That is a
-deliberate lockdown, not a fault — do not retry, and do not look for another tool that
-achieves the same change. Name the blocked operation and say an operator must clear the
-switch and restart the server. Read tools are unaffected. Running with local or small models? See [`references/agent-guardrails.md`](references/agent-guardrails.md).
+Running with local or small models? See [`references/agent-guardrails.md`](references/agent-guardrails.md) for explicit operating rules that keep tool calls reliable.
 
 ## CLI Quick Reference
 
@@ -287,10 +282,6 @@ A transport node in degraded state has partial connectivity. Steps:
 ### "Password not found" error
 
 The password environment variable is missing. Variable names follow the pattern `VMWARE_NSX_<TARGET_NAME_UPPER>_PASSWORD` where hyphens become underscores. Example: target `nsx-prod` needs `VMWARE_NSX_NSX_PROD_PASSWORD`. Check your `~/.vmware-nsx/.env` file.
-
-### "target does not declare which environment it is" on a write
-
-Policy scopes rules by each target's explicit `environment:` declaration, not its name. The write still ran — it warns today; the next release refuses it. Declaring now makes that a no-op: add `environment: production` (or `staging`, `lab`, any label) to the target in `~/.vmware-nsx/config.yaml`. Reads are never affected. A `production` target also requires a named approver (`VMWARE_AUDIT_APPROVED_BY`) for irreversible work. Run `vmware-audit policy` for the rules in force; details: `references/setup-guide.md`.
 
 ## Safety
 

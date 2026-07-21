@@ -32,6 +32,7 @@
       "detail": {
         "broken_chains": [],
         "entry_points": [
+          "create_tier1_gateway",
           "list_nsx_alarms",
           "get_nsx_manager_status",
           "list_segments",
@@ -40,28 +41,29 @@
           "list_transport_zones",
           "list_transport_nodes",
           "list_edge_clusters",
+          "create_ip_pool",
           "list_ip_pools"
         ],
-        "reachable_on_surface": 10,
+        "reachable_on_surface": 23,
         "reachable_only_via_description": 1,
-        "required_entity_params": 11,
-        "required_params_classified": "11/11",
-        "tool_count": 20
+        "required_entity_params": 24,
+        "required_params_classified": "24/38",
+        "tool_count": 33
       },
-      "maximum": 11,
+      "maximum": 24,
       "pct": 100.0,
       "unit": "required entity params",
-      "value": 11
+      "value": 24
     },
     "entry_point_availability": {
       "detail": {
         "full_entry_points": 11,
-        "read_only_entry_points": 9
+        "read_only_entry_points": 11
       },
-      "maximum": 20,
-      "pct": 45.0,
+      "maximum": 33,
+      "pct": 33.3,
       "unit": "entry points",
-      "value": 9
+      "value": 11
     },
     "error_actionability": {
       "detail": {
@@ -124,28 +126,14 @@
       "detail": {
         "full_manifest_tokens": 6633,
         "full_tool_count": 33,
-        "gated_manifest_tokens": 3108,
-        "gated_tool_count": 20,
-        "withheld_tools": [
-          "configure_tier0_bgp",
-          "create_ip_pool",
-          "create_nat_rule",
-          "create_segment",
-          "create_static_route",
-          "create_tier1_gateway",
-          "delete_ip_pool",
-          "delete_nat_rule",
-          "delete_segment",
-          "delete_static_route",
-          "delete_tier1_gateway",
-          "update_segment",
-          "update_tier1_gateway"
-        ]
+        "gated_manifest_tokens": 6633,
+        "gated_tool_count": 33,
+        "withheld_tools": []
       },
       "maximum": 6633,
-      "pct": 53.1,
+      "pct": 0.0,
       "unit": "tokens",
-      "value": 3525
+      "value": 0
     },
     "read_write_marker_coverage": {
       "detail": {
@@ -161,9 +149,9 @@
         "budget_chars": 300,
         "over_budget": [],
         "remedy_after_interpolation": [
-          "config.py:234",
+          "config.py:228",
           "config.py:159",
-          "config.py:220",
+          "config.py:214",
           "connection.py:220",
           "connection.py:233",
           "connection.py:244",

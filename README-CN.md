@@ -36,6 +36,32 @@ uv tool install vmware-nsx-mgmt
 pip install vmware-nsx-mgmt
 ```
 
+### 离线 / 气隙环境安装（从源码）
+
+本项目采用现代 PEP 517 构建系统（hatchling），因此**没有 `setup.py`**——这是设计
+使然，不是文件缺失。如果你克隆源码后遇到 `ERROR: File "setup.py" or "setup.cfg" not
+found ... editable mode currently requires a setuptools-based build`，说明你的 `pip`
+版本低于 21.3，无法对非 setuptools 后端做*可编辑*（`-e`）安装。可编辑模式只是开发
+便利，运行本工具并不需要它——任选其一：
+
+```bash
+# 在源码目录下——普通（非可编辑）安装会构建 wheel：
+pip install .              # 不是  pip install -e .
+
+# ……或先升级 pip，可编辑安装也能用：
+pip install --upgrade pip && pip install -e .
+```
+
+对于**完全气隙的主机**，在联网机器上构建 wheel 再拷贝过去——目标机无需联网：
+
+```bash
+# 在联网机器上，把本包及其依赖收集为 wheel：
+pip wheel . -w dist        # → dist/*.whl  （或：uv build，仅构建本包）
+
+# 把 dist/ 拷到气隙主机，离线安装：
+pip install --no-index --find-links dist vmware-nsx-mgmt
+```
+
 ## 配置
 
 ```bash
@@ -69,29 +95,6 @@ targets:
 `VMWARE_NSX_NSX_PROD_USERNAME` / `VMWARE_NSX_NSX_LAB_USERNAME` 覆盖，
 两者在每次连接时一起读取，便于从密钥管理系统整对轮换。
 
-## 只读模式
-
-提示词约束只是建议——模型可以无视它。只读模式是结构性的：设置 `VMWARE_READ_ONLY=true`，全部 13 个写工具（Segment/Tier-1/NAT 的创建-更新-删除、静态路由、IP 池）会在启动时从 MCP 注册表中移除——`list_tools()` 根本不会列出它们，模型看不见的工具就无法调用。20 个只读工具保持可用。默认关闭；且为 fail-closed 设计：请求了只读模式但无法保证时，服务器直接拒绝启动。
-
-三种启用方式：
-
-```json
-{
-  "mcpServers": {
-    "vmware-nsx": {
-      "command": "vmware-nsx",
-      "args": ["mcp"],
-      "env": { "VMWARE_READ_ONLY": "true" }
-    }
-  }
-}
-```
-
-- 按 skill 覆盖：`VMWARE_NSX_READ_ONLY=true`（优先于家族级 `VMWARE_READ_ONLY`）
-- 配置文件方式：在 `~/.vmware-nsx/config.yaml` 中设置 `read_only: true`
-
-优先级：按 skill 环境变量 → 家族环境变量 → 配置文件 → 默认关闭。启动日志会列出被移除工具的完整清单。
-
 ## 功能概览
 
 | 类别 | 工具 | 数量 | 读 / 写 |
@@ -106,8 +109,6 @@ targets:
 | **健康与排障** | 告警、传输节点状态、Edge 集群状态、Manager 状态、逻辑端口状态、VM 所在 Segment | 6 | 6 读 / 0 写 |
 
 **合计**：33 个工具（20 只读 + 13 写）
-
-- **只读模式** —— 一个环境变量即可从 MCP 注册表移除全部写工具，适合审计、PoC 与本地小模型场景，详见[只读模式](#只读模式)
 
 ## MCP 工具（33 个 —— 20 读 / 13 写）
 

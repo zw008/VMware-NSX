@@ -9,13 +9,9 @@ targets:
     # verify_ssl: true is the default (v1.5.15+).
     # Uncomment verify_ssl: false for default NSX-T deployments with self-signed certs.
     # verify_ssl: false
-    # Declare which environment this target is. Policy scopes by environment:
-    # a target labelled production requires a named approver
-    # (VMWARE_AUDIT_APPROVED_BY) for irreversible work — that part is active
-    # now. A target that declares nothing is treated as unknown: writes still
-    # run today but log a warning, and the next major release will refuse them,
-    # so declaring it now makes that upgrade a no-op. Read-only operations are
-    # never affected. Run 'vmware-audit policy' to see the rules in force.
+    # Optional label for this target. An environment-scoped 'deny' rule in
+    # ~/.vmware/rules.yaml can match on it — e.g. freeze writes on 'production'.
+    # A target with no label is simply not matched by such a rule.
     environment: production
   nsx-lab:
     host: 10.0.0.50
@@ -26,16 +22,6 @@ targets:
     verify_ssl: false
 
 default_target: nsx-prod
-
-# Read-only mode. Off by default. When on, all 13 write tools (segment /
-# Tier-1 / NAT create-update-delete, static routes, IP pools) are removed from
-# the MCP registry at startup, so the model cannot call what it cannot see.
-# This config key is the *last* link in the precedence chain:
-#   VMWARE_NSX_READ_ONLY (per-skill env) → VMWARE_READ_ONLY (family env)
-#   → read_only below → off
-# An env var set to false therefore overrides read_only: true here. Startup
-# logs list exactly which tools were withheld.
-# read_only: true
 
 # Passwords are loaded from environment variables:
 # VMWARE_NSX_NSX_PROD_PASSWORD=xxx

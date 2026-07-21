@@ -69,17 +69,7 @@ notify:
 
 The first target in the list is the default (used when `--target` is not specified).
 
-**`environment` (declare it now)**: policy rules scope by environment, and this declaration is the only thing that tells them which of your NSX Managers is production — the target's *name* is not used for it. Any label you like works (`production`, `staging`, `lab`, `dc2-prod`); `production` is the one the shipped rules attach a second-person approval requirement to for irreversible work.
-
-A target that declares nothing counts as unknown. Today a state-changing operation against it still runs and logs a warning of this shape:
-
-```
-delete_segment ran against a target that declares no environment. A future
-release will REFUSE this. Add 'environment: <name>' to that target in the
-skill's config.yaml.
-```
-
-The next major release refuses it. Declaring `environment:` on each target now makes that upgrade a no-op. Read-only operations are never affected either way. Run `vmware-audit policy` to see the rules currently in force.
+**`environment` (optional label)**: policy scopes its rules by this value, so an environment-scoped `deny` rule in `~/.vmware/rules.yaml` can match on it — for example, to freeze state-changing writes on `production`. Any label you like works (`production`, `staging`, `lab`, `dc2-prod`); the target's *name* is not used for it. A target with no label is simply not matched by such a rule. Read-only operations are never affected either way. Run `vmware-audit policy` to see the rules currently in force.
 
 **NSX Manager cluster**: Use the cluster VIP as the `host` value. The VIP automatically routes to the active manager node.
 
@@ -242,50 +232,9 @@ whitespace are handled correctly).
 > Secrets Manager, or a Kubernetes Secret) into the `*_PASSWORD` environment
 > variable at process start. The code reads the env var either way.
 
-## Read-Only Mode
+## Read-Only Operation
 
-Off by default. When on, all 13 write tools are removed from the MCP registry at start-up,
-so `list_tools()` never offers them — the model cannot call what it cannot see, and no
-prompt discipline is required. The 20 read tools are unaffected. This is for audits, PoCs,
-demos, and deployments driven by a local or otherwise untrusted model.
-
-Three ways to turn it on, highest precedence first:
-
-| Setting | Scope |
-|---------|-------|
-| `VMWARE_NSX_READ_ONLY=true` | this skill only |
-| `VMWARE_READ_ONLY=true` | every installed VMware skill — one variable puts the whole estate into an audit posture |
-| `read_only: true` in `~/.vmware-nsx/config.yaml` | this skill, persisted to disk |
-
-Precedence is **per-skill env → family env → config → off**. The environment variables come
-first so a deployment can be locked down from the MCP client's `env` block without editing
-any config file:
-
-```json
-{
-  "mcpServers": {
-    "vmware-nsx": {
-      "command": "vmware-nsx",
-      "args": ["mcp"],
-      "env": { "VMWARE_READ_ONLY": "true" }
-    }
-  }
-}
-```
-
-An empty string (`"VMWARE_READ_ONLY": ""`) counts as unset, not as an explicit off — a
-template leftover is not a decision, and treating it as one would let it override
-`read_only: true` in config.
-
-**Fail-closed.** If read-only mode is requested but cannot be *proven* — the tool registry
-cannot be enumerated, or a removal does not take effect — the server refuses to start rather
-than serve write tools it promised to withhold. A misspelled value is handled differently:
-`VMWARE_READ_ONLY=ture` does not abort, it resolves to **on** with a warning, so a typo
-locks the deployment down instead of quietly leaving it open.
-
-**Verifying it took.** `vmware-nsx doctor` reports the resolved state and which setting it
-came from — including the case where an unrecognised value enabled the mode by accident. The
-MCP server's start-up log additionally names every tool that was withheld.
+To run the agent read-only, give it a read-only NSX service account (RBAC).
 
 ## Security Details
 
