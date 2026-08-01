@@ -17,7 +17,7 @@ Each operation is classified by autonomy level per the Enterprise Harness Engine
 **Notes**:
 - L1/L2 tools are always safe for agents to call without confirmation.
 - L3 tools always pass through the `@vmware_tool` decorator: connection check → policy check → audit log → double-confirm. Segment delete additionally verifies port count = 0.
-- For DFW/security rules see [vmware-nsx-security](https://github.com/zw008/VMware-NSX-Security).
+- For DFW/security rules see [vmware-nsx-security](https://github.com/vmware-skills/VMware-NSX-Security).
 
 ## API Coverage
 

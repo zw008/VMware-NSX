@@ -4,7 +4,7 @@
   "title": "VMware NSX",
   "description": "VMware NSX networking management with 31 MCP tools: segments, gateways, NAT, routing, IPAM.",
   "repository": {
-    "url": "https://github.com/zw008/VMware-NSX",
+    "url": "https://github.com/vmware-skills/VMware-NSX",
     "source": "github"
   },
   "version": "1.8.8",

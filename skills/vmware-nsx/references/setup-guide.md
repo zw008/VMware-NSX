@@ -26,7 +26,7 @@ pip install vmware-nsx-mgmt
 ### From source
 
 ```bash
-git clone https://github.com/zw008/VMware-NSX.git
+git clone https://github.com/vmware-skills/VMware-NSX.git
 cd VMware-NSX
 pip install -e .
 ```
