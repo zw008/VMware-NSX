@@ -1,4 +1,4 @@
-<!-- mcp-name: io.github.zw008/vmware-nsx -->
+<!-- mcp-name: io.github.vmware-skills/vmware-nsx -->
 # VMware NSX
 
 > **Author**: Wei Zhou, VMware by Broadcom — wei-wz.zhou@broadcom.com

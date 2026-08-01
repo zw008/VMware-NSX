@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.zw008/vmware-nsx",
+  "name": "io.github.vmware-skills/vmware-nsx",
   "title": "VMware NSX",
   "description": "VMware NSX networking management with 31 MCP tools: segments, gateways, NAT, routing, IPAM.",
   "repository": {
     "url": "https://github.com/vmware-skills/VMware-NSX",
     "source": "github"
   },
-  "version": "1.8.8",
+  "version": "1.8.9",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "vmware-nsx-mgmt",
-      "version": "1.8.8",
+      "version": "1.8.9",
       "transport": {
         "type": "stdio"
       }
