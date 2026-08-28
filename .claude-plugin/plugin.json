@@ -3,7 +3,7 @@
   "name": "vmware-nsx",
   "displayName": "VMware NSX",
   "version": "1.8.9",
-  "description": "VMware NSX networking management with 31 MCP tools: segments, gateways, NAT, routing, IPAM.",
+  "description": "VMware NSX networking management with 33 MCP tools: segments, gateways, NAT, routing, IPAM.",
   "author": {
     "name": "Wei Zhou",
     "email": "zhouwei008@gmail.com",
