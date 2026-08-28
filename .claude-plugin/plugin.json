@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "vmware-nsx",
+  "displayName": "VMware NSX",
+  "version": "1.8.9",
+  "description": "VMware NSX networking management with 31 MCP tools: segments, gateways, NAT, routing, IPAM.",
+  "author": {
+    "name": "Wei Zhou",
+    "email": "zhouwei008@gmail.com",
+    "url": "https://github.com/vmware-skills"
+  },
+  "homepage": "https://github.com/vmware-skills/VMware-NSX",
+  "repository": "https://github.com/vmware-skills/VMware-NSX",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "nsx",
+    "vmware",
+    "vsphere"
+  ]
+}

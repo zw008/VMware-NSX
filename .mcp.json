@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "vmware-nsx": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "vmware-nsx-mgmt==1.8.9",
+        "vmware-nsx-mcp"
+      ]
+    }
+  }
+}
