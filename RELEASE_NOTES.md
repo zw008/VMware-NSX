@@ -1,3 +1,38 @@
+## v1.8.11 — the list tools can be asked for a page, and for the next one
+
+Found against a real VCF 9.1 estate.
+
+**Ten list tools exposed only `target` on the MCP surface**, with `limit=50`
+hardcoded in the ops layer. An agent could not ask for more, or for what came
+after. All ten now take `limit` and `offset` on the tool, the op and the CLI,
+and return `next_offset` — the value to pass back, or `null` when the collection
+ends. `truncated` is deliberately *not* the stop signal: it answers "is this the
+whole collection?", which is still true on the last page of a walk, and flipping
+it there would buy a terminating loop at the price of the failure the envelope
+exists to prevent.
+
+`limit=0`, negatives and anything above the maximum are now rejected with a
+message naming the range, rather than clamped or silently read as "unlimited" —
+the family had four contradictory meanings for `limit=0`, and negatives reached
+Python's negative slicing and quietly dropped rows off the end.
+
+The NSX cursor is deliberately not exposed, though it would be O(1) per page
+instead of O(pages): nothing in this repo demonstrates that a cursor survives
+between calls, and this family has been burned before by an API layer written
+from recollection.
+
+**`verify_ssl: false` needed a package this skill never declared.** On a clean
+install, authenticating against a self-signed target — the VCF default — died
+with `No module named 'urllib3'`. The import sat behind that branch, so it never
+ran in this repo's tests. The code it guarded was already inert: this client is
+httpx, which does not use urllib3 and does not raise `InsecureRequestWarning`.
+Removed rather than declared.
+
+**`doctor` reported on a different config file from the one the tools load**,
+and the Dockerfile could not build the wheel it installs. `server.json` did not
+merely start the wrong thing — `uvx vmware-nsx-mgmt` is refused by uv outright,
+because the distribution and the console script have different names.
+
 ## v1.8.10 — two wrong numbers: the server's own version, and the advertised tool count
 
 Both defects were invisible to the test suites and both were user-facing.
