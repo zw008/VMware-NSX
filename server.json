@@ -13,6 +13,37 @@
       "registryType": "pypi",
       "identifier": "vmware-nsx-mgmt",
       "version": "1.8.10",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "vmware-nsx-mgmt",
+          "description": "The PyPI distribution is vmware-nsx-mgmt; the command it installs is vmware-nsx."
+        },
+        {
+          "type": "positional",
+          "valueHint": "command",
+          "value": "vmware-nsx"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "valueHint": "subcommand",
+          "value": "mcp",
+          "description": "Starts the stdio MCP server. Without it the console script runs the human CLI and exits."
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "VMWARE_NSX_CONFIG",
+          "description": "Path to the config file. Defaults to ~/.vmware-nsx/config.yaml.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ],
       "transport": {
         "type": "stdio"
       }
