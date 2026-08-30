@@ -8,6 +8,12 @@ from typing import TYPE_CHECKING
 from vmware_policy import paginated, sanitize
 
 from vmware_nsx.connection import CollectionTotal
+from vmware_nsx.ops._paginate import (
+    MAX_LIMIT,
+    next_offset,
+    paginate,
+    validate_page_args,
+)
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -23,6 +29,8 @@ _log = logging.getLogger("vmware-nsx.health")
 def list_alarms(
     client: NsxClient,
     severity: str = "MEDIUM",
+    limit: int = MAX_LIMIT,
+    offset: int = 0,
 ) -> dict:
     """List alarms filtered by severity (exact match).
 
@@ -33,14 +41,29 @@ def list_alarms(
     Args:
         client: Authenticated NSX API client.
         severity: Severity filter, exact match (default "MEDIUM").
+        limit: Page size, 1..1000. Defaults to 1000 — the connection layer's
+            own backstop, so the default fetch is exactly what it was before
+            this argument existed: every alarm at the severity, which is what
+            makes a health check complete. Pass a smaller value to page. 0 and
+            negatives are rejected; there is no "unlimited".
+        offset: Alarms to skip. Pass the previous response's ``next_offset``.
 
     Returns:
         Result envelope with alarm dicts under ``items``, messages sanitized.
-        Every alarm at the severity is fetched (no limit), so ``total`` — the
-        ListResult ``result_count`` — normally equals ``returned`` and the
-        result reads as complete; it exceeds ``returned`` only when the
-        client's safety backstop cut the walk short, which is exactly when the
-        agent must not treat this as the full alarm picture.
+        ``total`` is the ListResult ``result_count`` — the number of alarms at
+        this severity, which is what says whether the page in hand is all of
+        them.
+
+        The envelope carries ``next_offset``: pass it back as ``offset`` for
+        the next page and stop when it is ``None``. Do not loop on
+        ``truncated`` — that says this page is not the whole set, which stays
+        true on the last page of a walk.
+
+        Before 2026-08-30 there was no ``limit`` or ``offset`` here at all.
+        The default fetch is unchanged, but an estate with more alarms than
+        the 1000-item backstop had the remainder simply unreachable: the
+        envelope said ``truncated: true`` and there was no argument that could
+        get at what sat behind it.
     """
     valid_severities = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
     if severity.upper() not in valid_severities:
@@ -52,10 +75,13 @@ def list_alarms(
         )
 
     # Management API endpoint for alarms (paginated)
+    validate_page_args(limit, offset)
     total = CollectionTotal()
     items = client.get_all(
         "/api/v1/alarms",
         params={"severity": severity.upper()},
+        page_size=limit,
+        limit=offset + limit,
         total_sink=total,
     )
 
@@ -76,9 +102,14 @@ def list_alarms(
                 a.get("node_display_name", "")
             ),
         }
-        for a in items
+        for a in paginate(items, limit, offset)
     ]
-    return paginated(rows, total=total.value)
+    return paginated(
+        rows,
+        limit=limit,
+        total=total.value,
+        next_offset=next_offset(len(rows), limit, offset, total.value),
+    )
 
 
 # ---------------------------------------------------------------------------

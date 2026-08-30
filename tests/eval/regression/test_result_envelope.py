@@ -178,11 +178,19 @@ def test_full_page_short_of_the_real_total_states_exact_numbers(tool: str) -> No
     assert "50" in result["hint"] and "412" in result["hint"]
 
 
-def test_alarms_take_no_limit_and_report_the_full_severity_set() -> None:
-    """Every alarm at the severity is fetched, so the result is complete."""
+def test_alarms_default_to_the_full_severity_set_and_report_it_complete() -> None:
+    """Every alarm at the severity is still fetched, so the result is complete.
+
+    2026-08-30: alarms gained ``limit``/``offset`` along with the other nine
+    list tools, because past the connection layer's 1000-item backstop the
+    remaining alarms were unreachable — the envelope said ``truncated: true``
+    and no argument could get at what sat behind it. The default is that same
+    backstop, so the fetch is byte-for-byte what it was; what changed is that
+    the page size is now stated rather than left null.
+    """
     result = _call("list_nsx_alarms", _PagedClient(page=7, result_count=7))
     assert result["returned"] == 7
-    assert result["limit"] is None
+    assert result["limit"] == 1000
     assert result["total"] == 7
     assert result["truncated"] is False
     assert result["hint"] is None

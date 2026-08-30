@@ -46,6 +46,14 @@ ConfigOption = Annotated[
 DryRunOption = Annotated[
     bool, typer.Option("--dry-run", help="Print API calls without executing")
 ]
+LimitOption = Annotated[
+    int,
+    typer.Option("--limit", help="Page size, 1-1000; 0 or negative is rejected"),
+]
+OffsetOption = Annotated[
+    int,
+    typer.Option("--offset", help="Rows to skip; the next-page offset is printed below the table"),
+]
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -155,3 +163,22 @@ def _double_confirm(
             result="rejected",
         )
         raise
+
+
+def print_next_page(result: dict) -> None:
+    """Say where the next page starts, or say nothing when there is none.
+
+    A table headed "Segments (50)" reads as "this estate has 50 segments", and
+    that reading was correct exactly never: the ops bound the fetch at 50 and
+    the CLI dropped the rest of the envelope on the floor. The count in the
+    title is the page, so the page has to say when it is not the whole thing.
+    """
+    nxt = result.get("next_offset")
+    if nxt is None:
+        return
+    total = result.get("total")
+    of_total = f" of {total}" if total is not None else ""
+    console.print(
+        f"[yellow]Showing rows up to {nxt}{of_total}. "
+        f"Re-run with --offset {nxt} for the next page.[/]"
+    )

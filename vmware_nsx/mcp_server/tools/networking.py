@@ -10,10 +10,21 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> dict:
+def list_nat_rules(
+    tier1_id: str,
+    target: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
     """[READ] List NAT rules on a Tier-1 gateway (USER section).
 
     Returns the result envelope; check `truncated` before calling it complete.
+    Page it: `limit` is the page size (1-1000, default 50; 0 or negative is
+    rejected), `offset` is how many rows to skip, and the response carries
+    `next_offset` — pass that back as `offset` and stop when it is null. Do not
+    loop on `truncated`: that says this page is not the whole collection, so it
+    stays true on the last page of a walk.
+
     Get tier1_id from list_tier1_gateways first. Use this before create_nat_rule
     to avoid an id clash, and before delete_nat_rule to confirm what a rule
     does. Only the USER section is listed — NSX-internal NAT is not shown.
@@ -21,12 +32,14 @@ def list_nat_rules(tier1_id: str, target: Optional[str] = None) -> dict:
     Args:
         tier1_id: Gateway ID, as returned by list_tier1_gateways.
         target: NSX Manager target from config (default if omitted).
+        limit: Page size, 1-1000 (default 50).
+        offset: Rows to skip; pass the previous response's `next_offset`.
     """
     try:
         from vmware_nsx.ops.networking import list_nat_rules as _list_nat
 
         client = server._get_connection(target)
-        return _list_nat(client, tier1_id)
+        return _list_nat(client, tier1_id, limit=limit, offset=offset)
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
@@ -65,10 +78,18 @@ def list_static_routes(
     tier1_id: str,
     gateway_type: str = "tier1",
     target: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
 ) -> dict:
     """[READ] List static routes on a Tier-0 or Tier-1 gateway.
 
     Returns the result envelope; check `truncated` before calling it complete.
+    Page it: `limit` is the page size (1-1000, default 50; 0 or negative is
+    rejected), `offset` is how many rows to skip, and the response carries
+    `next_offset` — pass that back as `offset` and stop when it is null. Do not
+    loop on `truncated`: that says this page is not the whole collection, so it
+    stays true on the last page of a walk.
+
     Use this before create_static_route to avoid an id clash, and before
     delete_static_route to confirm the destination and next hops. gateway_type
     must match where the route actually lives — querying the wrong tier returns
@@ -80,34 +101,50 @@ def list_static_routes(
             by list_tier0_gateways / list_tier1_gateways.
         gateway_type: Either "tier0" or "tier1" (default "tier1").
         target: NSX Manager target from config (default if omitted).
+        limit: Page size, 1-1000 (default 50).
+        offset: Rows to skip; pass the previous response's `next_offset`.
     """
     try:
         from vmware_nsx.ops.networking import list_static_routes as _list_routes
 
         client = server._get_connection(target)
-        return _list_routes(client, tier1_id, gateway_type=gateway_type)
+        return _list_routes(
+            client, tier1_id, gateway_type=gateway_type, limit=limit, offset=offset
+        )
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_ip_pools(target: Optional[str] = None) -> dict:
+def list_ip_pools(
+    target: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
     """[READ] List all IP address pools with subnets and usage summary.
 
     Returns the result envelope; check `truncated` before calling it complete.
+    Page it: `limit` is the page size (1-1000, default 50; 0 or negative is
+    rejected), `offset` is how many rows to skip, and the response carries
+    `next_offset` — pass that back as `offset` and stop when it is null. Do not
+    loop on `truncated`: that says this page is not the whole collection, so it
+    stays true on the last page of a walk.
+
     Use this first to resolve a pool_id, then get_ip_pool_usage for the actual
     allocations — the summary here does not tell you which addresses are taken.
     Run it before create_ip_pool to avoid overlapping ranges.
 
     Args:
         target: NSX Manager target from config (default if omitted).
+        limit: Page size, 1-1000 (default 50).
+        offset: Rows to skip; pass the previous response's `next_offset`.
     """
     try:
         from vmware_nsx.ops.networking import list_ip_pools as _list_pools
 
         client = server._get_connection(target)
-        return _list_pools(client)
+        return _list_pools(client, limit=limit, offset=offset)
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 

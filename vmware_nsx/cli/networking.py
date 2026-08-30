@@ -7,9 +7,12 @@ from rich.table import Table
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
     ConfigOption,
+    LimitOption,
+    OffsetOption,
     TargetOption,
     _cli_errors,
     console,
+    print_next_page,
     networking_app,
 )
 
@@ -18,6 +21,8 @@ from vmware_nsx.cli._base import (
 @_cli_errors
 def networking_list_nat_rules(
     tier1_id: str,
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -25,7 +30,8 @@ def networking_list_nat_rules(
     from vmware_nsx.ops.networking import list_nat_rules
 
     client, _ = cli._get_connection(target, config)
-    rules = list_nat_rules(client, tier1_id)["items"]
+    _result = list_nat_rules(client, tier1_id, limit=limit, offset=offset)
+    rules = _result["items"]
     table = Table(title=f"NAT Rules on '{tier1_id}' ({len(rules)})")
     table.add_column("ID", style="cyan")
     table.add_column("Action")
@@ -44,6 +50,7 @@ def networking_list_nat_rules(
             f"[{enabled_style}]{'Yes' if r.get('enabled', True) else 'No'}[/]",
         )
     console.print(table)
+    print_next_page(_result)
 
 
 @networking_app.command("bgp-neighbors")
@@ -93,6 +100,8 @@ def networking_bgp_neighbors(
 @_cli_errors
 def networking_list_static_routes(
     tier1_id: str,
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -100,7 +109,8 @@ def networking_list_static_routes(
     from vmware_nsx.ops.networking import list_static_routes
 
     client, _ = cli._get_connection(target, config)
-    routes = list_static_routes(client, tier1_id)["items"]
+    _result = list_static_routes(client, tier1_id, limit=limit, offset=offset)
+    routes = _result["items"]
     table = Table(title=f"Static Routes on '{tier1_id}' ({len(routes)})")
     table.add_column("ID", style="cyan")
     table.add_column("Network")
@@ -110,11 +120,14 @@ def networking_list_static_routes(
         hops = ", ".join(nh.get("ip_address", "") for nh in r.get("next_hops", []))
         table.add_row(r["id"], r["network"], hops or "-")
     console.print(table)
+    print_next_page(_result)
 
 
 @networking_app.command("list-ip-pools")
 @_cli_errors
 def networking_list_ip_pools(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -122,7 +135,8 @@ def networking_list_ip_pools(
     from vmware_nsx.ops.networking import list_ip_pools
 
     client, _ = cli._get_connection(target, config)
-    pools = list_ip_pools(client)["items"]
+    _result = list_ip_pools(client, limit=limit, offset=offset)
+    pools = _result["items"]
     table = Table(title=f"IP Pools ({len(pools)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -131,6 +145,7 @@ def networking_list_ip_pools(
     for p in pools:
         table.add_row(p["id"], p["display_name"], p.get("subnets", "-"), p.get("usage_summary", "-"))
     console.print(table)
+    print_next_page(_result)
 
 
 @networking_app.command("ip-pool-usage")

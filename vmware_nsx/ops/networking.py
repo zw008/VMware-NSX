@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from vmware_policy import paginated, sanitize
 
 from vmware_nsx.connection import CollectionTotal
+from vmware_nsx.ops._paginate import next_offset, paginate, validate_page_args
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -25,7 +26,10 @@ _DEFAULT_LIST_LIMIT = 50
 
 
 def list_nat_rules(
-    client: NsxClient, tier1_id: str, limit: int = _DEFAULT_LIST_LIMIT
+    client: NsxClient,
+    tier1_id: str,
+    limit: int = _DEFAULT_LIST_LIMIT,
+    offset: int = 0,
 ) -> dict:
     """List all user-defined NAT rules on a Tier-1 gateway.
 
@@ -37,13 +41,23 @@ def list_nat_rules(
         Result envelope with NAT rule dicts under ``items``, each with id,
         action, networks, and status. ``total`` carries the gateway's
         ``result_count`` from the Policy API's ListResult.
+
+    ``limit`` is a page size, 1..1000 (default 50); 0 and negatives are
+    rejected, not read as "everything". ``offset`` is the number of rows to
+    skip. The envelope carries ``next_offset``: pass it back as ``offset`` for
+    the next page and stop when it is ``None``. Do not loop on ``truncated`` —
+    that says this page is not the whole collection, which stays true on the
+    last page of a walk.
     """
+    validate_page_args(limit, offset)
     path = (
         f"/policy/api/v1/infra/tier-1s/{tier1_id}"
         "/nat/USER/nat-rules"
     )
     total = CollectionTotal()
-    items = client.get_all(path, page_size=limit, limit=limit, total_sink=total)
+    items = client.get_all(
+        path, page_size=limit, limit=offset + limit, total_sink=total
+    )
     rows = [
         {
             "id": sanitize(r.get("id", "")),
@@ -58,9 +72,14 @@ def list_nat_rules(
             "firewall_match": r.get("firewall_match", ""),
             "sequence_number": r.get("sequence_number", 0),
         }
-        for r in items
+        for r in paginate(items, limit, offset)
     ]
-    return paginated(rows, limit=limit, total=total.value)
+    return paginated(
+        rows,
+        limit=limit,
+        total=total.value,
+        next_offset=next_offset(len(rows), limit, offset, total.value),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +202,7 @@ def list_static_routes(
     gateway_id: str,
     gateway_type: str = "tier1",
     limit: int = _DEFAULT_LIST_LIMIT,
+    offset: int = 0,
 ) -> dict:
     """List static routes on a gateway (Tier-0 or Tier-1).
 
@@ -194,11 +214,21 @@ def list_static_routes(
     Returns:
         Result envelope with static route dicts under ``items``. ``total``
         carries the gateway's ``result_count`` from the ListResult.
+
+    ``limit`` is a page size, 1..1000 (default 50); 0 and negatives are
+    rejected, not read as "everything". ``offset`` is the number of rows to
+    skip. The envelope carries ``next_offset``: pass it back as ``offset`` for
+    the next page and stop when it is ``None``. Do not loop on ``truncated`` —
+    that says this page is not the whole collection, which stays true on the
+    last page of a walk.
     """
+    validate_page_args(limit, offset)
     gw_resource = "tier-0s" if gateway_type == "tier0" else "tier-1s"
     path = f"/policy/api/v1/infra/{gw_resource}/{gateway_id}/static-routes"
     total = CollectionTotal()
-    items = client.get_all(path, page_size=limit, limit=limit, total_sink=total)
+    items = client.get_all(
+        path, page_size=limit, limit=offset + limit, total_sink=total
+    )
     rows = [
         {
             "id": sanitize(r.get("id", "")),
@@ -214,9 +244,14 @@ def list_static_routes(
                 for nh in r.get("next_hops", [])
             ],
         }
-        for r in items
+        for r in paginate(items, limit, offset)
     ]
-    return paginated(rows, limit=limit, total=total.value)
+    return paginated(
+        rows,
+        limit=limit,
+        total=total.value,
+        next_offset=next_offset(len(rows), limit, offset, total.value),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -225,19 +260,29 @@ def list_static_routes(
 
 
 def list_ip_pools(
-    client: NsxClient, limit: int = _DEFAULT_LIST_LIMIT
+    client: NsxClient,
+    limit: int = _DEFAULT_LIST_LIMIT,
+    offset: int = 0,
 ) -> dict:
     """List IP pools (bounded to ``limit``, default 50).
 
     Returns:
         Result envelope with IP pool dicts under ``items``, each with id,
         display_name, and usage summary. ``total`` carries ``result_count``.
+
+    ``limit`` is a page size, 1..1000 (default 50); 0 and negatives are
+    rejected, not read as "everything". ``offset`` is the number of rows to
+    skip. The envelope carries ``next_offset``: pass it back as ``offset`` for
+    the next page and stop when it is ``None``. Do not loop on ``truncated`` —
+    that says this page is not the whole collection, which stays true on the
+    last page of a walk.
     """
+    validate_page_args(limit, offset)
     total = CollectionTotal()
     items = client.get_all(
         "/policy/api/v1/infra/ip-pools",
         page_size=limit,
-        limit=limit,
+        limit=offset + limit,
         total_sink=total,
     )
     rows = [
@@ -246,9 +291,14 @@ def list_ip_pools(
             "display_name": sanitize(p.get("display_name", "")),
             "pool_usage": p.get("pool_usage", {}),
         }
-        for p in items
+        for p in paginate(items, limit, offset)
     ]
-    return paginated(rows, limit=limit, total=total.value)
+    return paginated(
+        rows,
+        limit=limit,
+        total=total.value,
+        next_offset=next_offset(len(rows), limit, offset, total.value),
+    )
 
 
 def get_ip_pool_usage(

@@ -10,13 +10,26 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 
 @mcp.tool(annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 @vmware_tool(risk_level="low")
-def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> dict:
+def list_nsx_alarms(
+    severity: str = "MEDIUM",
+    target: Optional[str] = None,
+    limit: int = 1000,
+    offset: int = 0,
+) -> dict:
     """[READ] Get active NSX alarms at one severity, with feature, description, and entity.
 
     Returns the result envelope; check `truncated` before calling it complete.
     Note: the NSX severity filter is an EXACT match — "MEDIUM" returns only
     MEDIUM alarms, not MEDIUM-and-above, so call it once per severity to build a
     full picture.
+
+    Page it: `limit` is the page size (1-1000, 0 or negative is rejected),
+    `offset` is how many rows to skip, and the response carries `next_offset` —
+    pass that back as `offset` and stop when it is null. Do not loop on
+    `truncated`: that says this page is not the whole set, so it stays true on
+    the last page of a walk. Unlike the other list tools this one defaults to
+    the full 1000, because a health sweep that silently showed the first fifty
+    alarms would be worse than a long one.
 
     Start a health check at get_nsx_manager_status, then come here, then drill
     into the entity the alarm names with get_transport_node_status or
@@ -25,12 +38,14 @@ def list_nsx_alarms(severity: str = "MEDIUM", target: Optional[str] = None) -> d
     Args:
         severity: Exact severity: LOW, MEDIUM, HIGH or CRITICAL (default MEDIUM).
         target: NSX Manager target from config (default if omitted).
+        limit: Page size, 1-1000 (default 1000 — every alarm at the severity).
+        offset: Alarms to skip; pass the previous response's `next_offset`.
     """
     try:
         from vmware_nsx.ops.health import list_alarms as _list_alarms
 
         client = server._get_connection(target)
-        return _list_alarms(client, severity=severity)
+        return _list_alarms(client, severity=severity, limit=limit, offset=offset)
     except Exception as e:
         return {"error": _safe_error(e, "nsx"), "hint": _DOCTOR_HINT}
 

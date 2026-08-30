@@ -10,9 +10,12 @@ from rich.table import Table
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
     ConfigOption,
+    LimitOption,
+    OffsetOption,
     TargetOption,
     _cli_errors,
     console,
+    print_next_page,
     health_app,
 )
 
@@ -27,6 +30,8 @@ def health_alarms(
             help="Severity filter, exact match (not 'and above'): LOW, MEDIUM, HIGH, CRITICAL",
         ),
     ] = "MEDIUM",
+    limit: LimitOption = 1000,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -34,7 +39,8 @@ def health_alarms(
     from vmware_nsx.ops.health import list_alarms
 
     client, _ = cli._get_connection(target, config)
-    alarms = list_alarms(client, severity=severity)["items"]
+    _result = list_alarms(client, severity=severity, limit=limit, offset=offset)
+    alarms = _result["items"]
     if not alarms:
         console.print(f"[green]No active {severity.upper()} alarms.[/]")
         return
@@ -55,6 +61,7 @@ def health_alarms(
             a.get("last_reported_time", "-"),
         )
     console.print(table)
+    print_next_page(_result)
 
 
 @health_app.command("transport-node-status")

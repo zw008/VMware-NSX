@@ -7,9 +7,12 @@ from rich.table import Table
 from vmware_nsx import cli
 from vmware_nsx.cli._base import (
     ConfigOption,
+    LimitOption,
+    OffsetOption,
     TargetOption,
     _cli_errors,
     console,
+    print_next_page,
     inventory_app,
 )
 
@@ -17,6 +20,8 @@ from vmware_nsx.cli._base import (
 @inventory_app.command("list-segments")
 @_cli_errors
 def inventory_list_segments(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -24,7 +29,8 @@ def inventory_list_segments(
     from vmware_nsx.ops.inventory import list_segments
 
     client, _ = cli._get_connection(target, config)
-    segments = list_segments(client)["items"]
+    _result = list_segments(client, limit=limit, offset=offset)
+    segments = _result["items"]
     table = Table(title=f"Segments ({len(segments)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -43,6 +49,7 @@ def inventory_list_segments(
             str(s.get("port_count", "-")),
         )
     console.print(table)
+    print_next_page(_result)
 
 
 @inventory_app.command("get-segment")
@@ -64,6 +71,8 @@ def inventory_get_segment(
 @inventory_app.command("list-tier0s")
 @_cli_errors
 def inventory_list_tier0s(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -71,7 +80,8 @@ def inventory_list_tier0s(
     from vmware_nsx.ops.inventory import list_tier0_gateways
 
     client, _ = cli._get_connection(target, config)
-    gateways = list_tier0_gateways(client)["items"]
+    _result = list_tier0_gateways(client, limit=limit, offset=offset)
+    gateways = _result["items"]
     table = Table(title=f"Tier-0 Gateways ({len(gateways)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -80,6 +90,7 @@ def inventory_list_tier0s(
     for gw in gateways:
         table.add_row(gw["id"], gw["display_name"], gw.get("ha_mode", "-"), gw.get("transit_subnets", "-"))
     console.print(table)
+    print_next_page(_result)
 
 
 @inventory_app.command("get-tier0")
@@ -101,6 +112,8 @@ def inventory_get_tier0(
 @inventory_app.command("list-tier1s")
 @_cli_errors
 def inventory_list_tier1s(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -108,7 +121,8 @@ def inventory_list_tier1s(
     from vmware_nsx.ops.inventory import list_tier1_gateways
 
     client, _ = cli._get_connection(target, config)
-    gateways = list_tier1_gateways(client)["items"]
+    _result = list_tier1_gateways(client, limit=limit, offset=offset)
+    gateways = _result["items"]
     table = Table(title=f"Tier-1 Gateways ({len(gateways)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -117,6 +131,7 @@ def inventory_list_tier1s(
     for gw in gateways:
         table.add_row(gw["id"], gw["display_name"], gw.get("tier0_path", "-"), gw.get("route_advertisement", "-"))
     console.print(table)
+    print_next_page(_result)
 
 
 @inventory_app.command("get-tier1")
@@ -138,6 +153,8 @@ def inventory_get_tier1(
 @inventory_app.command("list-transport-zones")
 @_cli_errors
 def inventory_list_transport_zones(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -145,7 +162,8 @@ def inventory_list_transport_zones(
     from vmware_nsx.ops.inventory import list_transport_zones
 
     client, _ = cli._get_connection(target, config)
-    zones = list_transport_zones(client)["items"]
+    _result = list_transport_zones(client, limit=limit, offset=offset)
+    zones = _result["items"]
     table = Table(title=f"Transport Zones ({len(zones)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -153,11 +171,14 @@ def inventory_list_transport_zones(
     for z in zones:
         table.add_row(z["id"], z["display_name"], z["transport_type"])
     console.print(table)
+    print_next_page(_result)
 
 
 @inventory_app.command("list-transport-nodes")
 @_cli_errors
 def inventory_list_transport_nodes(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -165,7 +186,8 @@ def inventory_list_transport_nodes(
     from vmware_nsx.ops.inventory import list_transport_nodes
 
     client, _ = cli._get_connection(target, config)
-    nodes = list_transport_nodes(client)["items"]
+    _result = list_transport_nodes(client, limit=limit, offset=offset)
+    nodes = _result["items"]
     table = Table(title=f"Transport Nodes ({len(nodes)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -176,11 +198,14 @@ def inventory_list_transport_nodes(
         style = "green" if status == "UP" else "red" if status == "DOWN" else "yellow"
         table.add_row(n["id"], n["display_name"], n.get("node_type", "-"), f"[{style}]{status}[/]")
     console.print(table)
+    print_next_page(_result)
 
 
 @inventory_app.command("list-edge-clusters")
 @_cli_errors
 def inventory_list_edge_clusters(
+    limit: LimitOption = 50,
+    offset: OffsetOption = 0,
     target: TargetOption = None,
     config: ConfigOption = None,
 ) -> None:
@@ -188,7 +213,8 @@ def inventory_list_edge_clusters(
     from vmware_nsx.ops.inventory import list_edge_clusters
 
     client, _ = cli._get_connection(target, config)
-    clusters = list_edge_clusters(client)["items"]
+    _result = list_edge_clusters(client, limit=limit, offset=offset)
+    clusters = _result["items"]
     table = Table(title=f"Edge Clusters ({len(clusters)})")
     table.add_column("ID", style="cyan")
     table.add_column("Display Name")
@@ -197,3 +223,4 @@ def inventory_list_edge_clusters(
     for c in clusters:
         table.add_row(c["id"], c["display_name"], str(c.get("member_count", "-")), c.get("deployment_type", "-"))
     console.print(table)
+    print_next_page(_result)
