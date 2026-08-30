@@ -1,6 +1,6 @@
 """WRITE tools: NAT rule create / delete."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from vmware_policy import report_tool_failure, vmware_tool
 
@@ -25,7 +25,7 @@ from vmware_nsx.mcp_server._shared import _DOCTOR_HINT, _safe_error, mcp
 def create_nat_rule(
     tier1_id: str,
     rule_id: str,
-    action: str = "DNAT",
+    action: Literal["SNAT", "DNAT", "REFLEXIVE", "NO_SNAT", "NO_DNAT", "NAT64"] = "DNAT",
     source_network: Optional[str] = None,
     destination_network: Optional[str] = None,
     translated_network: str = "",
@@ -44,7 +44,8 @@ def create_nat_rule(
     Args:
         tier1_id: Gateway ID, as returned by list_tier1_gateways.
         rule_id: Unique ID for the NAT rule.
-        action: "SNAT", "DNAT" or "REFLEXIVE" (default "DNAT").
+        action: "DNAT" (default), "SNAT", "REFLEXIVE", "NO_SNAT", "NO_DNAT",
+            or "NAT64".
         source_network: Source CIDR (required for SNAT).
         destination_network: Destination CIDR (required for DNAT).
         translated_network: Translated network/IP (required for all three).

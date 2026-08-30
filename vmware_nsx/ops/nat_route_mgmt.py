@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 _log = logging.getLogger("vmware-nsx.nat-route-mgmt")
 
 
+# The NAT actions this module accepts. The MCP tool's Literal[...] is checked
+# against this set by a regression test, so the schema an agent sees and the
+# values this code will take cannot drift apart.
+VALID_NAT_ACTIONS = frozenset({"SNAT", "DNAT", "REFLEXIVE", "NO_SNAT", "NO_DNAT", "NAT64"})
+
 def _validate_id(resource_id: str) -> str:
     """Validate resource ID contains only safe characters."""
     if not resource_id or not re.match(r"^[a-zA-Z0-9_-]+$", resource_id):
@@ -59,18 +64,10 @@ def create_nat_rule(
     _validate_id(tier1_id)
     _validate_id(rule_id)
 
-    valid_actions = {
-        "SNAT",
-        "DNAT",
-        "REFLEXIVE",
-        "NO_SNAT",
-        "NO_DNAT",
-        "NAT64",
-    }
-    if action not in valid_actions:
+    if action not in VALID_NAT_ACTIONS:
         raise ValueError(
             f"Invalid NAT action: '{action}'. Must be one of: "
-            f"{', '.join(sorted(valid_actions))}. Pass one of those as "
+            f"{', '.join(sorted(VALID_NAT_ACTIONS))}. Pass one of those as "
             "create_nat_rule's action argument (CLI: vmware-nsx nat create-rule "
             "--action SNAT)."
         )

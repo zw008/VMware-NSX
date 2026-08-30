@@ -1,6 +1,6 @@
 """READ-ONLY networking tools: NAT rules, BGP neighbors, static routes, IP pools."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from vmware_policy import vmware_tool
 
@@ -76,7 +76,7 @@ def get_bgp_neighbors(tier0_id: str, target: Optional[str] = None) -> dict:
 @vmware_tool(risk_level="low")
 def list_static_routes(
     tier1_id: str,
-    gateway_type: str = "tier1",
+    gateway_type: Literal["tier0", "tier1"] = "tier1",
     target: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,

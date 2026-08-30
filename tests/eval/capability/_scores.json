@@ -88,43 +88,25 @@
       "detail": {
         "heaviest_tools": {
           "create_ip_pool": 385,
-          "create_nat_rule": 385,
+          "create_nat_rule": 418,
           "create_segment": 378,
-          "create_static_route": 363,
+          "create_static_route": 374,
           "create_tier1_gateway": 377
         },
-        "manifest_tokens": 8525,
-        "mean_tokens_per_tool": 258.3,
+        "manifest_tokens": 8590,
+        "mean_tokens_per_tool": 260.3,
         "reference_context": 16384,
         "tool_count": 33
       },
       "maximum": 16384,
-      "pct": 48.0,
+      "pct": 47.6,
       "unit": "tokens",
-      "value": 7859
+      "value": 7794
     },
     "parameter_documentation_coverage": {
       "detail": {
         "undocumented_by_tool": {},
-        "value_set_candidates": {
-          "create_nat_rule.action": [
-            "DNAT",
-            "REFLEXIVE",
-            "SNAT"
-          ],
-          "create_static_route.gateway_type": [
-            "tier0",
-            "tier1"
-          ],
-          "delete_static_route.gateway_type": [
-            "tier0",
-            "tier1"
-          ],
-          "list_static_routes.gateway_type": [
-            "tier0",
-            "tier1"
-          ]
-        }
+        "value_set_candidates": {}
       },
       "maximum": 114,
       "pct": 100.0,
@@ -137,11 +119,11 @@
         "over_ceiling": {
           "configure_tier0_bgp": 360,
           "create_ip_pool": 385,
-          "create_nat_rule": 385,
+          "create_nat_rule": 418,
           "create_segment": 378,
-          "create_static_route": 363,
+          "create_static_route": 374,
           "create_tier1_gateway": 377,
-          "list_static_routes": 360
+          "list_static_routes": 371
         }
       },
       "maximum": 33,
@@ -235,7 +217,7 @@
         "bare_string_error_lines": [
           143,
           97,
-          101,
+          102,
           103,
           131
         ],

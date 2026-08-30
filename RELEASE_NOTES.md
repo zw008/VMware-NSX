@@ -1,3 +1,19 @@
+## v1.8.14 — gateway_type and NAT action now reach the MCP schema
+
+`create_nat_rule(action=...)` and `gateway_type` on the three static-route tools
+were typed `str`. The gateway case had teeth: the implementation chooses with
+`"tier-0s" if gateway_type == "tier0" else "tier-1s"`, so anything not spelled
+exactly `tier0` silently addressed **tier1** — including on
+`delete_static_route`. Both are now `Literal[...]`, so the client rejects a bad
+value before it reaches that branch.
+
+`create_nat_rule`'s docstring named three actions while the implementation
+accepts six (`SNAT`, `DNAT`, `REFLEXIVE`, `NO_SNAT`, `NO_DNAT`, `NAT64`). An
+enum copied from the prose would have turned that documentation gap into a hard
+rejection of three working values, so the set is taken from the code and the
+docstring is corrected. The set is hoisted to `VALID_NAT_ACTIONS` and a new
+regression test pins the schema's enum against it.
+
 ## v1.8.13 — an agent's network changes left no trace a human could find
 
 The MCP write tools recorded nothing in `~/.vmware-nsx/audit.log` — the

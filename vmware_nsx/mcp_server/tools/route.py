@@ -1,6 +1,6 @@
 """WRITE tools: static route create / delete."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from vmware_policy import report_tool_failure, vmware_tool
 
@@ -28,7 +28,7 @@ def create_static_route(
     route_id: str,
     network: str,
     next_hop: str,
-    gateway_type: str = "tier1",
+    gateway_type: Literal["tier0", "tier1"] = "tier1",
     target: Optional[str] = None,
 ) -> dict:
     """[WRITE] Create a static route on a Tier-0 or Tier-1 gateway via the Policy API.
@@ -69,7 +69,7 @@ def create_static_route(
 def delete_static_route(
     tier1_id: str,
     route_id: str,
-    gateway_type: str = "tier1",
+    gateway_type: Literal["tier0", "tier1"] = "tier1",
     target: Optional[str] = None,
 ) -> str:
     """[WRITE] Permanently delete a static route from a Tier-0 or Tier-1 gateway.
