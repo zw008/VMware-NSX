@@ -145,13 +145,6 @@ class NsxClient:
         self._base_url = f"https://{target.host}:{target.port}"
         self._token: str | None = None
 
-        # Suppress urllib3's InsecureRequestWarning for self-signed certs.
-        # urllib3.disable_warnings is class-targeted and idempotent; it avoids
-        # the process-global side-effects of warnings.filterwarnings().
-        if not target.verify_ssl:
-            import urllib3
-
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         # No client-level auth — credentials are sent via form body in
         # _create_session(); subsequent requests use session cookie + XSRF token.
