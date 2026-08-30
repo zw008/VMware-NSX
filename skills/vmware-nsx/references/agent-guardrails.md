@@ -34,7 +34,7 @@ These are structural, so it cannot.
 | Guardrail you would otherwise prompt for | Now enforced by |
 |---|---|
 | "Warn me if a segment still has workloads on it before deleting" | **`delete_segment` checks port count** and warns on connected ports. The check runs server-side, not in the prompt. |
-| "Use explicit limits for queries that may return large amounts of data" | **The list envelope.** Every list-returning tool returns `{items, returned, limit, total, truncated, hint}`, so the model reads truncation instead of guessing at it. `truncated: true` means more rows exist — the `hint` says how to re-query. |
+| "Use explicit limits for queries that may return large amounts of data" | **The list envelope.** Every list-returning tool returns `{items, returned, limit, total, truncated, hint}`, so the model reads truncation instead of guessing at it. `truncated: true` means `items` is not the whole collection; `next_offset` (null on the last page) is what a paging loop stops on, and the `hint` says which of the two you are looking at. |
 | "If a listing came back empty, say so rather than claiming the call failed" | Same envelope. Empty `items` with `truncated: false` means the query genuinely matched nothing — a stated result, not a silence the model has to interpret. |
 | "Log every state change you make" | **The `@vmware_tool` decorator.** Every write is recorded to `~/.vmware/audit.db` before the model sees the result, and policy rules are evaluated ahead of execution. |
 | "Block state-changing writes against a production target" | **Policy.** An opt-in environment-scoped `deny` rule in `~/.vmware/rules.yaml` matches a target's `environment:` label and refuses matching writes before execution. |

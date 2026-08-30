@@ -263,18 +263,30 @@ Every list-returning tool wraps its rows in the family envelope
 (`vmware_policy.paginated`) rather than returning a bare array, so an agent can
 tell a complete answer from page one instead of guessing (VMware-AIops issue
 #31). Keys: `items`, `returned`, `limit`, `total`, `truncated`, `hint` — always
-all six, with explicit `null` where a value is unknown. Example payload:
+all six, with explicit `null` where a value is unknown — plus the `next_offset`
+extra. Example payload:
 
 ```json
 {
-  "items":     [ ... ],
-  "returned":  50,
-  "limit":     50,
-  "total":     412,
-  "truncated": true,
-  "hint":      "Showing 50 of 412. Raise limit or narrow the query with a filter to see the rest."
+  "items":       [ ... ],
+  "returned":    50,
+  "limit":       50,
+  "total":       412,
+  "truncated":   true,
+  "next_offset": 50,
+  "hint":        "Showing rows 0-49 of 412. Continue at offset 50 for the next page, or narrow the query with a filter."
 }
 ```
+
+`next_offset` is the stop signal, and `truncated` is not. `truncated` answers
+"is `items` the whole collection?", which is still `true` on the last page of a
+walk — rows 400-411 of 412 are not 412 rows. A loop driven by `truncated` never
+terminates; a loop driven by `next_offset is null` ends on the last page.
+
+`hint` is written for that same distinction. Mid-walk it names the offset to
+pass back; on the last page it says there is no next page, and on a page past
+the end it says the offset is past the end and to start again at 0. It never
+tells you to raise a limit that cannot return another row.
 
 `total` is the collection's `result_count` from the NSX ListResult. It is read
 from the pages `get_all` already fetched (via `CollectionTotal`), so it costs no

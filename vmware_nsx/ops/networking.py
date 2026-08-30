@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from vmware_policy import paginated, sanitize
+from vmware_policy import sanitize
 
 from vmware_nsx.connection import CollectionTotal
-from vmware_nsx.ops._paginate import next_offset, paginate, validate_page_args
+from vmware_nsx.ops._paginate import page_envelope, paginate, validate_page_args
 
 if TYPE_CHECKING:
     from vmware_nsx.connection import NsxClient
@@ -74,12 +74,7 @@ def list_nat_rules(
         }
         for r in paginate(items, limit, offset)
     ]
-    return paginated(
-        rows,
-        limit=limit,
-        total=total.value,
-        next_offset=next_offset(len(rows), limit, offset, total.value),
-    )
+    return page_envelope(rows, limit=limit, offset=offset, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -246,12 +241,7 @@ def list_static_routes(
         }
         for r in paginate(items, limit, offset)
     ]
-    return paginated(
-        rows,
-        limit=limit,
-        total=total.value,
-        next_offset=next_offset(len(rows), limit, offset, total.value),
-    )
+    return page_envelope(rows, limit=limit, offset=offset, total=total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -293,12 +283,7 @@ def list_ip_pools(
         }
         for p in paginate(items, limit, offset)
     ]
-    return paginated(
-        rows,
-        limit=limit,
-        total=total.value,
-        next_offset=next_offset(len(rows), limit, offset, total.value),
-    )
+    return page_envelope(rows, limit=limit, offset=offset, total=total.value)
 
 
 def get_ip_pool_usage(

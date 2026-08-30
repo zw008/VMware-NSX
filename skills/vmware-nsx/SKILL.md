@@ -190,7 +190,7 @@ Write tools require explicit parameters and are audit-logged. Dry-run preview (`
 
 ### List results are envelopes — read `truncated` before you summarise
 
-Every list-returning tool above returns `{items, returned, limit, total, truncated, hint}`, not a bare array. Rows live under `items`: empty `items` with `truncated: false` means the query genuinely matched nothing — report that, not a tool failure. `truncated: true` means more rows exist — never describe the result as the complete set; re-query as `hint` instructs. Field semantics, `total` sourcing, and an example payload: `references/capabilities.md`.
+Every list-returning tool above returns `{items, returned, limit, total, truncated, hint}`, not a bare array. Rows live under `items`: empty `items` with `truncated: false` means the query genuinely matched nothing — report that, not a tool failure. `truncated: true` means `items` is not the whole collection — never call it complete. It does **not** mean more rows can be fetched: it stays true on the last page. Page with `next_offset`, stopping when it is `null`; `hint` says which situation you are in. Field semantics, `total` sourcing, and an example payload: `references/capabilities.md`.
 
 ## Local & Small Models
 

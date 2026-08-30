@@ -104,3 +104,83 @@ def next_offset(returned: int, limit: int, offset: int, total: int | None) -> in
     if total is not None:
         return consumed if consumed < total else None
     return consumed if returned >= limit else None
+
+
+def page_hint(
+    returned: int, limit: int, offset: int, total: int | None, nxt: int | None
+) -> str | None:
+    """The sentence a caller should act on, or ``None`` when there is nothing to do.
+
+    ``vmware_policy.paginated`` writes this field, and it cannot write it
+    correctly: it is not given the ``offset``, so it cannot tell a page in the
+    middle of a walk from the last one. Every truncated page therefore got the
+    same sentence — "Raise limit or narrow the query with a filter to see the
+    rest" — including the page that *is* the rest, and the page past the end
+    where ``returned`` is 0. Raising a limit there returns nothing; narrowing a
+    filter returns less than nothing. It was the one field in the envelope
+    written for a reader rather than a machine, and it was the one field giving
+    false advice.
+
+    The remedy is not to redefine ``truncated``. That key answers "is ``items``
+    the whole collection?" and on the last page of a walk the answer is still
+    no — three rows out of twelve. It is ``next_offset`` that says the walk is
+    over, and it already did. So the semantics stay and the sentence is
+    rewritten from the offset the ops layer has and the shared package does not.
+    """
+    if nxt is not None:
+        if total is not None:
+            return (
+                f"Showing rows {offset}-{offset + returned - 1} of {total}. "
+                f"Continue at offset {nxt} for the next page, or narrow the query "
+                f"with a filter."
+            )
+        return (
+            f"Showing {returned} rows from offset {offset}, which fills the limit "
+            f"({limit}) — there may be more. Continue at offset {nxt}; the walk "
+            f"ends when next_offset is null."
+        )
+    if returned == 0:
+        if total is not None and offset >= total:
+            return (
+                f"No rows at offset {offset}: the collection holds {total}, so this "
+                f"offset is past the end. There is no next page — start again at "
+                f"offset 0."
+            )
+        # Zero rows that are not past a known end: the manager returned nothing
+        # for a window inside the collection it reported. Say what happened
+        # rather than inventing a cause.
+        return "No rows on this page, and no next page. Re-read from offset 0 to see the collection."
+    size = f"{total}" if total is not None else "the collection"
+    return (
+        f"Showing rows {offset}-{offset + returned - 1}, the last {returned} of {size}. "
+        f"There is no next page. 'truncated' is true because these {returned} rows are "
+        f"not the whole collection, not because more can be fetched — read from "
+        f"offset 0 for all of it."
+    )
+
+
+def page_envelope(
+    items: list[dict],
+    *,
+    limit: int,
+    offset: int,
+    total: int | None,
+    **extra: object,
+) -> dict:
+    """The family envelope for one page of a walk, with a hint that fits it.
+
+    One helper rather than the incantation
+    ``paginated(rows, limit=..., total=..., next_offset=next_offset(...))``
+    repeated at every list op: ten copies of a four-line rule is ten chances for
+    the eleventh to differ, which is 形态 #6 — a fact with no mechanical relation
+    to the code that has to keep it true. Everything the six family keys mean is
+    unchanged; ``next_offset`` is still the stop signal and ``truncated`` still
+    answers whether ``items`` is the whole collection.
+    """
+    from vmware_policy import paginated
+
+    nxt = next_offset(len(items), limit, offset, total)
+    envelope = paginated(items, limit=limit, total=total, next_offset=nxt, **extra)
+    if envelope["truncated"]:
+        envelope["hint"] = page_hint(len(items), limit, offset, total, nxt)
+    return envelope

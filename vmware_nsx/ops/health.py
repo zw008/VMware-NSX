@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from vmware_policy import paginated, sanitize
+from vmware_policy import sanitize
 
 from vmware_nsx.connection import CollectionTotal
 from vmware_nsx.ops._paginate import (
     MAX_LIMIT,
-    next_offset,
+    page_envelope,
     paginate,
     validate_page_args,
 )
@@ -104,12 +104,7 @@ def list_alarms(
         }
         for a in paginate(items, limit, offset)
     ]
-    return paginated(
-        rows,
-        limit=limit,
-        total=total.value,
-        next_offset=next_offset(len(rows), limit, offset, total.value),
-    )
+    return page_envelope(rows, limit=limit, offset=offset, total=total.value)
 
 
 # ---------------------------------------------------------------------------
