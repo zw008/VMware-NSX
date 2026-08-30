@@ -1,3 +1,34 @@
+## v1.8.13 — an agent's network changes left no trace a human could find
+
+The MCP write tools recorded nothing in `~/.vmware-nsx/audit.log` — the
+per-skill trail the README advertises as holding "All operations", the one that
+carries before/after state, and the one an operator actually opens. The shared
+`audit.db` was always written; this is the other sink. So a segment deleted by
+an agent was absent from the file a human's identical CLI command had just
+appeared in. The wrapper is derived from each tool's own `readOnlyHint`, so a
+new write tool is covered by being written.
+
+The paging hint also told a reader on the last page to raise a limit that cannot
+return another row. `truncated` keeps its meaning — it answers whether `items`
+is the whole collection, which is still true mid-walk — and `next_offset`
+remains the stop signal.
+
+**The `vmware-policy` floor moves to >=1.11.0.** Policy 1.11.0 stops the engine
+failing open: on a host whose locale is not UTF-8, reading `rules.yaml` raised a
+decode error that was swallowed, and a `freeze-production-writes` rule came back
+ALLOW. No new API is used here, so the floor could have stayed — it is raised
+because leaving it low means a user resolving 1.10.0 keeps the permissive engine
+and the fix never reaches them. One behaviour travels with it: on a host whose
+rules file cannot be read, operations move from all-allowed to all-denied.
+`VMWARE_POLICY_DISABLED=1` is checked above the rules, so the escape hatch does
+not itself depend on them loading.
+
+Also in this release: the suite no longer appends to the operator's real
+`~/.vmware/audit.db`. It held over 30,000 rows dominated by tool names nobody
+had invoked, including 1,400 entries for a destructive operation that never
+happened — an audit trail carrying test fiction cannot answer the question it is
+kept for.
+
 ## v1.8.12 — the schema an agent reads now carries the descriptions
 
 Parameter descriptions reach the JSON schema for the first time. An MCP client
