@@ -218,10 +218,24 @@ class AppConfig:
         return cfg
 
 
+def resolve_config_path(config_path: Path | None = None) -> Path:
+    """Which config file this skill will read: explicit arg, env var, default.
+
+    The single place that precedence lives. It used to be written out here and
+    again in :func:`vmware_nsx.doctor.run_doctor`, and the doctor's copy had no
+    env-var clause — so with ``VMWARE_NSX_CONFIG`` set it reported on a file the
+    tools would never open, and passed (2026-08-30). Two copies of a rule do not
+    disagree loudly; they disagree slowly (形态 #6).
+    """
+    if config_path is not None:
+        return config_path
+    env_override = os.environ.get("VMWARE_NSX_CONFIG")
+    return Path(env_override) if env_override else CONFIG_FILE
+
+
 def load_config(config_path: Path | None = None) -> AppConfig:
     """Load config from YAML file, with env var overrides for passwords."""
-    env_override = os.environ.get("VMWARE_NSX_CONFIG")
-    path = config_path or (Path(env_override) if env_override else CONFIG_FILE)
+    path = resolve_config_path(config_path)
 
     if not path.exists():
         raise FileNotFoundError(

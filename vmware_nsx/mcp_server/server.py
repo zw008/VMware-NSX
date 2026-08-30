@@ -41,8 +41,6 @@ For monitoring, use vmware-monitor.
 
 
 import logging
-import os
-from pathlib import Path
 from typing import Any, Optional
 
 from vmware_policy import mtime_cached_loader, set_environment_resolver
@@ -71,9 +69,10 @@ def _get_connection(target: Optional[str] = None) -> Any:
     """
     global _conn_mgr  # noqa: PLW0603
     if _conn_mgr is None:
-        config_path_str = os.environ.get("VMWARE_NSX_CONFIG")
-        config_path = Path(config_path_str) if config_path_str else None
-        config = load_config(config_path)
+        # No env-var read here: load_config resolves the path (explicit arg,
+        # then $VMWARE_NSX_CONFIG, then the default). This was a third copy of
+        # that rule, and copies are how the doctor's copy drifted (形态 #6).
+        config = load_config()
         _conn_mgr = ConnectionManager(config)
     return _conn_mgr.connect(target)
 
