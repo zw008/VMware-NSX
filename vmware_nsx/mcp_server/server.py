@@ -88,6 +88,13 @@ def _get_connection(target: Optional[str] = None) -> Any:
 # module is fine as long as the helper already exists.
 
 from vmware_nsx.mcp_server import tools  # noqa: E402
+from vmware_nsx.mcp_server._write_audit import install_write_audit
+
+# Give every registered write tool this skill's own audit log — the sink the CLI
+# surface has always written and the MCP surface never did. Must run BEFORE the
+# re-export below, so the names published here are the audited callables and not
+# a second, unaudited copy of each tool.
+_AUDITED_WRITES = install_write_audit(mcp)
 
 # Re-export every tool callable into this module's namespace so existing
 # imports (``from vmware_nsx.mcp_server.server import create_tier1_gateway``) and tests
