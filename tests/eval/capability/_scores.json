@@ -52,13 +52,13 @@
       },
       "maximum": 24,
       "pct": 100.0,
+      "stale": true,
       "unit": "required entity params",
       "value": 24
     },
     "entry_point_availability": {
       "detail": {
-        "full_entry_points": 11,
-        "read_only_entry_points": 11
+        "full_entry_points": 11
       },
       "maximum": 33,
       "pct": 33.3,
@@ -68,59 +68,86 @@
     "error_actionability": {
       "detail": {
         "composed_hint_sites": [
-          "connection.py:323"
+          "connection.py:316"
         ],
         "dead_end_count": 0,
         "dead_end_errors": [],
         "per_dimension_pct": {
-          "names_artifact": 100.0,
+          "names_artifact": 92.9,
           "names_input": 100.0,
           "states_remedy": 100.0
         },
-        "raise_sites": 26
+        "raise_sites": 28
       },
-      "maximum": 78,
-      "pct": 100.0,
+      "maximum": 84,
+      "pct": 97.6,
       "unit": "points",
-      "value": 78
+      "value": 82
     },
     "manifest_context_headroom": {
       "detail": {
         "heaviest_tools": {
-          "create_ip_pool": 350,
-          "create_nat_rule": 350,
-          "create_segment": 348,
-          "create_static_route": 330,
-          "create_tier1_gateway": 350
+          "create_ip_pool": 385,
+          "create_nat_rule": 385,
+          "create_segment": 378,
+          "create_static_route": 363,
+          "create_tier1_gateway": 377
         },
-        "manifest_tokens": 6633,
-        "mean_tokens_per_tool": 201.0,
+        "manifest_tokens": 8525,
+        "mean_tokens_per_tool": 258.3,
         "reference_context": 16384,
         "tool_count": 33
       },
       "maximum": 16384,
-      "pct": 59.5,
+      "pct": 48.0,
       "unit": "tokens",
-      "value": 9751
+      "value": 7859
     },
     "parameter_documentation_coverage": {
       "detail": {
-        "undocumented_by_tool": {}
+        "undocumented_by_tool": {},
+        "value_set_candidates": {
+          "create_nat_rule.action": [
+            "DNAT",
+            "REFLEXIVE",
+            "SNAT"
+          ],
+          "create_static_route.gateway_type": [
+            "tier0",
+            "tier1"
+          ],
+          "delete_static_route.gateway_type": [
+            "tier0",
+            "tier1"
+          ],
+          "list_static_routes.gateway_type": [
+            "tier0",
+            "tier1"
+          ]
+        }
       },
-      "maximum": 94,
+      "maximum": 114,
       "pct": 100.0,
       "unit": "parameters",
-      "value": 94
+      "value": 114
     },
     "per_tool_token_discipline": {
       "detail": {
         "ceiling": 350,
-        "over_ceiling": {}
+        "over_ceiling": {
+          "configure_tier0_bgp": 360,
+          "create_ip_pool": 385,
+          "create_nat_rule": 385,
+          "create_segment": 378,
+          "create_static_route": 363,
+          "create_tier1_gateway": 377,
+          "list_static_routes": 360
+        }
       },
       "maximum": 33,
-      "pct": 100.0,
+      "pct": 78.8,
       "unit": "tools",
-      "value": 33
+      "value": 26
     },
     "read_only_manifest_saving": {
       "detail": {
@@ -132,6 +159,7 @@
       },
       "maximum": 6633,
       "pct": 0.0,
+      "stale": true,
       "unit": "tokens",
       "value": 0
     },
@@ -149,27 +177,27 @@
         "budget_chars": 300,
         "over_budget": [],
         "remedy_after_interpolation": [
-          "config.py:228",
-          "config.py:159",
-          "config.py:214",
-          "connection.py:220",
-          "connection.py:233",
-          "connection.py:244",
-          "connection.py:494",
-          "connection.py:507",
-          "health.py:47",
-          "nat_route_mgmt.py:20"
+          "config.py:241",
+          "config.py:158",
+          "config.py:213",
+          "connection.py:213",
+          "connection.py:226",
+          "connection.py:237",
+          "connection.py:487",
+          "connection.py:500",
+          "_paginate.py:50",
+          "_paginate.py:59"
         ]
       },
-      "maximum": 26,
+      "maximum": 28,
       "pct": 100.0,
       "unit": "messages",
-      "value": 26
+      "value": 28
     },
     "teaching_error_rate": {
       "detail": {},
-      "maximum": 26,
-      "pct": 100.0,
+      "maximum": 28,
+      "pct": 92.9,
       "unit": "messages",
       "value": 26
     },
@@ -177,7 +205,7 @@
       "detail": {
         "per_dimension_pct": {
           "args": 100.0,
-          "gotcha": 100.0,
+          "gotcha": 97.0,
           "marker": 100.0,
           "next_hop": 100.0,
           "what": 100.0,
@@ -188,7 +216,9 @@
           "configure_tier0_bgp": [],
           "create_ip_pool": [],
           "create_nat_rule": [],
-          "create_segment": [],
+          "create_segment": [
+            "gotcha"
+          ],
           "create_static_route": [],
           "create_tier1_gateway": [],
           "delete_ip_pool": [],
@@ -196,9 +226,9 @@
         }
       },
       "maximum": 198,
-      "pct": 100.0,
+      "pct": 99.5,
       "unit": "points",
-      "value": 198
+      "value": 197
     },
     "tool_failure_payload_quality": {
       "detail": {
