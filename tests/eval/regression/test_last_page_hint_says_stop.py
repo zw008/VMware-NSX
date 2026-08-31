@@ -199,7 +199,7 @@ def _paged_ops() -> list[tuple[str, ast.FunctionDef]]:
     sources = sorted(p for p in OPS_DIR.glob("*.py") if not p.name.startswith("_"))
     assert sources, f"no ops modules under {OPS_DIR} — this gate would check nothing"
     for path in sources:
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and any(
                 a.arg == "offset" for a in node.args.args + node.args.kwonlyargs

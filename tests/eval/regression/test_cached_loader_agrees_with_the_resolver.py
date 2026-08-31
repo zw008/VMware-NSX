@@ -76,7 +76,7 @@ def test_with_the_variable_unset_both_settle_on_the_default(monkeypatch, tmp_pat
 @pytest.mark.unit
 def test_with_the_variable_set_both_settle_on_that_file(monkeypatch, tmp_path):
     elsewhere = tmp_path / "elsewhere.yaml"
-    elsewhere.write_text("targets: {}\n")
+    elsewhere.write_text("targets: {}\n", encoding="utf-8")
     monkeypatch.setenv(_ENV, str(elsewhere))
     loader, seen = _spy()
     cached = mtime_cached_loader(_ENV, CONFIG_FILE, loader)
@@ -106,7 +106,7 @@ def test_the_cli_path_and_the_server_path_are_the_same_file(monkeypatch, tmp_pat
     So the assertion is on the *bare* call, the one the CLI and the doctor make.
     """
     elsewhere = tmp_path / "elsewhere.yaml"
-    elsewhere.write_text("targets: {}\n")
+    elsewhere.write_text("targets: {}\n", encoding="utf-8")
     monkeypatch.setenv(_ENV, str(elsewhere))
     loader, seen = _spy()
     mtime_cached_loader(_ENV, CONFIG_FILE, loader)()
@@ -158,8 +158,8 @@ def test_changing_the_variable_mid_process_moves_both(monkeypatch, tmp_path):
     """The documented hot-reload contract: the name is re-read on every call.
     If the cache did not follow, the server would keep serving the old file."""
     first, second = tmp_path / "a.yaml", tmp_path / "b.yaml"
-    first.write_text("targets: {}\n")
-    second.write_text("targets: {}\n")
+    first.write_text("targets: {}\n", encoding="utf-8")
+    second.write_text("targets: {}\n", encoding="utf-8")
     loader, seen = _spy()
     cached = mtime_cached_loader(_ENV, CONFIG_FILE, loader)
 

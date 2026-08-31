@@ -72,7 +72,7 @@ def sandbox(tmp_path, monkeypatch):
     """A default config that exists and is valid, so the only way the doctor can
     report on the env var's file is by resolving it."""
     default = tmp_path / "default.yaml"
-    default.write_text(_ONE_TARGET)
+    default.write_text(_ONE_TARGET, encoding="utf-8")
     monkeypatch.setattr(cfg, "CONFIG_FILE", default)
     monkeypatch.setattr(cfg, "ENV_FILE", tmp_path / "no-such.env")
     monkeypatch.delenv("VMWARE_NSX_CONFIG", raising=False)
@@ -84,7 +84,7 @@ def sandbox(tmp_path, monkeypatch):
 
 def test_the_env_var_decides_which_file_is_resolved(sandbox, tmp_path, monkeypatch):
     elsewhere = tmp_path / "elsewhere.yaml"
-    elsewhere.write_text(_THREE_TARGETS)
+    elsewhere.write_text(_THREE_TARGETS, encoding="utf-8")
     monkeypatch.setenv("VMWARE_NSX_CONFIG", str(elsewhere))
 
     assert cfg.resolve_config_path() == elsewhere
@@ -94,7 +94,7 @@ def test_an_explicit_path_still_beats_the_env_var(sandbox, tmp_path, monkeypatch
     """The control on precedence: ``--config`` is the operator saying which file
     they mean, and it has to keep winning."""
     explicit = tmp_path / "explicit.yaml"
-    explicit.write_text(_ONE_TARGET)
+    explicit.write_text(_ONE_TARGET, encoding="utf-8")
     monkeypatch.setenv("VMWARE_NSX_CONFIG", str(tmp_path / "ignored.yaml"))
 
     assert cfg.resolve_config_path(explicit) == explicit
@@ -111,7 +111,7 @@ def test_doctor_reads_the_env_vars_file_not_the_default(
     """The positive half: pointed at a real file elsewhere, the doctor reports
     on that one — three targets, not the default's one."""
     elsewhere = tmp_path / "elsewhere.yaml"
-    elsewhere.write_text(_THREE_TARGETS)
+    elsewhere.write_text(_THREE_TARGETS, encoding="utf-8")
     monkeypatch.setenv("VMWARE_NSX_CONFIG", str(elsewhere))
 
     doc.run_doctor(skip_auth=True)

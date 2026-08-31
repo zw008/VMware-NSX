@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 import socket
-import stat
 from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
+from vmware_policy.fsperms import check_secret_file
 
 _log = logging.getLogger("vmware-nsx.doctor")
 console = Console()
@@ -49,18 +49,12 @@ def run_doctor(
     # ── 2. .env file permissions ─────────────────────────────────────────────
     if ENV_FILE.exists():
         try:
-            mode = ENV_FILE.stat().st_mode
-            perms = stat.S_IMODE(mode)
-            if perms & (stat.S_IRWXG | stat.S_IRWXO):
-                checks.append(
-                    (
-                        ".env permissions",
-                        False,
-                        f"Permissions {oct(perms)} too open. Run: chmod 600 {ENV_FILE}",
-                    )
-                )
-            else:
-                checks.append((".env permissions", True, f"{oct(perms)} (owner-only)"))
+            # Three states, not two — see vmware_policy.fsperms. Windows has no
+            # POSIX mode bits and `chmod 600` there exits 0 without changing
+            # anything, so the old two-state check was permanently red with an
+            # inert remedy.
+            check = check_secret_file(ENV_FILE)
+            checks.append((".env permissions", not check.is_failure, check.message))
         except OSError as e:
             checks.append((".env permissions", False, str(e)))
     else:

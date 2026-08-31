@@ -345,7 +345,7 @@ def _actual_tools() -> dict[str, bool]:
 
 
 def test_skill_md_tool_table_matches_live_registry() -> None:
-    skill_md = (REPO_ROOT / "skills" / "vmware-nsx" / "SKILL.md").read_text()
+    skill_md = (REPO_ROOT / "skills" / "vmware-nsx" / "SKILL.md").read_text(encoding="utf-8")
     rows = re.findall(r"^\|[^|]*\| `(\w+)` \| (Read|Write) \|", skill_md, re.MULTILINE)
     documented = {name: kind == "Read" for name, kind in rows}
     actual = _actual_tools()
@@ -360,7 +360,7 @@ def test_skill_md_tool_table_matches_live_registry() -> None:
 
 
 def test_skill_md_counts_match_live_registry() -> None:
-    skill_md = (REPO_ROOT / "skills" / "vmware-nsx" / "SKILL.md").read_text()
+    skill_md = (REPO_ROOT / "skills" / "vmware-nsx" / "SKILL.md").read_text(encoding="utf-8")
     actual = _actual_tools()
     total, reads = len(actual), sum(actual.values())
     writes = total - reads
@@ -412,7 +412,7 @@ def test_no_raw_raise_for_status_outside_connection_layer() -> None:
         *_cli_source_files(),
         *(p for p in _mcp_server_sources() if "__pycache__" not in p.parts),
     ]:
-        if "raise_for_status" in py.read_text():
+        if "raise_for_status" in py.read_text(encoding="utf-8"):
             offenders.append(str(py.relative_to(REPO_ROOT)))
     assert not offenders, (
         f"bare raise_for_status() outside connection layer: {offenders} — "
@@ -459,7 +459,7 @@ def test_cli_translates_missing_config_to_exit_1() -> None:
 def test_every_cli_command_has_error_decorator() -> None:
     """Every @<group>.command() must be wrapped by @_cli_errors so no
     command can leak a raw traceback."""
-    src = "\n".join(p.read_text() for p in _cli_source_files())
+    src = "\n".join(p.read_text(encoding="utf-8") for p in _cli_source_files())
     blocks = re.findall(r"^(@[a-z_]*app\.command\([^\n]*\)\n)(@_cli_errors\n)?", src, re.MULTILINE)
     undecorated = [b[0].strip() for b in blocks if not b[1]]
     assert not undecorated, f"CLI commands missing @_cli_errors: {undecorated}"

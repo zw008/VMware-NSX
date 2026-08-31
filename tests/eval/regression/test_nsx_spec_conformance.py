@@ -49,7 +49,7 @@ _ALLOWLIST = {
 
 def _spec_segment_lists() -> list[list[str]]:
     """Spec paths split into segments; '{...}' segments act as wildcards."""
-    spec = json.loads(SPEC_PATH.read_text())
+    spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     return [op["path"].split("/") for op in spec["operations"]]
 
 
@@ -120,7 +120,7 @@ def _collect_api_calls() -> list[tuple[str, str]]:
     for scan_dir in SCAN_DIRS:
         for py in sorted(scan_dir.rglob("*.py")):
             scanner = _ApiCallScanner(str(py.relative_to(REPO_ROOT)))
-            scanner.visit(ast.parse(py.read_text()))
+            scanner.visit(ast.parse(py.read_text(encoding="utf-8")))
             calls.extend(scanner.calls)
     return calls
 
@@ -151,7 +151,7 @@ def _matches_spec(path: str, spec_paths: list[list[str]]) -> bool:
 
 
 def test_spec_index_is_loaded() -> None:
-    spec = json.loads(SPEC_PATH.read_text())
+    spec = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     assert spec["operation_count"] >= 2000, "spec index missing or truncated"
     assert spec["operation_count"] == len(spec["operations"])
 

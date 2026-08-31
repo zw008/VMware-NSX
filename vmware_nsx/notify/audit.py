@@ -50,7 +50,7 @@ class AuditLogger:
         }
 
         try:
-            with open(self._path, "a") as fh:
+            with open(self._path, "a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except OSError as exc:
             self._logger.warning("Failed to write audit log: %s", exc)

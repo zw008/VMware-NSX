@@ -68,7 +68,7 @@ def mcp_config_generate(
         console.print(f"[red]Template file not found: {template_file}[/]")
         raise typer.Exit(1)
 
-    content = template_file.read_text()
+    content = template_file.read_text(encoding="utf-8")
 
     if install_path:
         content = content.replace("/path/to/VMware-NSX", str(Path(install_path).resolve()))
@@ -78,7 +78,7 @@ def mcp_config_generate(
             content = content.replace("/path/to/VMware-NSX", str(pkg_dir))
 
     if output:
-        output.write_text(content)
+        output.write_text(content, encoding="utf-8")
         console.print(f"[green]Config written to: {output}[/]")
     else:
         console.print(content)
@@ -139,7 +139,7 @@ def mcp_config_install(
         console.print(f"[red]Template file not found: {template_file}[/]")
         raise typer.Exit(1)
 
-    content = template_file.read_text()
+    content = template_file.read_text(encoding="utf-8")
     if install_path:
         abs_path = str(Path(install_path).resolve())
         content = content.replace("/path/to/VMware-NSX", abs_path)
@@ -169,22 +169,22 @@ def mcp_config_install(
 
     if dest.suffix == ".json" and dest.exists():
         try:
-            existing = json.loads(dest.read_text())
+            existing = json.loads(dest.read_text(encoding="utf-8"))
             new_entry = json.loads(content)
             if "mcpServers" in new_entry:
                 existing.setdefault("mcpServers", {}).update(new_entry["mcpServers"])
             else:
                 existing.update(new_entry)
-            dest.write_text(json.dumps(existing, indent=2) + "\n")
+            dest.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
             console.print(f"[green]Merged vmware-nsx into: {dest}[/]")
         except (json.JSONDecodeError, Exception) as e:
             console.print(f"[red]Failed to merge into existing config: {e}[/]")
             console.print("[yellow]Writing new config (backup original first).[/]")
-            dest.with_suffix(".bak").write_text(dest.read_text())
-            dest.write_text(content)
+            dest.with_suffix(".bak").write_text(dest.read_text(encoding="utf-8"), encoding="utf-8")
+            dest.write_text(content, encoding="utf-8")
             console.print(f"[green]Written: {dest} (backup: {dest.with_suffix('.bak')})[/]")
     else:
-        dest.write_text(content)
+        dest.write_text(content, encoding="utf-8")
         console.print(f"[green]Written: {dest}[/]")
 
     console.print("\n[dim]Run 'vmware-nsx doctor' to verify your setup.[/]")

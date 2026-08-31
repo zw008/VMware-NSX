@@ -37,7 +37,7 @@ DESTRUCTIVE_CLI_COMMANDS: list[str] = [
 def _has_double_confirm(sources: list[Path], func_name: str) -> bool:
     """Return True if *func_name* in any of *sources* references ``double_confirm``."""
     for file_path in sources:
-        tree = ast.parse(file_path.read_text())
+        tree = ast.parse(file_path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
                 return "double_confirm" in ast.dump(node)
