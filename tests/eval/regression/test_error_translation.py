@@ -413,7 +413,7 @@ def test_no_raw_raise_for_status_outside_connection_layer() -> None:
         *(p for p in _mcp_server_sources() if "__pycache__" not in p.parts),
     ]:
         if "raise_for_status" in py.read_text(encoding="utf-8"):
-            offenders.append(str(py.relative_to(REPO_ROOT)))
+            offenders.append(py.relative_to(REPO_ROOT).as_posix())
     assert not offenders, (
         f"bare raise_for_status() outside connection layer: {offenders} — "
         "all HTTP errors must be translated centrally (踩坑 #37)"

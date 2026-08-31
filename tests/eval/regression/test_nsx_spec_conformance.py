@@ -119,7 +119,7 @@ def _collect_api_calls() -> list[tuple[str, str]]:
     calls: list[tuple[str, str]] = []
     for scan_dir in SCAN_DIRS:
         for py in sorted(scan_dir.rglob("*.py")):
-            scanner = _ApiCallScanner(str(py.relative_to(REPO_ROOT)))
+            scanner = _ApiCallScanner(py.relative_to(REPO_ROOT).as_posix())
             scanner.visit(ast.parse(py.read_text(encoding="utf-8")))
             calls.extend(scanner.calls)
     return calls
