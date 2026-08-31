@@ -12,6 +12,8 @@ import pytest
 
 from vmware_nsx import init_wizard
 
+from vmware_policy.fsperms import assert_owner_only
+
 
 # ── init wizard ──────────────────────────────────────────────────────────────
 
@@ -47,7 +49,7 @@ def test_init_writes_grep_safe_env(_wizard_env: Path, monkeypatch: pytest.Monkey
     env_text = env_path.read_text(encoding="utf-8")
     assert "VMWARE_NSX_NSX_LAB_PASSWORD=b64:" in env_text
     assert "S3cr3t!pw)" not in env_text  # never plaintext on disk
-    assert env_path.stat().st_mode & 0o777 == 0o600
+    assert_owner_only(env_path)
     line = next(ln for ln in env_text.splitlines() if ln.startswith("VMWARE_NSX_NSX_LAB_PASSWORD="))
     # Round-trip: the stored b64 decodes back to the literal special-char pw.
     assert _decode_secret(line.split("=", 1)[1]) == "S3cr3t!pw)"
